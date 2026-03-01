@@ -32,6 +32,7 @@ import { WeeklyNarrativeView } from "./weekly-narrative-view";
 import { FaabRecommendView } from "./faab-recommend-view";
 import { OwnershipTrendsView } from "./ownership-trends-view";
 import { RosterStatsView } from "./roster-stats-view";
+import { WorkflowSummaryView } from "./workflow-summary-view";
 import "../globals.css";
 
 function SeasonApp() {
@@ -73,6 +74,17 @@ function SeasonApp() {
           case "faab-recommend": return <FaabRecommendView data={data} app={app} navigate={navigate} />;
           case "ownership-trends": return <OwnershipTrendsView data={data} app={app} navigate={navigate} />;
           case "roster-stats": return <RosterStatsView data={data} app={app} navigate={navigate} />;
+          case "league-landscape":
+          case "roster-health":
+          case "waiver-recommendations":
+          case "auto-lineup":
+          case "trade-analysis":
+          case "game-day-manager":
+          case "waiver-deadline-prep":
+          case "trade-pipeline":
+          case "weekly-digest":
+          case "season-checkpoint":
+            return <WorkflowSummaryView data={data} />;
           default: return <div className="p-4 text-muted-foreground">Unknown view: {toolName}</div>;
         }
       }}

@@ -9,6 +9,7 @@ import os
 import json
 import time
 import urllib.request
+import threading
 
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
@@ -79,7 +80,26 @@ def get_connection():
     """Get authenticated Yahoo OAuth connection."""
     if not LEAGUE_ID:
         raise RuntimeError("LEAGUE_ID environment variable is required")
-    sc = OAuth2(None, None, from_file=OAUTH_FILE)
+
+    # Yahoo OAuth object creation is relatively expensive and many MCP
+    # requests arrive in bursts (e.g. workflow tools). Reuse the same
+    # connection for a short TTL and refresh token as needed.
+    global _yahoo_cache
+    now = time.time()
+    with _yahoo_cache_lock:
+        cached = _yahoo_cache.get("connection")
+        if cached and now - _yahoo_cache.get("connection_time", 0) < _YAHOO_CACHE_TTL_SECONDS:
+            sc = cached
+        else:
+            sc = OAuth2(None, None, from_file=OAUTH_FILE)
+            _yahoo_cache["connection"] = sc
+            _yahoo_cache["connection_time"] = now
+            # League/team objects depend on connection lifecycle; invalidate.
+            _yahoo_cache["game"] = None
+            _yahoo_cache["league"] = None
+            _yahoo_cache["team"] = None
+            _yahoo_cache["team_key"] = ""
+
     if not sc.token_is_valid():
         sc.refresh_access_token()
     return sc
@@ -88,8 +108,20 @@ def get_connection():
 def get_league():
     """Get (sc, gm, lg) — connection, game, and league objects."""
     sc = get_connection()
-    gm = yfa.Game(sc, "mlb")
-    lg = gm.to_league(LEAGUE_ID)
+    now = time.time()
+
+    global _yahoo_cache
+    with _yahoo_cache_lock:
+        gm = _yahoo_cache.get("game")
+        lg = _yahoo_cache.get("league")
+        valid = now - _yahoo_cache.get("league_time", 0) < _YAHOO_CACHE_TTL_SECONDS
+        if gm is None or lg is None or not valid:
+            gm = yfa.Game(sc, "mlb")
+            lg = gm.to_league(LEAGUE_ID)
+            _yahoo_cache["game"] = gm
+            _yahoo_cache["league"] = lg
+            _yahoo_cache["league_time"] = now
+
     return sc, gm, lg
 
 
@@ -102,8 +134,34 @@ def get_league_context():
             "Could not determine team key. Set TEAM_ID env var or ensure "
             "your OAuth token is for a manager in this league."
         )
-    team = lg.to_team(tk)
+    now = time.time()
+
+    global _yahoo_cache
+    with _yahoo_cache_lock:
+        cached_tk = _yahoo_cache.get("team_key", "")
+        team = _yahoo_cache.get("team")
+        valid = now - _yahoo_cache.get("team_time", 0) < _YAHOO_CACHE_TTL_SECONDS
+        if team is None or cached_tk != tk or not valid:
+            team = lg.to_team(tk)
+            _yahoo_cache["team"] = team
+            _yahoo_cache["team_key"] = tk
+            _yahoo_cache["team_time"] = now
+
     return sc, gm, lg, team
+
+
+_YAHOO_CACHE_TTL_SECONDS = int(os.environ.get("YAHOO_CONTEXT_CACHE_TTL_SECONDS", "30"))
+_yahoo_cache_lock = threading.Lock()
+_yahoo_cache = {
+    "connection": None,
+    "connection_time": 0,
+    "game": None,
+    "league": None,
+    "league_time": 0,
+    "team": None,
+    "team_key": "",
+    "team_time": 0,
+}
 
 
 # ---------------------------------------------------------------------------

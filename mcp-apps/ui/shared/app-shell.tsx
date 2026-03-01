@@ -40,6 +40,17 @@ var TOOL_LABELS: Record<string, string> = {
   "yahoo_waiver_claim_swap": "waiver claim swap",
   "yahoo_who_owns": "who owns",
   "yahoo_category_trends": "category trends",
+  "yahoo_morning_briefing": "morning briefing",
+  "yahoo_league_landscape": "league landscape",
+  "yahoo_roster_health_check": "roster health check",
+  "yahoo_waiver_recommendations": "waiver recommendations",
+  "yahoo_auto_lineup": "auto lineup",
+  "yahoo_trade_analysis": "trade analysis",
+  "yahoo_game_day_manager": "game day manager",
+  "yahoo_waiver_deadline_prep": "waiver deadline prep",
+  "yahoo_trade_pipeline": "trade pipeline",
+  "yahoo_weekly_digest": "weekly digest",
+  "yahoo_season_checkpoint": "season checkpoint",
 };
 
 function toolLabel(name: string): string | null {
