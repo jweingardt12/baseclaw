@@ -10,10 +10,10 @@ interface RefreshButtonProps {
 }
 
 export function RefreshButton({ app, toolName, toolArgs, navigate }: RefreshButtonProps) {
-  const { callTool, loading } = useCallTool(app);
+  var { callTool, loading } = useCallTool(app);
 
-  const handleRefresh = async () => {
-    const result = await callTool(toolName, toolArgs || {});
+  var handleRefresh = async function () {
+    var result = await callTool(toolName, toolArgs || {});
     if (result && result.structuredContent) {
       navigate(result.structuredContent);
     }

@@ -3,7 +3,9 @@ import { Button } from "../components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
 import { useCallTool } from "../shared/use-call-tool";
 
-import { ChevronLeft, ChevronRight, Loader2, Trophy } from "@/shared/icons";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from "recharts";
+
+import { ChevronLeft, ChevronRight, Loader2, Trophy, BarChart3 } from "@/shared/icons";
 
 interface PastStandingsEntry {
   rank: number;
@@ -17,6 +19,23 @@ interface PastStandingsData {
   standings: PastStandingsEntry[];
 }
 
+function parseStandingsRecord(record: string): { wins: number; losses: number; ties: number } | null {
+  if (!record || record === "-") {
+    return null;
+  }
+  var parts = record.split("-");
+  if (parts.length < 2) {
+    return null;
+  }
+  var wins = parseInt(parts[0], 10);
+  var losses = parseInt(parts[1], 10);
+  var ties = parts.length > 2 ? parseInt(parts[2], 10) : 0;
+  if (isNaN(wins) || isNaN(losses)) {
+    return null;
+  }
+  return { wins: wins, losses: losses, ties: ties };
+}
+
 export function PastStandingsView({ data, app, navigate }: { data: PastStandingsData; app: any; navigate: (data: any) => void }) {
   const { callTool, loading } = useCallTool(app);
 
@@ -26,6 +45,31 @@ export function PastStandingsView({ data, app, navigate }: { data: PastStandings
       navigate(result.structuredContent);
     }
   };
+
+  // Build chart data from standings records
+  var standingsChartData = (data.standings || [])
+    .map(function (s) {
+      var parsed = parseStandingsRecord(s.record);
+      if (!parsed) {
+        return null;
+      }
+      // Truncate long team names for chart labels
+      var shortName = s.team_name.length > 14 ? s.team_name.slice(0, 13) + "\u2026" : s.team_name;
+      return {
+        team: shortName,
+        rank: s.rank,
+        wins: parsed.wins,
+        losses: parsed.losses,
+        ties: parsed.ties,
+      };
+    })
+    .filter(function (d) { return d !== null; }) as Array<{
+      team: string;
+      rank: number;
+      wins: number;
+      losses: number;
+      ties: number;
+    }>;
 
   return (
     <div className="space-y-3 animate-fade-in">
@@ -73,6 +117,61 @@ export function PastStandingsView({ data, app, navigate }: { data: PastStandings
             </TableBody>
           </Table>
         </div>
+        {/* Win/Loss Chart */}
+        {standingsChartData.length > 1 && (
+          <div className="surface-card p-4 mt-3">
+            <div className="flex items-center gap-2 mb-3">
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-bold">Win-Loss Breakdown</span>
+            </div>
+            <div style={{ height: Math.max(standingsChartData.length * 26, 120) + "px" }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={standingsChartData} layout="vertical" margin={{ top: 5, right: 10, bottom: 5, left: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
+                  <XAxis
+                    type="number"
+                    tick={{ fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="team"
+                    tick={{ fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={90}
+                  />
+                  <Tooltip
+                    formatter={function (value: number, name: string) {
+                      var label = name === "wins" ? "Wins" : name === "losses" ? "Losses" : "Ties";
+                      return [value, label];
+                    }}
+                    contentStyle={{
+                      background: "var(--color-card)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Bar dataKey="wins" stackId="record" fill="var(--sem-success)" radius={[0, 0, 0, 0]} maxBarSize={18} name="wins" />
+                  <Bar dataKey="losses" stackId="record" fill="var(--sem-risk)" radius={[0, 4, 4, 0]} maxBarSize={18} name="losses" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <div className="w-2.5 h-2.5 rounded-sm bg-green-500" />
+                Wins
+              </span>
+              <span className="flex items-center gap-1">
+                <div className="w-2.5 h-2.5 rounded-sm bg-red-500" />
+                Losses
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

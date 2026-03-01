@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Badge } from "../components/ui/badge";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
@@ -35,10 +36,38 @@ function dayOfWeek(dateStr: string): string {
   }
 }
 
+function heatmapBg(count: number, max: number): string {
+  if (count === 0) return "var(--color-muted)";
+  var pct = count / Math.max(1, max);
+  // Green gradient from 15% to 80% mix with success color
+  var mix = Math.round(15 + pct * 65);
+  return "color-mix(in oklab, var(--sem-success) " + mix + "%, var(--color-surface-1))";
+}
+
+function heatmapText(count: number, max: number): string {
+  if (count === 0) return "var(--color-muted-foreground)";
+  var pct = count / Math.max(1, max);
+  if (pct > 0.6) return "#fff";
+  return "var(--color-foreground)";
+}
+
+function playersForDate(players: WeekPlannerPlayer[], dateStr: string): string[] {
+  var result: string[] = [];
+  for (var i = 0; i < players.length; i++) {
+    var p = players[i];
+    var isBench = p.position === "BN" || p.position === "IL" || p.position === "IL+" || p.position === "NA";
+    if (!isBench && p.games_by_date && p.games_by_date[dateStr]) {
+      result.push(p.name);
+    }
+  }
+  return result;
+}
+
 export function WeekPlannerView({ data }: { data: WeekPlannerData }) {
   var dates = data.dates || [];
   var players = data.players || [];
   var totals = data.daily_totals || {};
+  var [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   // Calculate max daily total for color scaling
   var maxTotal = Math.max(1, ...Object.values(totals));
@@ -51,6 +80,8 @@ export function WeekPlannerView({ data }: { data: WeekPlannerData }) {
     if (totals[bestKeys[bi]] === bestDayVal) { bestDay = bestKeys[bi].slice(5); break; }
   }
 
+  var selectedPlayers = selectedDay ? playersForDate(players, selectedDay) : [];
+
   return (
     <div className="space-y-2">
       <AiInsight recommendation={data.ai_recommendation} />
@@ -59,6 +90,60 @@ export function WeekPlannerView({ data }: { data: WeekPlannerData }) {
         <KpiTile value={totalGames} label="Total Games" color="primary" />
         <KpiTile value={offDays} label="Off Days" color={offDays > 0 ? "warning" : "success"} />
         <KpiTile value={bestDay || "-"} label="Best Day" color="info" />
+      </div>
+
+      {/* Calendar heatmap */}
+      <div className="surface-card" style={{ padding: "var(--app-space-2)" }}>
+        <div style={{ fontSize: "var(--app-text-xs)", fontWeight: 600, marginBottom: "8px", color: "var(--color-muted-foreground)" }}>
+          Games per Day
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(" + dates.length + ", 1fr)", gap: "6px" }}>
+          {dates.map(function (d) {
+            var count = totals[d] || 0;
+            var isSelected = selectedDay === d;
+            return (
+              <div
+                key={d}
+                onClick={function () { setSelectedDay(isSelected ? null : d); }}
+                style={{
+                  background: heatmapBg(count, maxTotal),
+                  color: heatmapText(count, maxTotal),
+                  borderRadius: "var(--radius)",
+                  padding: "8px 4px",
+                  textAlign: "center" as "center",
+                  cursor: "pointer",
+                  border: isSelected ? "2px solid var(--sem-success)" : "2px solid transparent",
+                  transition: "border-color 150ms ease, background 150ms ease",
+                }}
+              >
+                <div style={{ fontSize: "var(--app-text-xs)", fontWeight: 600, opacity: 0.8 }}>
+                  {dayOfWeek(d)}
+                </div>
+                <div style={{ fontSize: "var(--app-text-lg)", fontWeight: 700, lineHeight: 1.2, fontVariantNumeric: "tabular-nums" }}>
+                  {count}
+                </div>
+                <div style={{ fontSize: "0.65rem", opacity: 0.7 }}>
+                  {dayLabel(d)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {selectedDay && selectedPlayers.length > 0 && (
+          <div className="animate-fade-in" style={{ marginTop: "8px", padding: "8px", background: "var(--color-surface-2)", borderRadius: "var(--radius)", fontSize: "var(--app-text-xs)" }}>
+            <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+              {dayOfWeek(selectedDay) + " " + dayLabel(selectedDay) + " — " + selectedPlayers.length + " active"}
+            </div>
+            <div style={{ color: "var(--color-muted-foreground)", lineHeight: 1.5 }}>
+              {selectedPlayers.join(", ")}
+            </div>
+          </div>
+        )}
+        {selectedDay && selectedPlayers.length === 0 && (
+          <div className="animate-fade-in" style={{ marginTop: "8px", padding: "8px", background: "var(--color-surface-2)", borderRadius: "var(--radius)", fontSize: "var(--app-text-xs)", color: "var(--color-muted-foreground)" }}>
+            No active players scheduled for {dayOfWeek(selectedDay) + " " + dayLabel(selectedDay)}
+          </div>
+        )}
       </div>
 
       <div>

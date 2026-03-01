@@ -4,6 +4,7 @@ import { Badge } from "../components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 import { ComparisonBar } from "../shared/comparison-bar";
 import { AiInsight } from "../shared/ai-insight";
+import { RefreshButton } from "../shared/refresh-button";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 interface MatchupCategory {
@@ -66,7 +67,7 @@ function CategoryList({ categories, keyPrefix }: { categories: MatchupCategory[]
   );
 }
 
-export function MatchupDetailView({ data }: { data: MatchupDetailData }) {
+export function MatchupDetailView({ data, app, navigate }: { data: MatchupDetailData; app?: any; navigate?: (data: any) => void }) {
   var [activeTab, setActiveTab] = React.useState("all");
 
   var score = data.score || { wins: 0, losses: 0, ties: 0 };
@@ -98,6 +99,13 @@ export function MatchupDetailView({ data }: { data: MatchupDetailData }) {
 
   return (
     <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Week {String(data.week)} Matchup</h2>
+        {app && navigate && (
+          <RefreshButton app={app} toolName="yahoo_my_matchup" navigate={navigate} />
+        )}
+      </div>
+
       <AiInsight recommendation={data.ai_recommendation} />
 
       {/* Score Ring + Teams */}

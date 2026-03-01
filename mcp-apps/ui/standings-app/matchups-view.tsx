@@ -1,6 +1,7 @@
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { AiInsight } from "../shared/ai-insight";
+import { RefreshButton } from "../shared/refresh-button";
 
 interface MatchupTeam {
   name: string;
@@ -30,13 +31,19 @@ function getTeamName(team: MatchupTeam | string): string {
   return team.name || "?";
 }
 
-export function MatchupsView({ data }: { data: MatchupsData }) {
+export function MatchupsView({ data, app, navigate, toolName }: { data: MatchupsData; app?: any; navigate?: (data: any) => void; toolName?: string }) {
   var isScoreboard = data.type === "scoreboard";
+  var refreshToolName = toolName === "scoreboard" ? "yahoo_scoreboard" : "yahoo_matchups";
   return (
     <div className="space-y-3">
-      <h2 className="text-lg font-semibold">
-        {isScoreboard ? "Scoreboard" : "Matchups"} - Week {data.week}
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">
+          {isScoreboard ? "Scoreboard" : "Matchups"} - Week {data.week}
+        </h2>
+        {app && navigate && (
+          <RefreshButton app={app} toolName={refreshToolName} navigate={navigate} />
+        )}
+      </div>
 
       <AiInsight recommendation={data.ai_recommendation} />
 

@@ -5,6 +5,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from ".
 import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { AlertDialog } from "../components/ui/alert-dialog";
 import { useCallTool } from "../shared/use-call-tool";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 import { IntelBadge } from "../shared/intel-badge";
 import { IntelPanel } from "../shared/intel-panel";
@@ -24,6 +25,8 @@ interface WaiverPlayer {
   positions: string;
   status: string;
   score: number;
+  z_score?: number;
+  tier?: string;
   mlb_id?: number;
   intel?: any;
   trend?: any;
@@ -61,12 +64,57 @@ function ScoreBar({ score, maxScore }: { score: number; maxScore: number }) {
   );
 }
 
+function tierBarFill(tier: string): string {
+  if (tier === "Untouchable" || tier === "Core") return "#22c55e";
+  if (tier === "Solid") return "#eab308";
+  return "#ef4444";
+}
+
+function WaiverChartTooltip({ active, payload }: any) {
+  if (!active || !payload || payload.length === 0) return null;
+  var entry = payload[0].payload;
+  return (
+    <div className="rounded-md border bg-background p-2 shadow-md text-xs">
+      <p className="font-semibold mb-1">{entry.fullName || entry.name}</p>
+      <div className="space-y-0.5">
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Score</span>
+          <span className="font-mono font-semibold">{formatFixed(entry.score, 1, "0.0")}</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Positions</span>
+          <span>{entry.positions}</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Tier</span>
+          <span>{entry.tier}</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Own%</span>
+          <span className="font-mono">{entry.ownPct != null ? entry.ownPct + "%" : "-"}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function WaiverAnalyzeView({ data, app, navigate }: { data: WaiverData; app: any; navigate: (data: any) => void }) {
   const { callTool, loading } = useCallTool(app);
   const [swapTarget, setSwapTarget] = useState<WaiverPlayer | null>(null);
   const label = data.pos_type === "P" ? "Pitchers" : "Batters";
   const players = data.recommendations || data.players || [];
   const maxScore = players.length > 0 ? Math.max(...players.map((p) => p.score)) : 1;
+
+  var chartData = players.map(function (p) {
+    return {
+      name: p.name.length > 14 ? p.name.substring(0, 12) + ".." : p.name,
+      fullName: p.name,
+      score: p.score,
+      tier: p.tier || "Unknown",
+      positions: p.positions,
+      ownPct: p.pct != null ? p.pct : p.percent_owned,
+    };
+  });
 
   const handleTabChange = async (value: string) => {
     const result = await callTool("yahoo_waiver_analyze", { pos_type: value, count: 15 });
@@ -128,6 +176,24 @@ export function WaiverAnalyzeView({ data, app, navigate }: { data: WaiverData; a
             const detail = typeof c === "string" ? "" : " (" + c.rank + "/" + c.total + ")";
             return <Badge key={i} variant="destructive" className="text-xs">{name}{detail}</Badge>;
           })}
+        </div>
+      )}
+
+      {chartData.length > 0 && (
+        <div className="h-48 sm:h-56">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" strokeOpacity={0.5} vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-35} textAnchor="end" height={50} interval={0} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip content={<WaiverChartTooltip />} />
+              <Bar dataKey="score" radius={[4, 4, 0, 0]}>
+                {chartData.map(function (entry, idx) {
+                  return <Cell key={idx} fill={tierBarFill(entry.tier)} />;
+                })}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       )}
 

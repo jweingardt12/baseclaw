@@ -4,6 +4,8 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from ".
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 import { Trophy, TrendingUp, Target, Award } from "@/shared/icons";
 
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+
 import { formatFixed } from "../shared/number-format";
 
 interface CareerEntry {
@@ -36,6 +38,37 @@ interface RecordBookData {
 export function RecordBookView({ data }: { data: RecordBookData }) {
   const [tab, setTab] = useState("champions");
 
+  // Prepare career chart data - top 10 by win%, sorted ascending so highest is at top of horizontal bar
+  var careerChartData = (data.careers || [])
+    .slice(0, 10)
+    .map(function (c) {
+      return {
+        manager: c.manager,
+        win_pct: c.win_pct,
+        seasons: c.seasons,
+      };
+    })
+    .sort(function (a, b) { return a.win_pct - b.win_pct; });
+
+  // Prepare champion win% chart data - sorted by year ascending
+  var champChartData = (data.champions || [])
+    .slice()
+    .sort(function (a, b) { return a.year - b.year; })
+    .map(function (c) {
+      return {
+        year: c.year,
+        win_pct: c.win_pct,
+        manager: c.manager,
+        team_name: c.team_name,
+        record: c.record,
+      };
+    });
+
+  // Prepare playoff chart data - sorted ascending so highest at top
+  var playoffChartData = (data.playoff_appearances || [])
+    .slice()
+    .sort(function (a, b) { return a.appearances - b.appearances; });
+
   return (
     <div className="space-y-3">
       <Tabs value={tab} onValueChange={setTab}>
@@ -55,6 +88,46 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
         </TabsList>
 
         <TabsContent value="champions">
+          {champChartData.length > 1 && (
+            <div className="surface-card p-4 mb-3">
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-bold">Champion Win % by Year</span>
+              </div>
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={champChartData} margin={{ top: 5, right: 5, bottom: 5, left: -10 }}>
+                    <XAxis
+                      dataKey="year"
+                      tick={{ fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      tick={{ fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={function (v: number) { return v + "%"; }}
+                    />
+                    <Tooltip
+                      formatter={function (value: number) {
+                        return [value + "%", "Win %"];
+                      }}
+                      labelFormatter={function (label: number) { return String(label); }}
+                      contentStyle={{
+                        background: "var(--color-card)",
+                        border: "1px solid var(--color-border)",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Bar dataKey="win_pct" radius={[4, 4, 0, 0]} maxBarSize={28} fill="var(--sem-warning)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
           <div className="space-y-2">
             {(data.champions || []).map(function (c) {
               return (
@@ -81,6 +154,60 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
         </TabsContent>
 
         <TabsContent value="careers">
+          {careerChartData.length > 1 && (
+            <div className="surface-card p-4 mb-3">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-bold">Career Win %</span>
+              </div>
+              <div style={{ height: Math.max(careerChartData.length * 28, 120) + "px" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={careerChartData} layout="vertical" margin={{ top: 5, right: 30, bottom: 5, left: 5 }}>
+                    <XAxis
+                      type="number"
+                      domain={[0, 100]}
+                      tick={{ fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={function (v: number) { return v + "%"; }}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="manager"
+                      tick={{ fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={80}
+                    />
+                    <Tooltip
+                      formatter={function (value: number, name: string, props: any) {
+                        return [value + "% (" + props.payload.seasons + " seasons)", "Win %"];
+                      }}
+                      contentStyle={{
+                        background: "var(--color-card)",
+                        border: "1px solid var(--color-border)",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Bar dataKey="win_pct" radius={[0, 4, 4, 0]} maxBarSize={20}>
+                      {careerChartData.map(function (entry) {
+                        var color = "var(--sem-neutral)";
+                        if (entry.win_pct >= 60) {
+                          color = "var(--sem-success)";
+                        } else if (entry.win_pct >= 50) {
+                          color = "var(--sem-info)";
+                        } else if (entry.win_pct < 40) {
+                          color = "var(--sem-risk)";
+                        }
+                        return <Cell key={entry.manager} fill={color} />;
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
           <div className="surface-card overflow-hidden">
             <Table>
               <TableHeader>
@@ -131,6 +258,47 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
         </TabsContent>
 
         <TabsContent value="playoffs">
+          {playoffChartData.length > 1 && (
+            <div className="surface-card p-4 mb-3">
+              <div className="flex items-center gap-2 mb-3">
+                <Award className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-bold">Playoff Appearances</span>
+              </div>
+              <div style={{ height: Math.max(playoffChartData.length * 28, 120) + "px" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={playoffChartData} layout="vertical" margin={{ top: 5, right: 30, bottom: 5, left: 5 }}>
+                    <XAxis
+                      type="number"
+                      tick={{ fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                      allowDecimals={false}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="manager"
+                      tick={{ fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={80}
+                    />
+                    <Tooltip
+                      formatter={function (value: number) {
+                        return [value, "Appearances"];
+                      }}
+                      contentStyle={{
+                        background: "var(--color-card)",
+                        border: "1px solid var(--color-border)",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Bar dataKey="appearances" radius={[0, 4, 4, 0]} maxBarSize={20} fill="var(--sem-info)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
           <div className="surface-card overflow-hidden">
             <Table>
               <TableHeader>

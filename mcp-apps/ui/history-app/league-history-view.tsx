@@ -2,7 +2,7 @@ import { Badge } from "../components/ui/badge";
 import { Trophy, TrendingUp } from "@/shared/icons";
 import { KpiTile } from "../shared/kpi-tile";
 
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from "recharts";
 
 interface SeasonResult {
   year: number;
@@ -78,6 +78,35 @@ export function LeagueHistoryView({ data }: { data: { seasons: SeasonResult[] } 
       finish: string;
     }>;
 
+  // Build finish position data for the line chart
+  var finishData = seasons
+    .map(function (s) {
+      var finish = parseFinish(s.your_finish || "");
+      if (finish === null) {
+        return null;
+      }
+      return {
+        year: s.year,
+        finish: finish,
+        isChampion: finish === 1,
+        label: s.your_finish || "",
+      };
+    })
+    .filter(function (d) { return d !== null; }) as Array<{
+      year: number;
+      finish: number;
+      isChampion: boolean;
+      label: string;
+    }>;
+
+  // Sort finish data by year ascending for the line chart
+  var sortedFinishData = finishData.slice().sort(function (a, b) { return a.year - b.year; });
+
+  // Calculate max finish for Y-axis domain
+  var maxFinish = sortedFinishData.reduce(function (max, d) {
+    return d.finish > max ? d.finish : max;
+  }, 1);
+
   // Sort seasons by year descending for timeline (most recent first)
   var sortedSeasons = seasons.slice().sort(function (a, b) { return b.year - a.year; });
 
@@ -102,6 +131,84 @@ export function LeagueHistoryView({ data }: { data: { seasons: SeasonResult[] } 
           <KpiTile value={championships} label="Titles" color="warning" />
           <KpiTile value={top3Finishes} label="Top 3" color="info" />
           <KpiTile value={seasonsPlayed} label="Seasons" color="neutral" />
+        </div>
+      )}
+
+      {/* Finish Position Chart */}
+      {sortedFinishData.length > 1 && (
+        <div className="surface-card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Trophy className="h-4 w-4 text-muted-foreground" />
+            <span className="text-base font-bold">Finish by Season</span>
+          </div>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={sortedFinishData} margin={{ top: 5, right: 10, bottom: 5, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                <XAxis
+                  dataKey="year"
+                  tick={{ fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  reversed
+                  domain={[1, maxFinish]}
+                  tick={{ fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={function (v: number) { return "#" + v; }}
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  formatter={function (value: number) {
+                    return ["#" + value, "Finish"];
+                  }}
+                  labelFormatter={function (label: number) { return "Season " + label; }}
+                  contentStyle={{
+                    background: "var(--color-card)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="finish"
+                  stroke="var(--sem-info)"
+                  strokeWidth={2}
+                  dot={function (props: any) {
+                    var entry = sortedFinishData[props.index];
+                    if (!entry) return <circle key={props.key} />;
+                    var isChamp = entry.isChampion;
+                    return (
+                      <circle
+                        key={props.key}
+                        cx={props.cx}
+                        cy={props.cy}
+                        r={isChamp ? 6 : 4}
+                        fill={isChamp ? "var(--sem-warning)" : "var(--sem-info)"}
+                        stroke={isChamp ? "var(--sem-warning)" : "var(--sem-info)"}
+                        strokeWidth={isChamp ? 2 : 1}
+                      />
+                    );
+                  }}
+                  activeDot={{ r: 6, fill: "var(--sem-info)" }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+              Champion
+            </span>
+            <span className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+              Other
+            </span>
+            <span className="text-muted-foreground/60">(lower is better)</span>
+          </div>
         </div>
       )}
 

@@ -15,15 +15,15 @@ import "../globals.css";
 function StandingsApp() {
   return (
     <AppShell name="Yahoo Fantasy Standings">
-      {({ data, toolName }) => {
+      {({ data, toolName, app, navigate }) => {
         switch (toolName) {
           case "standings": return <StandingsView data={data} />;
           case "matchups":
-          case "scoreboard": return <MatchupsView data={data} />;
+          case "scoreboard": return <MatchupsView data={data} app={app} navigate={navigate} toolName={toolName} />;
           case "info": return <InfoView data={data} />;
           case "transactions": return <TransactionsView data={data} />;
           case "stat-categories": return <StatCategoriesView data={data} />;
-          case "matchup-detail": return <MatchupDetailView data={data} />;
+          case "matchup-detail": return <MatchupDetailView data={data} app={app} navigate={navigate} />;
           case "transaction-trends": return <TransactionTrendsView data={data} />;
           case "league-pulse": return <LeaguePulseView data={data} />;
           case "power-rankings": return <PowerRankingsView data={data} />;

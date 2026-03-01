@@ -7,10 +7,10 @@ interface UseCallToolReturn {
 }
 
 export function useCallTool(app: any): UseCallToolReturn {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  var [loading, setLoading] = useState(false);
+  var [error, setError] = useState<string | null>(null);
 
-  const callTool = useCallback(async (name: string, args?: Record<string, any>) => {
+  var callTool = useCallback(async function (name: string, args?: Record<string, any>) {
     if (!app) {
       setError("App context not available");
       return null;
@@ -18,10 +18,10 @@ export function useCallTool(app: any): UseCallToolReturn {
     setLoading(true);
     setError(null);
     try {
-      const result = await app.callServerTool({ name, arguments: args || {} });
+      var result = await app.callServerTool({ name, arguments: args || {} });
       return result;
     } catch (err: any) {
-      const msg = err && err.message ? err.message : String(err);
+      var msg = err && err.message ? err.message : String(err);
       setError(msg);
       return null;
     } finally {
