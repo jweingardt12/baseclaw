@@ -205,6 +205,11 @@ def _fetch_csv(url):
         return []
 
 
+def _is_savant_meta_key(key):
+    """Return True for non-player metadata keys in savant dicts (id: refs, __ metadata)."""
+    return key.startswith("id:") or key.startswith("__")
+
+
 def _index_savant_rows(rows):
     """Build dict keyed by 'last_name, first_name' AND by player_id"""
     result = {}
@@ -861,7 +866,7 @@ def detect_regression_candidates():
         fg_bat = _fetch_fangraphs_regression_batting()
 
         for key, row in (savant_bat or {}).items():
-            if key.startswith("id:") or key.startswith("__"):
+            if _is_savant_meta_key(key):
                 continue
             try:
                 xwoba = float(row.get("est_woba", 0))
@@ -1531,7 +1536,7 @@ def _find_in_savant(player_name, savant_data):
     norm = _normalize_name(player_name)
     # Try direct match on normalized names
     for key, row in savant_data.items():
-        if key.startswith("id:"):
+        if _is_savant_meta_key(key):
             continue
         if _normalize_name(key) == norm:
             return row
@@ -1544,7 +1549,7 @@ def _find_in_savant(player_name, savant_data):
     parts = norm.split()
     if parts:
         for key, row in savant_data.items():
-            if key.startswith("id:"):
+            if _is_savant_meta_key(key):
                 continue
             row_norm = _normalize_name(key)
             if all(p in row_norm for p in parts):
@@ -1596,7 +1601,7 @@ def _collect_column_values(savant_data, column):
     """Collect all non-empty values for a column from Savant data"""
     values = []
     for key, row in savant_data.items():
-        if key.startswith("id:"):
+        if _is_savant_meta_key(key):
             continue
         val = row.get(column, "")
         if val != "" and val is not None:
@@ -2611,7 +2616,7 @@ def cmd_breakouts(args, as_json=False):
     # Find players with biggest positive xwOBA - wOBA diff
     candidates = []
     for key, row in expected.items():
-        if key.startswith("id:"):
+        if _is_savant_meta_key(key):
             continue
         try:
             xwoba = float(row.get("est_woba", 0))
@@ -2664,7 +2669,7 @@ def cmd_busts(args, as_json=False):
     # Find players with biggest negative xwOBA - wOBA diff (wOBA >> xwOBA)
     candidates = []
     for key, row in expected.items():
-        if key.startswith("id:"):
+        if _is_savant_meta_key(key):
             continue
         try:
             xwoba = float(row.get("est_woba", 0))
