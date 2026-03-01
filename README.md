@@ -435,7 +435,7 @@ The server exposes a `GET /health` endpoint (unauthenticated) that returns `{ ok
 
 ## MCP Tools
 
-113 total tools (93 read-only + 15 write operations + 5 workflow) across 10 tool files, each with rich inline HTML UI apps rendered directly in Claude.
+113 tools across 10 tool files, each with rich inline HTML UI apps rendered directly in Claude.
 
 <details>
 <summary><strong>Roster Management</strong> (16 tools)</summary>
@@ -608,6 +608,27 @@ The server exposes a `GET /health` endpoint (unauthenticated) that returns `{ ok
 | `yahoo_past_trades` | Trade history for a past season |
 | `yahoo_past_matchup` | Matchup results for a specific week in a past season |
 | `yahoo_roster_history` | View any team's roster from a past week or specific date |
+
+</details>
+
+<details>
+<summary><strong>Workflows</strong> (11 tools)</summary>
+
+Aggregated tools designed for autonomous agents. Each combines 5-7+ individual API calls server-side and returns concise, decision-ready output in a single tool call.
+
+| Tool | Description |
+|------|-------------|
+| `yahoo_morning_briefing` | Daily briefing: injuries, lineup issues, matchup scores, category strategy, league activity, opponent moves, and waiver targets — replaces 7+ individual tool calls |
+| `yahoo_league_landscape` | League intelligence: standings, playoff projections, roster strength, manager activity, transactions, matchup results, and trade opportunities |
+| `yahoo_roster_health_check` | Roster audit: injured players in active slots, healthy players on IL, bust candidates, off-day starters — ranked by severity |
+| `yahoo_waiver_recommendations` | Best waiver pickups for weak categories with recommended drops and projected category impact |
+| `yahoo_auto_lineup` | Auto-optimize lineup: bench off-day players, start active bench players, flag injured starters (write operation) |
+| `yahoo_trade_analysis` | Evaluate a trade by player names with z-score values, Statcast intel, and unified recommendation |
+| `yahoo_game_day_manager` | Pre-game pipeline: schedule, weather risks, injury check, lineup optimization, and streaming recommendation |
+| `yahoo_waiver_deadline_prep` | Pre-deadline waiver analysis with FAAB bid recommendations and simulated category impact |
+| `yahoo_trade_pipeline` | End-to-end trade search: complementary partners, package values, category impact, and graded proposals |
+| `yahoo_weekly_digest` | End-of-week summary: matchup result, standings, transactions, achievements, and prose narrative |
+| `yahoo_season_checkpoint` | Monthly assessment: rank, playoff probability, category trajectory, punt strategy, and trade targets |
 
 </details>
 
