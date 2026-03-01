@@ -37,21 +37,21 @@ export interface PlayerIntel {
 
 export function qualityColor(tier: string | null | undefined): string {
   if (!tier) return "bg-muted-foreground/30";
-  if (tier === "elite") return "bg-[#d4a017]";
-  if (tier === "strong") return "bg-[#15803d]";
-  if (tier === "average") return "bg-[#5c7266]";
-  if (tier === "below") return "bg-[#c28800]";
-  if (tier === "poor") return "bg-[#c0392b]";
+  if (tier === "elite") return "bg-sem-warning";
+  if (tier === "strong") return "bg-sem-success";
+  if (tier === "average") return "bg-sem-neutral";
+  if (tier === "below") return "bg-sem-warning";
+  if (tier === "poor") return "bg-sem-risk";
   return "bg-muted-foreground/30";
 }
 
 export function qualityTextColor(tier: string | null | undefined): string {
   if (!tier) return "text-muted-foreground";
-  if (tier === "elite") return "text-[#b8860b] dark:text-[#d4a017]";
-  if (tier === "strong") return "text-[#15803d] dark:text-[#4ade80]";
-  if (tier === "average") return "text-[#5c7266] dark:text-[#7d9b88]";
-  if (tier === "below") return "text-[#c28800] dark:text-[#f5b731]";
-  if (tier === "poor") return "text-[#c0392b] dark:text-[#f87171]";
+  if (tier === "elite") return "text-sem-warning";
+  if (tier === "strong") return "text-sem-success";
+  if (tier === "average") return "text-sem-neutral";
+  if (tier === "below") return "text-sem-warning";
+  if (tier === "poor") return "text-sem-risk";
   return "text-muted-foreground";
 }
 
@@ -95,7 +95,7 @@ export function IntelBadge({ intel, size = "sm" }: IntelBadgeProps) {
   return (
     <span className="inline-flex items-center gap-0.5">
       {tier && (
-        <span className={"inline-flex items-center rounded-sm font-semibold font-mono uppercase text-white " + qualityColor(tier) + " " + (isSmall ? "text-xs px-1.5 py-0.5" : "text-xs px-2 py-1") + (tier === "elite" ? " scoreboard-glow" : "")}>
+        <span className={"inline-flex items-center rounded-sm font-semibold font-mono uppercase text-white " + qualityColor(tier) + " " + (isSmall ? "text-xs px-1.5 py-0.5" : "text-xs px-2 py-1")}>
           {tier}
         </span>
       )}

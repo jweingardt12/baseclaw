@@ -27,7 +27,7 @@ export function ActionView({ data, app, navigate }: { data: ActionData; app: any
 
   return (
     <div className="space-y-3 mt-2 animate-slide-up">
-      <div className={"glass-card overflow-hidden " + (data.success ? "glow-success" : "glow-risk")}>
+      <div className={"rounded-md border bg-card overflow-hidden"}>
         <div className={"p-4 " + (data.success ? "bg-sem-success-subtle" : "bg-destructive/5")}>
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-base">{title}</h3>

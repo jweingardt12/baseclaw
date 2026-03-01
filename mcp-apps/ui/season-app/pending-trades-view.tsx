@@ -81,7 +81,7 @@ export function PendingTradesView({ data, app, navigate }: { data: PendingTrades
       )}
 
       {trades.map((trade) => (
-        <Card key={trade.transaction_key} className="glass-card">
+        <Card key={trade.transaction_key}>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm">

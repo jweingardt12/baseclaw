@@ -2,7 +2,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { Badge } from "../components/ui/badge";
 import { PlayerName } from "../shared/player-name";
 import { AlertTriangle } from "@/shared/icons";
-import { StatusBanner } from "../shared/status-banner";
 import { parseRoundKey, sortRoundEntries } from "./round-key";
 
 interface CheatsheetData {
@@ -14,11 +13,11 @@ interface CheatsheetData {
   ai_recommendation?: string | null;
 }
 
-var ROUND_GRADIENTS = [
-  "gradient-banner-gold",
-  "gradient-banner-success",
-  "gradient-banner-info",
-  "gradient-banner-neutral",
+var ROUND_COLORS = [
+  "bg-primary/15",
+  "bg-sem-success-subtle",
+  "bg-blue-500/10",
+  "bg-muted",
 ];
 
 export function CheatsheetView({ data, app, navigate }: { data: CheatsheetData; app?: any; navigate?: (data: any) => void }) {
@@ -31,7 +30,7 @@ export function CheatsheetView({ data, app, navigate }: { data: CheatsheetData; 
 
   return (
     <div className="space-y-2">
-      <StatusBanner text="DRAFT CHEAT SHEET" subtitle="Round-by-round strategy guide" variant="gold" />
+      <h2 className="text-lg font-semibold">Draft Cheat Sheet</h2>
 
       {/* Round-by-round strategy */}
       {roundEntries.length > 0 && (
@@ -39,11 +38,11 @@ export function CheatsheetView({ data, app, navigate }: { data: CheatsheetData; 
           {roundEntries.map(function (entry, idx) {
             var roundInfo = entry[0];
             var strategy = entry[1];
-            var gradientClass = ROUND_GRADIENTS[Math.min(idx, ROUND_GRADIENTS.length - 1)];
+            var colorClass = ROUND_COLORS[Math.min(idx, ROUND_COLORS.length - 1)];
             return (
               <Card key={roundInfo.rawKey}>
-                <div className={"rounded-t-[var(--radius)] px-3 py-2 " + gradientClass}>
-                  <span className="text-sm font-black tracking-wide uppercase" style={{ color: "#fff" }}>{roundInfo.label}</span>
+                <div className={"rounded-t-[var(--radius)] px-3 py-2 " + colorClass}>
+                  <span className="text-sm font-black tracking-wide uppercase">{roundInfo.label}</span>
                 </div>
                 <CardContent className="p-3 sm:p-4">
                   <p className="text-sm leading-6 break-words">{strategy}</p>
@@ -64,7 +63,7 @@ export function CheatsheetView({ data, app, navigate }: { data: CheatsheetData; 
             <div className="flex flex-wrap gap-2">
               {(targetMap as string[]).map(function (t) {
                 return (
-                  <div key={t} className="glass-card p-2 px-3 border-l-2 border-l-green-500">
+                  <div key={t} className="rounded-md border bg-card p-2 px-3 border-l-2 border-l-green-500">
                     <span className="text-sm font-semibold"><PlayerName name={t} app={app} navigate={navigate} context="draft" /></span>
                   </div>
                 );
@@ -91,7 +90,7 @@ export function CheatsheetView({ data, app, navigate }: { data: CheatsheetData; 
                   <div className="flex flex-wrap gap-1.5">
                     {players.map(function (t) {
                       return (
-                        <div key={t} className="glass-card p-1.5 px-2.5 border-l-2 border-l-green-500">
+                        <div key={t} className="rounded-md border bg-card p-1.5 px-2.5 border-l-2 border-l-green-500">
                           <span className="text-xs font-semibold"><PlayerName name={t} app={app} navigate={navigate} context="draft" /></span>
                         </div>
                       );
@@ -117,7 +116,7 @@ export function CheatsheetView({ data, app, navigate }: { data: CheatsheetData; 
             <div className="flex flex-wrap gap-2">
               {(data.avoid || []).map(function (name) {
                 return (
-                  <div key={name} className="glass-card p-1.5 px-2.5 border-l-2 border-l-yellow-500">
+                  <div key={name} className="rounded-md border bg-card p-1.5 px-2.5 border-l-2 border-l-yellow-500">
                     <span className="text-xs font-semibold text-yellow-600 dark:text-yellow-400">{name}</span>
                   </div>
                 );

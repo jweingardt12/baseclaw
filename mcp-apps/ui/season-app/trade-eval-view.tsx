@@ -8,7 +8,6 @@ import { IntelBadge } from "../shared/intel-badge";
 import { PlayerName } from "../shared/player-name";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
-import { StatusBanner } from "../shared/status-banner";
 import { VerdictBadge } from "../shared/verdict-badge";
 import { Copy, Check } from "@/shared/icons";
 import { formatFixed } from "../shared/number-format";
@@ -101,16 +100,8 @@ export function TradeEvalView({ data, app, navigate }: { data: TradeEvalData; ap
     });
   };
 
-  var bannerVariant: "winning" | "losing" | "tied" = netValue > 0.5 ? "winning" : netValue < -0.5 ? "losing" : "tied";
-
   return (
     <div className="space-y-2">
-      <StatusBanner
-        text={"TRADE GRADE: " + grade}
-        subtitle={"Net z-score: " + (netValue >= 0 ? "+" : "") + fmtOne(netValue)}
-        variant={bannerVariant}
-      />
-
       <AiInsight recommendation={(data as any).ai_recommendation} />
 
       <div className="kpi-grid">

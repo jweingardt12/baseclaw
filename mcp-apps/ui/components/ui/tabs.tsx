@@ -36,8 +36,8 @@ function TabsTrigger({ value, children, className }: { value: string; children: 
     <button
       type="button"
       className={cn(
-        "inline-flex min-h-10 items-center justify-center whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-bold uppercase tracking-wide transition-all shrink-0",
-        ctx.value === value ? "bg-background text-primary shadow-sm scoreboard-glow" : "hover:text-foreground/80",
+        "inline-flex min-h-10 items-center justify-center whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-semibold transition-all shrink-0",
+        ctx.value === value ? "bg-background text-primary shadow-sm" : "hover:text-foreground/80",
         className
       )}
       onClick={() => ctx.onValueChange(value)}

@@ -78,7 +78,7 @@ export function DraftRecommendView({ data, app, navigate }: { data: DraftRecomme
 
       {/* Hero card for top pick */}
       {data.top_pick && (
-        <Card className="glow-gold border-primary/40">
+        <Card className="border-primary/40">
           <CardContent className="p-4 text-center">
             <p className="app-kicker mb-1">Top Pick - Round {data.round}</p>
             <p className="text-2xl-app font-bold">{data.top_pick.name}</p>

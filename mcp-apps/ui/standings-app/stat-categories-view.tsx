@@ -15,7 +15,7 @@ export function StatCategoriesView({ data }: { data: { categories: StatCategory[
   var renderGroup = function (title: string, cats: StatCategory[], colorClass: string) {
     if (cats.length === 0) return null;
     return (
-      <div className="glass-card p-4">
+      <div className="rounded-md border bg-card p-4">
         <h3 className={"text-base font-semibold mb-3 " + colorClass}>{title}</h3>
         <div className="flex flex-wrap gap-2">
           {cats.map((c) => (

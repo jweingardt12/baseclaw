@@ -58,7 +58,7 @@ export function ValueView({ data, app, navigate }: { data: ValueData; app?: any;
   return (
     <div className="space-y-2">
       {/* Hero card with big z-score */}
-      <Card className="glow-gold border-primary/40">
+      <Card className="border-primary/40">
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
             <BarChart3 size={20} />
@@ -106,7 +106,7 @@ export function ValueView({ data, app, navigate }: { data: ValueData; app?: any;
           var pct = Math.max(0, Math.min(100, ((c.z_score + 2) / 6) * 100));
           var barColor = c.z_score >= 2 ? "bg-green-500" : c.z_score >= 1 ? "bg-blue-500" : c.z_score >= 0 ? "bg-yellow-500" : "bg-red-500";
           return (
-            <div key={c.category} className="glass-card p-2.5 card-highlight">
+            <div key={c.category} className="rounded-md border bg-card p-2.5">
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold">{c.category}</span>

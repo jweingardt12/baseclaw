@@ -2,7 +2,6 @@ import { LineupOptimizeView } from "./lineup-optimize-view";
 import { InjuryReportView } from "./injury-report-view";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
-import { StatusBanner } from "../shared/status-banner";
 
 interface DailyUpdateData {
   lineup: any;
@@ -20,12 +19,6 @@ export function DailyUpdateView({ data, app, navigate }: { data: DailyUpdateData
 
   return (
     <div className="space-y-2">
-      <StatusBanner
-        text="TODAY'S PRIORITIES"
-        subtitle={lineupIssues + injuredCount > 0 ? (lineupIssues + injuredCount) + " item" + ((lineupIssues + injuredCount) === 1 ? "" : "s") + " need attention" : "All clear!"}
-        variant={lineupIssues + injuredCount > 0 ? "alert" : "success"}
-      />
-
       <AiInsight recommendation={data.ai_recommendation} />
 
       <div className="kpi-grid">

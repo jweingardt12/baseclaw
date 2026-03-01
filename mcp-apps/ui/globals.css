@@ -6,70 +6,69 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-background: #f5f0e6;
-  --color-foreground: #1a2e20;
-  --color-card: #faf6ee;
-  --color-card-foreground: #1a2e20;
-  --color-popover: #faf6ee;
-  --color-popover-foreground: #1a2e20;
-  --color-primary: #b8860b;
-  --color-primary-foreground: #faf6ee;
-  --color-secondary: #ebe4d4;
-  --color-secondary-foreground: #1a2e20;
-  --color-muted: #ebe4d4;
-  --color-muted-foreground: #5c7266;
-  --color-accent: #ebe4d4;
-  --color-accent-foreground: #1a2e20;
-  --color-destructive: #c0392b;
-  --color-destructive-foreground: #faf6ee;
-  --color-border: #d4cbb8;
-  --color-input: #d4cbb8;
-  --color-ring: #b8860b;
+  --color-background: #ffffff;
+  --color-foreground: #0f172a;
+  --color-card: #f8fafc;
+  --color-card-foreground: #0f172a;
+  --color-popover: #f8fafc;
+  --color-popover-foreground: #0f172a;
+  --color-primary: #2563eb;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #0f172a;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #0f172a;
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-ring: #2563eb;
   --radius: 0.375rem;
 
-  /* Scoreboard semantic palette */
-  --color-surface-1: #faf6ee;
-  --color-surface-2: #f5f0e6;
-  --color-surface-3: #ebe4d4;
+  /* Semantic palette */
+  --color-surface-1: #ffffff;
+  --color-surface-2: #f8fafc;
+  --color-surface-3: #f1f5f9;
   --color-accent-info: #2563eb;
-  --color-accent-success: #15803d;
-  --color-accent-warning: #c28800;
-  --color-accent-risk: #c0392b;
+  --color-accent-success: #16a34a;
+  --color-accent-warning: #f59e0b;
+  --color-accent-risk: #dc2626;
 }
 
 /* Host variable overrides with light-dark() fallbacks.
    When hosted in Claude.ai, useHostStyles injects variables via inline style
    on <html> (highest specificity, always wins). These :root fallbacks only
    apply in standalone/dev mode. color-scheme enables light-dark() resolution
-   and native dark scrollbars/form controls.
-   Dark mode = premium navy-black/gold sports analytics palette. */
+   and native dark scrollbars/form controls. */
 :root {
   color-scheme: light dark;
-  --color-background: var(--color-background-primary, light-dark(#f5f0e6, #0a0e1a));
-  --color-foreground: var(--color-text-primary, light-dark(#1a2e20, #e8e2f0));
-  --color-card: var(--color-background-primary, light-dark(#faf6ee, #101628));
-  --color-card-foreground: var(--color-text-primary, light-dark(#1a2e20, #e8e2f0));
-  --color-popover: var(--color-background-primary, light-dark(#faf6ee, #101628));
-  --color-popover-foreground: var(--color-text-primary, light-dark(#1a2e20, #e8e2f0));
-  --color-primary: light-dark(#b8860b, #f5c518);
-  --color-primary-foreground: light-dark(#faf6ee, #0a0e1a);
-  --color-secondary: var(--color-background-secondary, light-dark(#ebe4d4, #151c30));
-  --color-secondary-foreground: var(--color-text-primary, light-dark(#1a2e20, #e8e2f0));
-  --color-muted: var(--color-background-secondary, light-dark(#ebe4d4, #151c30));
-  --color-muted-foreground: var(--color-text-secondary, light-dark(#5c7266, #7b85a0));
-  --color-accent: var(--color-background-secondary, light-dark(#ebe4d4, #151c30));
-  --color-accent-foreground: var(--color-text-primary, light-dark(#1a2e20, #e8e2f0));
-  --color-border: var(--color-border-primary, light-dark(#d4cbb8, #1e2640));
-  --color-input: var(--color-border-primary, light-dark(#d4cbb8, #1e2640));
-  --color-ring: var(--color-ring-primary, light-dark(#b8860b, #f5c518));
-  --color-surface-1: var(--color-background-primary, light-dark(#faf6ee, #0a0e1a));
-  --color-surface-2: var(--color-background-secondary, light-dark(#f5f0e6, #0e1324));
-  --color-surface-3: var(--color-background-secondary, light-dark(#ebe4d4, #151c30));
-  --color-accent-info: light-dark(#2563eb, #3b82f6);
-  --color-accent-success: light-dark(#15803d, #00ff87);
-  --color-accent-warning: light-dark(#c28800, #ffaa00);
-  --color-accent-risk: light-dark(#c0392b, #ff3b5c);
-  --color-accent-neutral: light-dark(#5c7266, #7b85a0);
+  --color-background: var(--color-background-primary, light-dark(#ffffff, #0f172a));
+  --color-foreground: var(--color-text-primary, light-dark(#0f172a, #f1f5f9));
+  --color-card: var(--color-background-primary, light-dark(#f8fafc, #1e293b));
+  --color-card-foreground: var(--color-text-primary, light-dark(#0f172a, #f1f5f9));
+  --color-popover: var(--color-background-primary, light-dark(#f8fafc, #1e293b));
+  --color-popover-foreground: var(--color-text-primary, light-dark(#0f172a, #f1f5f9));
+  --color-primary: light-dark(#2563eb, #3b82f6);
+  --color-primary-foreground: light-dark(#ffffff, #0f172a);
+  --color-secondary: var(--color-background-secondary, light-dark(#f1f5f9, #1e293b));
+  --color-secondary-foreground: var(--color-text-primary, light-dark(#0f172a, #f1f5f9));
+  --color-muted: var(--color-background-secondary, light-dark(#f1f5f9, #334155));
+  --color-muted-foreground: var(--color-text-secondary, light-dark(#64748b, #94a3b8));
+  --color-accent: var(--color-background-secondary, light-dark(#f1f5f9, #1e293b));
+  --color-accent-foreground: var(--color-text-primary, light-dark(#0f172a, #f1f5f9));
+  --color-border: var(--color-border-primary, light-dark(#e2e8f0, #334155));
+  --color-input: var(--color-border-primary, light-dark(#e2e8f0, #334155));
+  --color-ring: var(--color-ring-primary, light-dark(#2563eb, #3b82f6));
+  --color-surface-1: var(--color-background-primary, light-dark(#ffffff, #0f172a));
+  --color-surface-2: var(--color-background-secondary, light-dark(#f8fafc, #1e293b));
+  --color-surface-3: var(--color-background-secondary, light-dark(#f1f5f9, #334155));
+  --color-accent-info: light-dark(#2563eb, #60a5fa);
+  --color-accent-success: light-dark(#16a34a, #4ade80);
+  --color-accent-warning: light-dark(#f59e0b, #fbbf24);
+  --color-accent-risk: light-dark(#dc2626, #f87171);
+  --color-accent-neutral: light-dark(#64748b, #94a3b8);
   --sem-info: var(--color-accent-info);
   --sem-success: var(--color-accent-success);
   --sem-warning: var(--color-accent-warning);
@@ -91,38 +90,38 @@
   --app-text-2xl: clamp(1.5rem, 1.3rem + 0.6vw, 2rem);
   --app-text-hero: clamp(2rem, 1.8rem + 1vw, 3rem);
   --app-shadow-soft: var(--shadow-sm, 0 1px 2px rgba(2, 8, 23, 0.08), 0 3px 12px rgba(2, 8, 23, 0.04));
-  --background: #f5f0e6;
-  --foreground: #1a2e20;
-  --card: #faf6ee;
-  --card-foreground: #1a2e20;
-  --popover: #faf6ee;
-  --popover-foreground: #1a2e20;
-  --primary: #b8860b;
-  --primary-foreground: #faf6ee;
-  --secondary: #ebe4d4;
-  --secondary-foreground: #1a2e20;
-  --muted: #ebe4d4;
-  --muted-foreground: #5c7266;
-  --accent: #ebe4d4;
-  --accent-foreground: #1a2e20;
-  --destructive: #c0392b;
-  --border: #d4cbb8;
-  --input: #d4cbb8;
-  --ring: #b8860b;
-  --chart-1: #d4a017;
-  --chart-2: #b8860b;
-  --chart-3: #15803d;
-  --chart-4: #2563eb;
-  --chart-5: #c0392b;
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --card: #f8fafc;
+  --card-foreground: #0f172a;
+  --popover: #f8fafc;
+  --popover-foreground: #0f172a;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #dc2626;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #2563eb;
+  --chart-1: #2563eb;
+  --chart-2: #3b82f6;
+  --chart-3: #16a34a;
+  --chart-4: #f59e0b;
+  --chart-5: #dc2626;
   --radius: var(--border-radius-md, 0.375rem);
-  --sidebar: #faf6ee;
-  --sidebar-foreground: #1a2e20;
-  --sidebar-primary: #b8860b;
-  --sidebar-primary-foreground: #faf6ee;
-  --sidebar-accent: #ebe4d4;
-  --sidebar-accent-foreground: #1a2e20;
-  --sidebar-border: #d4cbb8;
-  --sidebar-ring: #b8860b;
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #2563eb;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #2563eb;
 }
 
 * {
@@ -155,11 +154,11 @@ button, a, [role="button"] {
 .mcp-app-root {
   position: relative;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: var(--radius);
   animation: slide-up 240ms ease-out both;
-  background: linear-gradient(180deg, var(--color-surface-1), color-mix(in oklab, var(--color-surface-1) 95%, var(--color-foreground) 5%));
-  box-shadow: var(--app-shadow-soft), inset 0 1px 0 color-mix(in oklab, var(--color-primary) 8%, transparent);
-  border: 1px solid color-mix(in oklab, var(--color-border) 82%, transparent);
+  background: var(--color-card);
+  box-shadow: var(--app-shadow-soft);
+  border: 1px solid var(--color-border);
   padding:
     calc(var(--app-space-1) + min(var(--safe-area-top), 4px))
     calc(var(--app-space-1) + min(var(--safe-area-right), 4px))
@@ -167,7 +166,7 @@ button, a, [role="button"] {
     calc(var(--app-space-1) + min(var(--safe-area-left), 4px));
 }
 
-/* In preview mode, force components into the Nova card system instead of command-center chrome. */
+/* In preview mode, force components into the card system. */
 .preview-shell .mcp-app-root {
   border-radius: calc(var(--radius) + 2px);
   background: var(--card);
@@ -214,14 +213,13 @@ button, a, [role="button"] {
   gap: 4px;
   min-height: 24px;
   padding: 0 10px;
-  border-radius: var(--radius);
-  border: 1px solid color-mix(in oklab, var(--color-border) 65%, var(--color-primary) 35%);
-  background: color-mix(in oklab, var(--color-surface-2) 88%, var(--color-primary) 12%);
-  color: var(--color-primary);
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-muted);
+  color: var(--color-foreground);
   font-size: var(--app-text-sm);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .app-stat-grid-3 {
@@ -237,74 +235,17 @@ button, a, [role="button"] {
 }
 
 .app-kicker {
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   font-size: 0.72rem;
   color: var(--color-muted-foreground);
   font-weight: 600;
 }
 
-/* Scoreboard utilities */
-.scoreboard-panel {
-  background: color-mix(in oklab, var(--color-card) 92%, var(--color-foreground) 8%);
-  box-shadow: inset 0 1px 3px color-mix(in oklab, var(--color-foreground) 10%, transparent),
-              0 0 0 1px color-mix(in oklab, var(--color-border) 50%, transparent);
-  border-radius: var(--radius);
-}
-
-.scoreboard-glow {
-  box-shadow: 0 0 8px color-mix(in oklab, var(--color-primary) 30%, transparent),
-              0 0 2px color-mix(in oklab, var(--color-primary) 15%, transparent);
-}
-
-.scoreboard-heading {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 800;
-}
-
-/* Scoreboard heading cascade for app views */
-.mcp-app-root h2 {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 800;
-}
-
 /* ═══════════════════════════════════════════════════
-   Glass morphism utilities
-   ═══════════════════════════════════════════════════ */
-.glass-card {
-  background: color-mix(in oklab, var(--color-card) 72%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid color-mix(in oklab, var(--color-border) 40%, transparent);
-  border-radius: var(--radius);
-  box-shadow: 0 2px 8px color-mix(in oklab, var(--color-foreground) 6%, transparent);
-}
-
-.glass-surface {
-  background: color-mix(in oklab, var(--color-surface-2) 55%, transparent);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid color-mix(in oklab, var(--color-border) 25%, transparent);
-  border-radius: var(--radius);
-}
-
-/* ═══════════════════════════════════════════════════
-   Glow utilities — colored outer shadows
-   ═══════════════════════════════════════════════════ */
-.glow-success { box-shadow: 0 0 12px color-mix(in oklab, var(--sem-success) 35%, transparent), 0 0 4px color-mix(in oklab, var(--sem-success) 15%, transparent); }
-.glow-risk    { box-shadow: 0 0 12px color-mix(in oklab, var(--sem-risk) 35%, transparent), 0 0 4px color-mix(in oklab, var(--sem-risk) 15%, transparent); }
-.glow-warning { box-shadow: 0 0 12px color-mix(in oklab, var(--sem-warning) 35%, transparent), 0 0 4px color-mix(in oklab, var(--sem-warning) 15%, transparent); }
-.glow-info    { box-shadow: 0 0 12px color-mix(in oklab, var(--sem-info) 35%, transparent), 0 0 4px color-mix(in oklab, var(--sem-info) 15%, transparent); }
-.glow-gold    { box-shadow: 0 0 16px color-mix(in oklab, var(--color-primary) 40%, transparent), 0 0 4px color-mix(in oklab, var(--color-primary) 20%, transparent); }
-
-/* ═══════════════════════════════════════════════════
-   Hero typography — oversized scoreboard numbers
+   Hero typography
    ═══════════════════════════════════════════════════ */
 .text-hero {
   font-size: var(--app-text-hero);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
@@ -318,17 +259,16 @@ button, a, [role="button"] {
 
 .text-2xl-app {
   font-size: var(--app-text-2xl);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.01em;
 }
 
 .stat-huge {
   font-size: var(--app-text-hero);
-  font-weight: 900;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  text-shadow: 0 1px 2px color-mix(in oklab, var(--color-foreground) 10%, transparent);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -341,55 +281,19 @@ button, a, [role="button"] {
 }
 
 /* ═══════════════════════════════════════════════════
-   Premium utility classes
-   ═══════════════════════════════════════════════════ */
-.neon-border {
-  border: 1px solid;
-  box-shadow: 0 0 6px color-mix(in oklab, currentColor 25%, transparent);
-}
-
-.badge-glow {
-  box-shadow: 0 0 8px color-mix(in oklab, currentColor 30%, transparent);
-}
-
-.gradient-banner {
-  width: 100%;
-  padding: var(--app-space-3) var(--app-space-2);
-  border-radius: var(--radius);
-  color: #fff;
-}
-
-.gradient-banner-success { background: linear-gradient(135deg, #059669, #00ff87 180%); }
-.gradient-banner-risk    { background: linear-gradient(135deg, #dc2626, #ff3b5c 180%); }
-.gradient-banner-warning { background: linear-gradient(135deg, #b45309, #ffaa00 180%); }
-.gradient-banner-info    { background: linear-gradient(135deg, #1d4ed8, #3b82f6 180%); }
-.gradient-banner-gold    { background: linear-gradient(135deg, #92400e, #f5c518 180%); }
-.gradient-banner-neutral { background: linear-gradient(135deg, #374151, #6b7280 180%); }
-.gradient-banner-insight { background: linear-gradient(135deg, #312e81, #1e3a5f 180%); }
-
-.card-highlight {
-  transition: box-shadow 200ms ease;
-}
-.card-highlight:hover,
-.card-highlight:focus-within {
-  box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-primary) 40%, transparent),
-              0 0 12px color-mix(in oklab, var(--color-primary) 20%, transparent);
-}
-
-/* ═══════════════════════════════════════════════════
    Semantic utility classes used across all apps/views
    ═══════════════════════════════════════════════════ */
-.bg-sem-info { background-color: var(--sem-info); color: color-mix(in oklab, var(--color-primary-foreground) 90%, transparent); }
-.bg-sem-success { background-color: var(--sem-success); color: color-mix(in oklab, var(--color-primary-foreground) 90%, transparent); }
-.bg-sem-warning { background-color: var(--sem-warning); color: color-mix(in oklab, var(--color-primary-foreground) 90%, transparent); }
-.bg-sem-risk { background-color: var(--sem-risk); color: color-mix(in oklab, var(--color-primary-foreground) 90%, transparent); }
-.bg-sem-neutral { background-color: var(--sem-neutral); color: color-mix(in oklab, var(--color-primary-foreground) 90%, transparent); }
+.bg-sem-info { background-color: var(--sem-info); color: #fff; }
+.bg-sem-success { background-color: var(--sem-success); color: #fff; }
+.bg-sem-warning { background-color: var(--sem-warning); color: #fff; }
+.bg-sem-risk { background-color: var(--sem-risk); color: #fff; }
+.bg-sem-neutral { background-color: var(--sem-neutral); color: #fff; }
 
-.bg-sem-info-subtle { background-color: color-mix(in oklab, var(--sem-info) 12%, var(--color-surface-1)); }
-.bg-sem-success-subtle { background-color: color-mix(in oklab, var(--sem-success) 12%, var(--color-surface-1)); }
-.bg-sem-warning-subtle { background-color: color-mix(in oklab, var(--sem-warning) 14%, var(--color-surface-1)); }
-.bg-sem-risk-subtle { background-color: color-mix(in oklab, var(--sem-risk) 12%, var(--color-surface-1)); }
-.bg-sem-neutral-subtle { background-color: color-mix(in oklab, var(--sem-neutral) 14%, var(--color-surface-1)); }
+.bg-sem-info-subtle { background-color: color-mix(in oklab, var(--sem-info) 10%, var(--color-surface-1)); }
+.bg-sem-success-subtle { background-color: color-mix(in oklab, var(--sem-success) 10%, var(--color-surface-1)); }
+.bg-sem-warning-subtle { background-color: color-mix(in oklab, var(--sem-warning) 10%, var(--color-surface-1)); }
+.bg-sem-risk-subtle { background-color: color-mix(in oklab, var(--sem-risk) 10%, var(--color-surface-1)); }
+.bg-sem-neutral-subtle { background-color: color-mix(in oklab, var(--sem-neutral) 10%, var(--color-surface-1)); }
 
 .text-sem-info { color: var(--sem-info); }
 .text-sem-success { color: var(--sem-success); }
@@ -397,39 +301,17 @@ button, a, [role="button"] {
 .text-sem-risk { color: var(--sem-risk); }
 .text-sem-neutral { color: var(--sem-neutral); }
 
-.border-sem-info { border-color: color-mix(in oklab, var(--sem-info) 55%, transparent); }
-.border-sem-success { border-color: color-mix(in oklab, var(--sem-success) 55%, transparent); }
-.border-sem-warning { border-color: color-mix(in oklab, var(--sem-warning) 55%, transparent); }
-.border-sem-risk { border-color: color-mix(in oklab, var(--sem-risk) 55%, transparent); }
-.border-sem-neutral { border-color: color-mix(in oklab, var(--sem-neutral) 45%, transparent); }
+.border-sem-info { border-color: color-mix(in oklab, var(--sem-info) 50%, transparent); }
+.border-sem-success { border-color: color-mix(in oklab, var(--sem-success) 50%, transparent); }
+.border-sem-warning { border-color: color-mix(in oklab, var(--sem-warning) 50%, transparent); }
+.border-sem-risk { border-color: color-mix(in oklab, var(--sem-risk) 50%, transparent); }
+.border-sem-neutral { border-color: color-mix(in oklab, var(--sem-neutral) 40%, transparent); }
 
-.border-sem-info-border { border-color: color-mix(in oklab, var(--sem-info) 38%, var(--color-border)); }
-.border-sem-success-border { border-color: color-mix(in oklab, var(--sem-success) 38%, var(--color-border)); }
-.border-sem-warning-border { border-color: color-mix(in oklab, var(--sem-warning) 38%, var(--color-border)); }
-.border-sem-risk-border { border-color: color-mix(in oklab, var(--sem-risk) 38%, var(--color-border)); }
-.border-sem-neutral-border { border-color: color-mix(in oklab, var(--sem-neutral) 30%, var(--color-border)); }
-
-/* Transitional tokenization: remap legacy utility colors to semantic tones. */
-.bg-green-600, .bg-green-500 { background-color: var(--sem-success) !important; }
-.bg-red-600, .bg-red-500, .bg-red-400 { background-color: var(--sem-risk) !important; }
-.bg-yellow-600, .bg-yellow-500 { background-color: var(--sem-warning) !important; }
-.bg-blue-600, .bg-blue-500, .bg-blue-400 { background-color: var(--sem-info) !important; }
-.bg-orange-600, .bg-orange-500, .bg-amber-700, .bg-amber-500, .bg-yellow-600 { background-color: var(--sem-warning) !important; }
-.bg-purple-600, .bg-slate-500, .bg-slate-400, .bg-gray-500 { background-color: var(--sem-neutral) !important; }
-.bg-green-500\/5, .bg-green-500\/10, .bg-green-500\/15 { background-color: color-mix(in oklab, var(--sem-success) 12%, var(--color-surface-1)) !important; }
-.bg-red-500\/5, .bg-red-500\/10, .bg-red-500\/15 { background-color: color-mix(in oklab, var(--sem-risk) 12%, var(--color-surface-1)) !important; }
-.bg-yellow-500\/5, .bg-yellow-500\/10, .bg-yellow-500\/15 { background-color: color-mix(in oklab, var(--sem-warning) 14%, var(--color-surface-1)) !important; }
-.bg-blue-500\/5, .bg-blue-500\/10, .bg-blue-500\/15 { background-color: color-mix(in oklab, var(--sem-info) 12%, var(--color-surface-1)) !important; }
-
-.text-green-600, .text-green-500, .dark\:text-green-400 { color: var(--sem-success) !important; }
-.text-red-600, .text-red-500, .dark\:text-red-400 { color: var(--sem-risk) !important; }
-.text-yellow-600, .text-yellow-500, .dark\:text-yellow-400, .text-orange-500 { color: var(--sem-warning) !important; }
-.text-blue-600, .text-blue-500, .dark\:text-blue-400 { color: var(--sem-info) !important; }
-.text-slate-600, .text-slate-500, .text-slate-400, .dark\:text-slate-400 { color: var(--sem-neutral) !important; }
-.border-green-500, .border-green-500\/30, .border-green-500\/50 { border-color: color-mix(in oklab, var(--sem-success) 45%, var(--color-border)) !important; }
-.border-red-500, .border-red-500\/30, .border-red-500\/50 { border-color: color-mix(in oklab, var(--sem-risk) 45%, var(--color-border)) !important; }
-.border-yellow-500, .border-yellow-500\/30, .border-yellow-500\/50, .border-amber-500 { border-color: color-mix(in oklab, var(--sem-warning) 45%, var(--color-border)) !important; }
-.border-blue-500, .border-blue-500\/30, .border-blue-500\/50 { border-color: color-mix(in oklab, var(--sem-info) 45%, var(--color-border)) !important; }
+.border-sem-info-border { border-color: color-mix(in oklab, var(--sem-info) 35%, var(--color-border)); }
+.border-sem-success-border { border-color: color-mix(in oklab, var(--sem-success) 35%, var(--color-border)); }
+.border-sem-warning-border { border-color: color-mix(in oklab, var(--sem-warning) 35%, var(--color-border)); }
+.border-sem-risk-border { border-color: color-mix(in oklab, var(--sem-risk) 35%, var(--color-border)); }
+.border-sem-neutral-border { border-color: color-mix(in oklab, var(--sem-neutral) 28%, var(--color-border)); }
 
 /* ═══════════════════════════════════════════════════
    Animations
@@ -483,34 +365,6 @@ button, a, [role="button"] {
 .animate-stagger > *:nth-child(4) { animation-delay: 150ms; }
 .animate-stagger > *:nth-child(5) { animation-delay: 200ms; }
 .animate-stagger > *:nth-child(n+6) { animation-delay: 240ms; }
-
-@keyframes score-flash {
-  0%   { box-shadow: 0 0 0 color-mix(in oklab, var(--color-primary) 0%, transparent); }
-  40%  { box-shadow: 0 0 12px color-mix(in oklab, var(--color-primary) 40%, transparent); }
-  100% { box-shadow: 0 0 0 color-mix(in oklab, var(--color-primary) 0%, transparent); }
-}
-.animate-score-flash { animation: score-flash 600ms ease-out both; }
-
-@keyframes shimmer {
-  from { background-position: -200% 0; }
-  to   { background-position:  200% 0; }
-}
-.animate-shimmer {
-  background: linear-gradient(90deg,
-    var(--color-muted) 25%,
-    oklch(from var(--color-muted) calc(l + 0.08) c h) 50%,
-    var(--color-muted) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
-  border-radius: var(--radius-sm);
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 4px color-mix(in oklab, var(--color-primary) 15%, transparent); }
-  50%      { box-shadow: 0 0 16px color-mix(in oklab, var(--color-primary) 40%, transparent); }
-}
-.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
 
 @keyframes slide-in-left {
   from { opacity: 0; transform: translateX(-12px); }
@@ -570,40 +424,40 @@ button, a, [role="button"] {
 }
 
 /* ═══════════════════════════════════════════════════
-   Dark mode — premium navy-black / gold / neon
+   Dark mode — slate/blue analytics palette
    ═══════════════════════════════════════════════════ */
 .dark {
-  --background: #0a0e1a;
-  --foreground: #e8e2f0;
-  --card: #101628;
-  --card-foreground: #e8e2f0;
-  --popover: #101628;
-  --popover-foreground: #e8e2f0;
-  --primary: #f5c518;
-  --primary-foreground: #0a0e1a;
-  --secondary: #151c30;
-  --secondary-foreground: #e8e2f0;
-  --muted: #151c30;
-  --muted-foreground: #7b85a0;
-  --accent: #151c30;
-  --accent-foreground: #e8e2f0;
-  --destructive: #ff3b5c;
-  --border: #1e2640;
-  --input: #1e2640;
-  --ring: #f5c518;
-  --chart-1: #f5c518;
-  --chart-2: #ffaa00;
-  --chart-3: #00ff87;
-  --chart-4: #3b82f6;
-  --chart-5: #ff3b5c;
-  --sidebar: #101628;
-  --sidebar-foreground: #e8e2f0;
-  --sidebar-primary: #f5c518;
-  --sidebar-primary-foreground: #0a0e1a;
-  --sidebar-accent: #151c30;
-  --sidebar-accent-foreground: #e8e2f0;
-  --sidebar-border: #1e2640;
-  --sidebar-ring: #f5c518;
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  --card: #1e293b;
+  --card-foreground: #f1f5f9;
+  --popover: #1e293b;
+  --popover-foreground: #f1f5f9;
+  --primary: #3b82f6;
+  --primary-foreground: #0f172a;
+  --secondary: #1e293b;
+  --secondary-foreground: #f1f5f9;
+  --muted: #334155;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f1f5f9;
+  --destructive: #f87171;
+  --border: #334155;
+  --input: #334155;
+  --ring: #3b82f6;
+  --chart-1: #3b82f6;
+  --chart-2: #60a5fa;
+  --chart-3: #4ade80;
+  --chart-4: #fbbf24;
+  --chart-5: #f87171;
+  --sidebar: #1e293b;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #0f172a;
+  --sidebar-accent: #334155;
+  --sidebar-accent-foreground: #f1f5f9;
+  --sidebar-border: #334155;
+  --sidebar-ring: #3b82f6;
 }
 
 @theme inline {

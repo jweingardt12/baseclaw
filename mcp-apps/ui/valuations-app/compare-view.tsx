@@ -9,7 +9,6 @@ import { ZScoreBadge, ZScoreExplainer } from "../shared/z-score";
 import { IntelBadge } from "../shared/intel-badge";
 import { PlayerName } from "../shared/player-name";
 import { AiInsight } from "../shared/ai-insight";
-import { StatusBanner } from "../shared/status-banner";
 import { formatFixed, toFiniteNumber } from "../shared/number-format";
 
 interface ComparePlayer {
@@ -95,22 +94,6 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
     ...Object.keys(data.player1.categories || {}),
     ...Object.keys(data.player2.categories || {}),
   ]));
-
-  // Calculate wins
-  var p1Wins = 0;
-  var p2Wins = 0;
-  allCats.forEach(function (cat) {
-    var v1 = toFiniteNumber((data.player1.categories || {})[cat], 0);
-    var v2 = toFiniteNumber((data.player2.categories || {})[cat], 0);
-    if (v1 > v2) p1Wins++;
-    else if (v2 > v1) p2Wins++;
-  });
-
-  var winner = p1Wins > p2Wins ? data.player1.name : p2Wins > p1Wins ? data.player2.name : null;
-  var bannerText = winner
-    ? winner.toUpperCase() + " WINS " + Math.max(p1Wins, p2Wins) + "-" + Math.min(p1Wins, p2Wins)
-    : "TIED " + p1Wins + "-" + p2Wins;
-  var bannerVariant: "winning" | "tied" = winner ? "winning" : "tied";
 
   var chartData = allCats.map(function (cat) {
     var obj: Record<string, any> = { category: cat };
@@ -206,15 +189,12 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
         </Card>
       )}
 
-      {/* Winner banner */}
-      <StatusBanner text={bannerText} subtitle={data.player1.name + " vs " + data.player2.name} variant={bannerVariant === "winning" ? "success" : "tied"} />
-
       <AiInsight recommendation={data.ai_recommendation} />
 
       <ZScoreExplainer />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Card className={p1Wins > p2Wins ? "glow-success" : ""}>
+        <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2 flex-wrap">
               <CardTitle className="text-base break-words"><PlayerName name={data.player1.name} app={app} navigate={navigate} context="default" /></CardTitle>
@@ -225,7 +205,7 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
             <ZScoreBadge z={data.player1.z_score} />
           </CardContent>
         </Card>
-        <Card className={p2Wins > p1Wins ? "glow-success" : ""}>
+        <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2 flex-wrap">
               <CardTitle className="text-base break-words"><PlayerName name={data.player2.name} app={app} navigate={navigate} context="default" /></CardTitle>

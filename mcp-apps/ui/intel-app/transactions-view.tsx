@@ -75,7 +75,7 @@ export function TransactionsView({ data, app, navigate }: { data: TransactionsDa
           <div className="space-y-1.5">
             {transactions.map(function(t, i) {
               return (
-                <div key={i} className={"glass-card p-3 border-l-4 card-highlight flex items-center gap-3 " + typeBorderColor(t.type)}>
+                <div key={i} className={"rounded-md border bg-card p-3 border-l-4 flex items-center gap-3 " + typeBorderColor(t.type)}>
                   <div className="shrink-0">
                     <TeamLogo abbrev={t.team} />
                   </div>

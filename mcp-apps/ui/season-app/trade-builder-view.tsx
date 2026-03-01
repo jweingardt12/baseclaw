@@ -92,7 +92,7 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Your roster - Give side */}
-        <Card className="glass-card">
+        <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base text-destructive">You Give</CardTitle>
@@ -136,7 +136,7 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
         </Card>
 
         {/* Search / Get side */}
-        <Card className="glass-card">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base text-primary">You Get</CardTitle>
           </CardHeader>

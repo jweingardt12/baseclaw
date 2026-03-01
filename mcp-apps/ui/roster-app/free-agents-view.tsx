@@ -118,10 +118,9 @@ export function FreeAgentsView({ data, app, navigate }: { data: FreeAgentsData; 
               {players.map((p, idx) => {
                 const posDisplay = p.positions || (p.eligible_positions || []).join(", ");
                 const logoUrl = p.team ? teamLogoFromAbbrev(p.team) : null;
-                var isTopThree = idx < 3;
                 return (
                   <React.Fragment key={p.player_id}>
-                  <TableRow className={isTopThree ? "card-highlight" : ""}>
+                  <TableRow>
                     <TableCell className="font-medium">
                       <span className="flex items-center" style={{ gap: "4px" }}>
                         {logoUrl && <img src={logoUrl} alt={p.team || ""} width={16} height={16} style={{ display: "inline", flexShrink: 0 }} />}

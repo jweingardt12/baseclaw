@@ -20,7 +20,7 @@ interface MlbPlayerData {
 export function PlayerView({ data, app, navigate }: { data: MlbPlayerData; app?: any; navigate?: (data: any) => void }) {
   return (
     <div className="space-y-3 animate-slide-up">
-      <div className="glass-card p-4">
+      <div className="rounded-md border bg-card p-4">
         <div className="flex items-center gap-3 sm:gap-3">
           <img src={mlbHeadshotUrl(data.mlb_id)} alt={data.name} className="w-16 h-16 rounded-full bg-muted object-cover" />
           <div className="min-w-0">
@@ -46,7 +46,7 @@ export function PlayerView({ data, app, navigate }: { data: MlbPlayerData; app?:
       </div>
 
       {data.intel && (
-        <div className="glass-card p-4">
+        <div className="rounded-md border bg-card p-4">
           <IntelPanel intel={data.intel} />
         </div>
       )}

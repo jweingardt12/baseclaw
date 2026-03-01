@@ -1,7 +1,7 @@
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { useCallTool } from "../shared/use-call-tool";
-import { StatusBanner } from "../shared/status-banner";
+
 import { ChevronLeft, ChevronRight, Loader2, ArrowRightLeft } from "@/shared/icons";
 
 interface PastTrade {
@@ -34,9 +34,7 @@ export function PastTradesView({ data, app, navigate }: { data: PastTradesData; 
         <Button variant="outline" size="sm" disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <div className="flex-1">
-          <StatusBanner text={"Trades - " + data.year} subtitle={trades.length + " trades"} variant="info" />
-        </div>
+        <span className="flex-1 text-center text-sm font-bold">{"Trades - " + data.year}</span>
         <Button variant="outline" size="sm" disabled={data.year >= 2026 || loading} onClick={() => changeYear(data.year + 1)}>
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -50,14 +48,14 @@ export function PastTradesView({ data, app, navigate }: { data: PastTradesData; 
         )}
 
         {trades.length === 0 ? (
-          <div className="glass-card p-4 text-center">
+          <div className="rounded-md border bg-card p-4 text-center">
             <p className="text-muted-foreground font-semibold">No trades for this season.</p>
           </div>
         ) : (
           <div className="space-y-3">
             {trades.map(function (t, i) {
               return (
-                <div key={i} className="glass-card p-4">
+                <div key={i} className="rounded-md border bg-card p-4">
                   <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3 items-start">
                     <div>
                       <p className="text-sm font-bold mb-2">{t.team1 + " sends:"}</p>

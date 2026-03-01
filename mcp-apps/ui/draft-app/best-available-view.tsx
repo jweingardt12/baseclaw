@@ -89,7 +89,7 @@ export function BestAvailableView({ data, app, navigate }: { data: BestAvailable
 
       {/* Hero top pick */}
       {topPlayer && (
-        <Card className="mb-2 glow-gold border-primary/40">
+        <Card className="mb-2 border-primary/40">
           <CardContent className="p-4 flex items-center gap-3">
             <span className="font-mono text-xs text-muted-foreground w-6 text-right">#1</span>
             <div className="flex-1 min-w-0">

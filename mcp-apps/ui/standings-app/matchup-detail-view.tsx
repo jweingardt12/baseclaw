@@ -4,7 +4,6 @@ import { Badge } from "../components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 import { ComparisonBar } from "../shared/comparison-bar";
 import { AiInsight } from "../shared/ai-insight";
-import { StatusBanner } from "../shared/status-banner";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 interface MatchupCategory {
@@ -72,12 +71,6 @@ export function MatchupDetailView({ data }: { data: MatchupDetailData }) {
 
   var score = data.score || { wins: 0, losses: 0, ties: 0 };
   var total = score.wins + score.losses + score.ties;
-  var isWinning = score.wins > score.losses;
-  var isTied = score.wins === score.losses;
-
-  var bannerVariant: "winning" | "losing" | "tied" = isWinning ? "winning" : isTied ? "tied" : "losing";
-  var bannerLabel = isWinning ? "WINNING" : isTied ? "TIED" : "LOSING";
-  var bannerText = bannerLabel + " " + score.wins + "-" + score.losses + (score.ties > 0 ? "-" + score.ties : "");
 
   var pieData = [
     { name: "Wins", value: score.wins },
@@ -105,13 +98,6 @@ export function MatchupDetailView({ data }: { data: MatchupDetailData }) {
 
   return (
     <div className="space-y-3">
-      {/* Status Banner */}
-      <StatusBanner
-        text={bannerText}
-        subtitle={"Week " + data.week + " vs " + data.opponent}
-        variant={bannerVariant}
-      />
-
       <AiInsight recommendation={data.ai_recommendation} />
 
       {/* Score Ring + Teams */}

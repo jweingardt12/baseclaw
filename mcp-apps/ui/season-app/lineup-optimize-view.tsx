@@ -11,7 +11,6 @@ import { IntelBadge } from "../shared/intel-badge";
 import { PlayerName } from "../shared/player-name";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
-import { StatusBanner } from "../shared/status-banner";
 import { Play, Loader2, ArrowRightLeft, AlertTriangle, CheckCircle, ArrowRight, Copy, Check } from "@/shared/icons";
 
 interface Player {
@@ -67,12 +66,6 @@ export function LineupOptimizeView({ data, app, navigate }: { data: LineupData; 
 
   return (
     <div className="space-y-2">
-      <StatusBanner
-        text={hasIssues ? issuesCount + " LINEUP ISSUES" : "LINEUP OPTIMIZED"}
-        subtitle={hasIssues ? swapsCount + " swap" + (swapsCount === 1 ? "" : "s") + " recommended" : "All active players have games today"}
-        variant={hasIssues ? "alert" : "success"}
-      />
-
       <AiInsight recommendation={data.ai_recommendation} />
 
       <div className="kpi-grid">

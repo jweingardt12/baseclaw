@@ -46,7 +46,7 @@ export function MatchupsView({ data }: { data: MatchupsData }) {
           var name2 = getTeamName(m.team2);
           var isMyMatchup = name1 === MY_TEAM || name2 === MY_TEAM;
           return (
-            <Card key={i} className={isMyMatchup ? "border-primary border-2 bg-primary/5 glow-gold" : ""}>
+            <Card key={i} className={isMyMatchup ? "border-primary border-2 bg-primary/5" : ""}>
               <CardContent className="py-2 px-3">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">

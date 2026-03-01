@@ -5,7 +5,6 @@ import { Tooltip } from "../components/ui/tooltip";
 import { Info } from "@/shared/icons";
 import { formatFixed } from "../shared/number-format";
 import { AiInsight } from "../shared/ai-insight";
-import { StatusBanner } from "../shared/status-banner";
 import { KpiTile } from "../shared/kpi-tile";
 
 interface SeasonPaceTeam {
@@ -46,28 +45,12 @@ export function SeasonPaceView({ data }: { data: SeasonPaceData }) {
   var progressPct = data.end_week > 0 ? Math.round((data.current_week / data.end_week) * 100) : 0;
 
   var myTeam = teams.find(function (t) { return t.is_my_team; });
-  var myStatus = myTeam ? myTeam.playoff_status : "";
   var myRank = myTeam ? myTeam.rank : null;
   var myMagic = myTeam ? myTeam.magic_number : 0;
   var myProjected = myTeam ? myTeam.projected_wins : 0;
 
-  var bannerVariant: "winning" | "losing" | "tied" | "gold" | "info" = "info";
-  if (myStatus === "in") bannerVariant = "winning";
-  else if (myStatus === "bubble") bannerVariant = "tied";
-  else if (myStatus === "out") bannerVariant = "losing";
-  if (myRank === 1) bannerVariant = "gold";
-
-  var bannerText = myStatus === "in" ? "PLAYOFF BOUND" : myStatus === "bubble" ? "ON THE BUBBLE" : myStatus === "out" ? "OUTSIDE LOOKING IN" : "SEASON PACE";
-  var bannerSubtitle = myTeam ? "#" + myTeam.rank + " - " + myTeam.wins + "-" + myTeam.losses + (myTeam.ties > 0 ? "-" + myTeam.ties : "") : "";
-
   return (
     <div className="space-y-3">
-      <StatusBanner
-        text={bannerText}
-        subtitle={bannerSubtitle}
-        variant={bannerVariant}
-      />
-
       <AiInsight recommendation={data.ai_recommendation} />
 
       <div className="kpi-grid">
@@ -115,7 +98,7 @@ export function SeasonPaceView({ data }: { data: SeasonPaceData }) {
               <TableRow
                 key={t.name}
                 className={
-                  (t.is_my_team ? "border-l-2 border-primary bg-primary/5 glow-gold " : "")
+                  (t.is_my_team ? "border-l-2 border-primary bg-primary/5 " : "")
                   + (showPlayoffLine ? "border-b-2 border-dashed border-muted-foreground/30" : "")
                 }
               >

@@ -32,7 +32,7 @@ export function TradeActionView({ data, app, navigate }: { data: TradeActionData
   return (
     <div className="space-y-2">
     <AiInsight recommendation={data.ai_recommendation} />
-    <Card className="w-full animate-slide-up overflow-hidden glass-card">
+    <Card className="w-full animate-slide-up overflow-hidden">
       <CardHeader className={data.success ? "bg-sem-success-subtle" : "bg-destructive/5"}>
         <div className="flex items-center gap-2">
           <CardTitle>{title}</CardTitle>

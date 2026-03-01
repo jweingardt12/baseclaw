@@ -3,7 +3,6 @@ import { Badge } from "../components/ui/badge";
 import { Progress } from "../components/ui/progress";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { KpiTile } from "../shared/kpi-tile";
-import { StatusBanner } from "../shared/status-banner";
 
 interface DraftStatusData {
   total_picks: number;
@@ -106,13 +105,6 @@ export function DraftStatusView({ data }: { data: DraftStatusData }) {
 
   return (
     <div className="space-y-2">
-      {/* Hero Banner */}
-      <StatusBanner
-        text={"ROUND " + data.current_round}
-        subtitle={data.total_picks + " picks made - " + draftPct + "% complete"}
-        variant="gold"
-      />
-
       {/* KPI Grid */}
       <div className="kpi-grid">
         <KpiTile value={data.current_round} label="Round" color="primary" />

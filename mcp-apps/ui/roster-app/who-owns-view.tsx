@@ -30,7 +30,7 @@ export function WhoOwnsView({ data, app, navigate }: { data: WhoOwnsData; app: a
 
   return (
     <div className="space-y-3 mt-2 animate-slide-up">
-      <div className="glass-card p-4">
+      <div className="rounded-md border bg-card p-4">
         <h3 className="font-semibold text-base mb-3">Player Ownership</h3>
         <div className="flex items-center gap-3 flex-wrap">
           {ownershipBadge(data.ownership_type)}

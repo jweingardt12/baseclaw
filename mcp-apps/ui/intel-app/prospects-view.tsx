@@ -48,7 +48,7 @@ export function ProspectsView({ data, app, navigate }: { data: ProspectsData; ap
         <div className="space-y-1.5">
           {transactions.map(function(t, i) {
             return (
-              <div key={i} className="glass-card p-3 flex items-center gap-3 card-highlight">
+              <div key={i} className="rounded-md border bg-card p-3 flex items-center gap-3">
                 <div className="shrink-0">
                   <TeamLogo abbrev={t.team} />
                 </div>

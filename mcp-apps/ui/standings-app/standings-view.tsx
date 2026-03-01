@@ -5,7 +5,6 @@ import { Card, CardContent } from "../components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, ReferenceLine } from "recharts";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
-import { StatusBanner } from "../shared/status-banner";
 
 interface StandingsEntry {
   rank: number;
@@ -115,7 +114,6 @@ export function StandingsView({ data }: { data: { standings: StandingsEntry[]; p
   var hasPoints = data.standings.some((s) => s.points_for);
 
   var myTeam = (data.standings || []).find(function (s) { return s.name === MY_TEAM; });
-  var myRank = myTeam ? myTeam.rank : null;
   var myRecord = myTeam ? myTeam.wins + "-" + myTeam.losses + (hasTies ? "-" + (myTeam.ties || 0) : "") : "";
   var myPoints = myTeam && myTeam.points_for ? myTeam.points_for : "";
   var leader = (data.standings || [])[0];
@@ -125,21 +123,8 @@ export function StandingsView({ data }: { data: { standings: StandingsEntry[]; p
     gb = diff > 0 ? diff.toFixed(1) : "-";
   }
 
-  var bannerVariant: "winning" | "losing" | "tied" | "info" | "gold" = "info";
-  if (myRank === 1) bannerVariant = "gold";
-  else if (myRank && myRank <= playoffLine) bannerVariant = "winning";
-  else if (myRank) bannerVariant = "losing";
-
   return (
     <div className="space-y-3">
-      {myRank && (
-        <StatusBanner
-          text={"YOU'RE #" + myRank}
-          subtitle={myTeam ? myTeam.name : ""}
-          variant={bannerVariant}
-        />
-      )}
-
       <AiInsight recommendation={data.ai_recommendation} />
 
       <div className="kpi-grid">
@@ -168,7 +153,7 @@ export function StandingsView({ data }: { data: { standings: StandingsEntry[]; p
                 <TableRow
                   key={s.rank}
                   className={
-                    (isMyTeam ? "border-l-2 border-primary bg-primary/5 glow-gold " : "")
+                    (isMyTeam ? "border-l-2 border-primary bg-primary/5 " : "")
                     + (showPlayoffLine ? "border-b-2 border-dashed border-muted-foreground/30" : "")
                   }
                 >

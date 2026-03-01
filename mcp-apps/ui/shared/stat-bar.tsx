@@ -12,9 +12,9 @@ interface StatBarProps {
 
 const VARIANT_COLORS: Record<string, string> = {
   default: "bg-primary",
-  success: "bg-green-500",
-  danger: "bg-red-500",
-  warning: "bg-yellow-500",
+  success: "bg-sem-success",
+  danger: "bg-sem-risk",
+  warning: "bg-sem-warning",
 };
 
 export function StatBar({ value, max = 100, className, barClassName, showLabel, label, variant = "default" }: StatBarProps) {
@@ -22,9 +22,9 @@ export function StatBar({ value, max = 100, className, barClassName, showLabel, 
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {showLabel && <span className="text-xs text-muted-foreground w-8 text-right">{label || Math.round(pct) + "%"}</span>}
-      <div className="flex-1 h-2 rounded-sm overflow-hidden bg-muted" style={{ backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent 3px, color-mix(in oklab, var(--color-foreground) 4%, transparent) 3px, color-mix(in oklab, var(--color-foreground) 4%, transparent) 4px)" }}>
+      <div className="flex-1 h-2 rounded-full overflow-hidden bg-muted">
         <div
-          className={cn("h-full rounded-sm transition-all animate-bar-fill", VARIANT_COLORS[variant] || VARIANT_COLORS.default, barClassName)}
+          className={cn("h-full rounded-full transition-all animate-bar-fill", VARIANT_COLORS[variant] || VARIANT_COLORS.default, barClassName)}
           style={{ width: pct + "%" }}
         />
       </div>

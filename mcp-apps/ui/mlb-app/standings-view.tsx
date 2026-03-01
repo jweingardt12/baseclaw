@@ -1,5 +1,5 @@
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { StatusBanner } from "../shared/status-banner";
+
 import { TeamLogo } from "../shared/team-logo";
 
 interface DivisionTeam {
@@ -18,10 +18,9 @@ interface MlbDivision {
 export function StandingsView({ data }: { data: { divisions: MlbDivision[] } }) {
   return (
     <div className="space-y-3">
-      <StatusBanner text="MLB Standings" variant="info" />
       {(data.divisions || []).map(function (div) {
         return (
-          <div key={div.division} className="glass-card overflow-hidden">
+          <div key={div.division} className="rounded-md border bg-card overflow-hidden">
             <div className="p-3 pb-1">
               <span className="text-base font-bold">{div.division}</span>
             </div>
@@ -39,7 +38,7 @@ export function StandingsView({ data }: { data: { divisions: MlbDivision[] } }) 
                   return (
                     <TableRow key={t.name}>
                       <TableCell className="font-semibold">
-                        <span className="flex items-center" style={{ gap: "6px" }}>
+                        <span className="flex items-center gap-1.5">
                           <TeamLogo teamId={t.team_id} name={t.name} size={20} />
                           {t.name}
                         </span>

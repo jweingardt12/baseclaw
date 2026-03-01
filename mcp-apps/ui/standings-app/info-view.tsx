@@ -32,7 +32,7 @@ export function InfoView({ data }: { data: LeagueInfo }) {
     <div className="space-y-3">
       <AiInsight recommendation={data.ai_recommendation} />
 
-      <div className="glass-card p-4">
+      <div className="rounded-md border bg-card p-4">
         <div className="flex items-center gap-2 mb-3">
           <h3 className="font-semibold text-lg">{data.name}</h3>
           <Badge variant="secondary">{data.season}</Badge>
@@ -49,7 +49,7 @@ export function InfoView({ data }: { data: LeagueInfo }) {
         </div>
       </div>
 
-      <div className="glass-card p-4">
+      <div className="rounded-md border bg-card p-4">
         <h3 className="font-semibold text-base mb-2">Your Team</h3>
         <p className="font-medium">{data.team_name}</p>
         <p className="text-xs text-muted-foreground">{data.team_id}</p>

@@ -9,7 +9,6 @@ import { PlayerName } from "../shared/player-name";
 import { TeamLogo } from "../shared/team-logo";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
-import { StatusBanner } from "../shared/status-banner";
 import {
   Swords, TrendingUp, TrendingDown, Target, Shield, Lock, XCircle,
   Calendar, ArrowRightLeft, Loader2, RefreshCw, UserPlus,
@@ -133,17 +132,8 @@ export function MatchupStrategyView({ data, app, navigate }: { data: MatchupStra
   var oppTotal = sched.opp_batter_games + sched.opp_pitcher_games;
   var gameDiff = Math.abs(myTotal - oppTotal);
 
-  var bannerVariant: "winning" | "losing" | "tied" = score.wins > score.losses ? "winning" : score.losses > score.wins ? "losing" : "tied";
-  var bannerLabel = score.wins > score.losses ? "WINNING" : score.losses > score.wins ? "LOSING" : "TIED";
-
   return (
     <div className="space-y-2">
-      <StatusBanner
-        text={bannerLabel + " " + score.wins + "-" + score.losses + (score.ties > 0 ? "-" + score.ties : "")}
-        subtitle={"vs " + d.opponent + " - Week " + d.week}
-        variant={bannerVariant}
-      />
-
       <AiInsight recommendation={d.ai_recommendation} />
 
       <div className="kpi-grid">

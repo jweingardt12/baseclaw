@@ -1,7 +1,7 @@
 import { Badge } from "../components/ui/badge";
 import { Trophy, TrendingUp } from "@/shared/icons";
 import { KpiTile } from "../shared/kpi-tile";
-import { StatusBanner } from "../shared/status-banner";
+
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 interface SeasonResult {
@@ -96,8 +96,6 @@ export function LeagueHistoryView({ data }: { data: { seasons: SeasonResult[] } 
 
   return (
     <div className="space-y-3">
-      <StatusBanner text="League History" subtitle={seasons.length + " seasons on record"} variant="gold" />
-
       {/* Summary Stats */}
       {seasonsPlayed > 0 && (
         <div className="kpi-grid">
@@ -114,7 +112,7 @@ export function LeagueHistoryView({ data }: { data: { seasons: SeasonResult[] } 
           var isChampion = rank === 1;
 
           return (
-            <div key={s.year} className={"rounded-lg border bg-card p-3" + (isChampion ? " glow-gold" : "")}>
+            <div key={s.year} className="rounded-lg border bg-card p-3">
               <div className="flex items-center gap-3">
                 {/* Year badge */}
                 <div className={
@@ -157,7 +155,7 @@ export function LeagueHistoryView({ data }: { data: { seasons: SeasonResult[] } 
 
       {/* Win % Trend Chart */}
       {sortedChartData.length > 1 && (
-        <div className="glass-card p-4">
+        <div className="rounded-md border bg-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
             <span className="text-base font-bold">Win % by Season</span>

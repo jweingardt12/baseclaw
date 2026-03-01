@@ -3,7 +3,7 @@ import { Badge } from "../components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 import { Trophy, TrendingUp, Target, Award } from "@/shared/icons";
-import { StatusBanner } from "../shared/status-banner";
+
 import { formatFixed } from "../shared/number-format";
 
 interface CareerEntry {
@@ -38,8 +38,6 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
 
   return (
     <div className="space-y-3">
-      <StatusBanner text="Record Book" subtitle="All-time league records and milestones" variant="gold" />
-
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList behavior="wrap">
           <TabsTrigger value="champions">
@@ -60,7 +58,7 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
           <div className="space-y-2">
             {(data.champions || []).map(function (c) {
               return (
-                <div key={c.year} className="rounded-lg border bg-card glow-gold p-3">
+                <div key={c.year} className="rounded-lg border bg-card p-3">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 border-2 border-amber-500 font-bold text-sm shrink-0">
                       {c.year}
@@ -83,7 +81,7 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
         </TabsContent>
 
         <TabsContent value="careers">
-          <div className="glass-card overflow-hidden">
+          <div className="rounded-md border bg-card overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -133,7 +131,7 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
         </TabsContent>
 
         <TabsContent value="playoffs">
-          <div className="glass-card overflow-hidden">
+          <div className="rounded-md border bg-card overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>

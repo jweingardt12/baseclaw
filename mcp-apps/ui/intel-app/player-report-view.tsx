@@ -46,7 +46,7 @@ export function PlayerReportView({ data, app, navigate }: { data: PlayerReportDa
   return (
     <div className="space-y-2">
       {/* Hero card */}
-      <Card className="glow-gold border-primary/40">
+      <Card className="border-primary/40">
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">

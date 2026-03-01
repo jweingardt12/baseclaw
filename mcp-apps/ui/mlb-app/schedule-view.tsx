@@ -1,5 +1,5 @@
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { StatusBanner } from "../shared/status-banner";
+
 import { TeamLogo } from "../shared/team-logo";
 
 interface MlbGame {
@@ -18,14 +18,12 @@ interface MlbScheduleData {
 export function ScheduleView({ data }: { data: MlbScheduleData }) {
   return (
     <div className="space-y-3">
-      <StatusBanner text="Schedule" subtitle={data.date + " - " + (data.games || []).length + " games"} variant="info" />
-
       {(data.games || []).length === 0 ? (
-        <div className="glass-card p-4 text-center">
+        <div className="rounded-md border bg-card p-4 text-center">
           <p className="text-muted-foreground font-semibold">No games scheduled for this date.</p>
         </div>
       ) : (
-        <div className="glass-card overflow-hidden">
+        <div className="rounded-md border bg-card overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -40,14 +38,14 @@ export function ScheduleView({ data }: { data: MlbScheduleData }) {
                 return (
                   <TableRow key={i}>
                     <TableCell className="font-semibold">
-                      <span className="flex items-center" style={{ gap: "5px" }}>
+                      <span className="flex items-center gap-1">
                         <TeamLogo teamId={g.away_id} abbrev={g.away} size={18} />
                         {g.away}
                       </span>
                     </TableCell>
                     <TableCell className="text-center text-muted-foreground font-bold">@</TableCell>
                     <TableCell className="font-semibold">
-                      <span className="flex items-center" style={{ gap: "5px" }}>
+                      <span className="flex items-center gap-1">
                         <TeamLogo teamId={g.home_id} abbrev={g.home} size={18} />
                         {g.home}
                       </span>

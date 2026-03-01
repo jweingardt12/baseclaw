@@ -1,6 +1,6 @@
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
 import { Badge } from "../components/ui/badge";
-import { StatusBanner } from "../shared/status-banner";
+
 import { TeamLogo } from "../shared/team-logo";
 
 interface MlbInjury {
@@ -13,8 +13,7 @@ export function InjuriesView({ data }: { data: { injuries: MlbInjury[] } }) {
   if ((data.injuries || []).length === 0) {
     return (
       <div className="space-y-3">
-        <StatusBanner text="MLB Injuries" variant="neutral" />
-        <div className="glass-card p-4 text-center">
+        <div className="rounded-md border bg-card p-4 text-center">
           <p className="text-muted-foreground font-semibold">No injuries reported (may be offseason).</p>
         </div>
       </div>
@@ -23,8 +22,7 @@ export function InjuriesView({ data }: { data: { injuries: MlbInjury[] } }) {
 
   return (
     <div className="space-y-3">
-      <StatusBanner text="MLB Injuries" subtitle={data.injuries.length + " players injured"} variant="alert" />
-      <div className="glass-card overflow-hidden">
+      <div className="rounded-md border bg-card overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

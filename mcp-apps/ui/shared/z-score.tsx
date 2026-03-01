@@ -18,18 +18,18 @@ export function tierGrade(z: number | null): string {
 
 export function tierColor(z: number | null): string {
   if (z == null) return "bg-muted-foreground/30";
-  if (z >= 2.0) return "bg-[#d4a017]";
-  if (z >= 1.0) return "bg-[#15803d]";
-  if (z >= 0) return "bg-[#2563eb]";
-  return "bg-[#c0392b]";
+  if (z >= 2.0) return "bg-sem-warning";
+  if (z >= 1.0) return "bg-sem-success";
+  if (z >= 0) return "bg-sem-info";
+  return "bg-sem-risk";
 }
 
 export function tierTextColor(z: number | null): string {
   if (z == null) return "text-muted-foreground";
-  if (z >= 2.0) return "text-[#b8860b] dark:text-[#d4a017]";
-  if (z >= 1.0) return "text-[#15803d] dark:text-[#4ade80]";
-  if (z >= 0) return "text-[#2563eb] dark:text-[#5b9cf6]";
-  return "text-[#c0392b] dark:text-[#f87171]";
+  if (z >= 2.0) return "text-sem-warning";
+  if (z >= 1.0) return "text-sem-success";
+  if (z >= 0) return "text-sem-info";
+  return "text-sem-risk";
 }
 
 export function ZScoreBar({ z }: { z: number | null }) {
@@ -37,8 +37,8 @@ export function ZScoreBar({ z }: { z: number | null }) {
   const pct = Math.max(0, Math.min(100, ((z + 1) / 5) * 100));
   return (
     <div className="flex items-center gap-1.5">
-      <div className="flex h-2 w-14 rounded-sm overflow-hidden bg-muted">
-        <div className={"rounded-sm " + tierColor(z)} style={{ width: pct + "%" }} />
+      <div className="flex h-2 w-14 rounded-full overflow-hidden bg-muted">
+        <div className={"rounded-full " + tierColor(z)} style={{ width: pct + "%" }} />
       </div>
       <span className="font-mono text-xs w-10 text-right">{formatFixed(z, 2, "0.00")}</span>
     </div>
@@ -49,7 +49,7 @@ export function ZScoreBadge({ z, size }: { z: number | null; size?: "sm" | "md" 
   if (z == null) return <span className="text-xs text-muted-foreground">N/A</span>;
   const isSmall = size === "sm";
   return (
-    <span className={"inline-flex items-center gap-1 rounded-sm font-mono uppercase " + tierColor(z) + " text-white " + (isSmall ? "px-1.5 py-0.5 text-xs" : "px-2 py-0.5 text-xs") + (z >= 2.0 ? " scoreboard-glow" : "")}>
+    <span className={"inline-flex items-center gap-1 rounded-sm font-mono uppercase " + tierColor(z) + " text-white " + (isSmall ? "px-1.5 py-0.5 text-xs" : "px-2 py-0.5 text-xs")}>
       <span className="font-medium">{getTier(z)}</span>
       <span>{formatFixed(z, 2, "0.00")}</span>
     </span>

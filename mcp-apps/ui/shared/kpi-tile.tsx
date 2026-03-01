@@ -29,7 +29,7 @@ interface KpiTileProps {
 
 export function KpiTile({ value, label, color = "primary", trend, className }: KpiTileProps) {
   return (
-    <div className={cn("glass-card p-3 text-center border-t-2", BORDER_MAP[color] || BORDER_MAP.primary, className)}>
+    <div className={cn("rounded-md border bg-card p-3 text-center border-t-2", BORDER_MAP[color] || BORDER_MAP.primary, className)}>
       <div className={cn("text-hero font-mono", COLOR_MAP[color] || COLOR_MAP.primary)}>
         {value}
       </div>

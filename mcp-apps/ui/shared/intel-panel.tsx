@@ -292,7 +292,7 @@ export function IntelPanel({ intel, defaultExpanded = false }: IntelPanelProps) 
       <button
         type="button"
         onClick={function () { setExpanded(!expanded); }}
-        className={"w-full flex items-center gap-2 py-1 px-2 rounded-sm text-left hover:bg-muted/50 transition-colors scoreboard-panel " + (expanded ? "bg-muted/30" : "")}
+        className={"w-full flex items-center gap-2 py-1 px-2 rounded-sm text-left hover:bg-muted/50 transition-colors border bg-card " + (expanded ? "bg-muted/30" : "")}
       >
         <ChevronRight className={"h-3 w-3 transition-transform " + (expanded ? "rotate-90" : "")} />
         <span className="text-xs text-muted-foreground font-medium">Intel</span>

@@ -7,7 +7,6 @@ import { IntelBadge } from "../shared/intel-badge";
 import { PlayerName } from "../shared/player-name";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
-import { StatusBanner } from "../shared/status-banner";
 import { Search, Loader2, CheckCircle } from "@/shared/icons";
 
 interface InjuredPlayer {
@@ -75,12 +74,6 @@ export function InjuryReportView({ data, app, navigate }: { data: InjuryReportDa
 
   return (
     <div className="space-y-2">
-      <StatusBanner
-        text={totalInjured + " INJURED / " + ilCount + " ON IL"}
-        subtitle={hasAnyIssues ? activeCount + " in active lineup need attention" : "Roster is healthy"}
-        variant={hasAnyIssues ? "alert" : "success"}
-      />
-
       <AiInsight recommendation={data.ai_recommendation} />
 
       <div className="kpi-grid">

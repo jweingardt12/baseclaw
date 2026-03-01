@@ -8,12 +8,6 @@ var URGENCY_BORDER: Record<string, string> = {
   info: "border-l-[var(--sem-info)]",
 };
 
-var URGENCY_HOVER: Record<string, string> = {
-  urgent: "glow-risk",
-  opportunity: "glow-success",
-  info: "glow-info",
-};
-
 interface ActionCardProps {
   icon?: React.ReactNode;
   title: string;
@@ -28,7 +22,7 @@ interface ActionCardProps {
 
 export function ActionCard({ icon, title, description, buttonText, onClick, urgency = "info", loading, className, children }: ActionCardProps) {
   return (
-    <div className={cn("glass-card p-3 border-l-4 card-highlight", URGENCY_BORDER[urgency] || URGENCY_BORDER.info, className)}>
+    <div className={cn("rounded-md border bg-card p-3 border-l-4", URGENCY_BORDER[urgency] || URGENCY_BORDER.info, className)}>
       <div className="flex items-center gap-3">
         {icon && <div className="shrink-0">{icon}</div>}
         <div className="flex-1 min-w-0">

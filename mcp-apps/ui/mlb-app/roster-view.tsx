@@ -1,6 +1,6 @@
 import { Badge } from "../components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { StatusBanner } from "../shared/status-banner";
+
 import { PlayerName } from "../shared/player-name";
 
 interface MlbRosterPlayer {
@@ -17,8 +17,7 @@ interface MlbRosterData {
 export function RosterView({ data, app, navigate }: { data: MlbRosterData; app?: any; navigate?: (data: any) => void }) {
   return (
     <div className="space-y-3">
-      <StatusBanner text={data.team_name + " Roster"} subtitle={(data.players || []).length + " players"} variant="info" />
-      <div className="glass-card overflow-hidden">
+      <div className="rounded-md border bg-card overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

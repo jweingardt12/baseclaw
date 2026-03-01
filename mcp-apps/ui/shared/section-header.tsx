@@ -14,7 +14,7 @@ export function SectionHeader({ icon: Icon, title, count, children, className }:
   return (
     <div className={cn("flex items-center gap-2 mb-2", className)}>
       {Icon && <Icon className="h-5 w-5 text-primary" />}
-      <h2 className="text-lg scoreboard-heading">{title}</h2>
+      <h2 className="text-lg font-semibold">{title}</h2>
       {count !== undefined && <Badge variant="secondary" className="text-xs">{count}</Badge>}
       <div className="flex-1" />
       {children}

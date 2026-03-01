@@ -1,12 +1,12 @@
 import { cn } from "../lib/utils";
 
-var VARIANT_COLORS: Record<string, string> = {
-  success: "bg-sem-success badge-glow text-sem-success",
-  warning: "bg-sem-warning badge-glow text-sem-warning",
-  risk: "bg-sem-risk badge-glow text-sem-risk",
-  info: "bg-sem-info badge-glow text-sem-info",
-  neutral: "bg-sem-neutral badge-glow text-sem-neutral",
-  gold: "bg-primary badge-glow text-primary",
+var VARIANT_STYLES: Record<string, { bg: string; text: string }> = {
+  success: { bg: "bg-sem-success-subtle", text: "text-sem-success" },
+  warning: { bg: "bg-sem-warning-subtle", text: "text-sem-warning" },
+  risk: { bg: "bg-sem-risk-subtle", text: "text-sem-risk" },
+  info: { bg: "bg-sem-info-subtle", text: "text-sem-info" },
+  neutral: { bg: "bg-sem-neutral-subtle", text: "text-sem-neutral" },
+  gold: { bg: "bg-sem-info-subtle", text: "text-primary" },
 };
 
 var SIZE_MAP: Record<string, string> = {
@@ -33,17 +33,13 @@ function gradeToVariant(grade: string): string {
 
 export function VerdictBadge({ grade, variant, size = "md", className }: VerdictBadgeProps) {
   var v = variant || gradeToVariant(grade);
-  var colors = VARIANT_COLORS[v] || VARIANT_COLORS.neutral;
-  /* Use subtle bg (12% tint) + full text color */
-  var bgParts = colors.split(" ");
-  var bgClass = bgParts[0] + "-subtle";
-  var textClass = bgParts[2] || "text-foreground";
+  var style = VARIANT_STYLES[v] || VARIANT_STYLES.neutral;
 
   return (
     <span className={cn(
       "inline-flex items-center justify-center rounded-full font-bold tracking-wide text-center",
-      bgClass,
-      textClass,
+      style.bg,
+      style.text,
       SIZE_MAP[size] || SIZE_MAP.md,
       className,
     )}>

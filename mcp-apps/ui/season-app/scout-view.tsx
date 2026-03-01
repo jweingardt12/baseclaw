@@ -6,7 +6,6 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from ".
 import { useCallTool } from "../shared/use-call-tool";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
-import { StatusBanner } from "../shared/status-banner";
 import { Shield, TrendingUp, TrendingDown, Target, AlertTriangle, Loader2, RefreshCw } from "@/shared/icons";
 
 interface ScoutCategory {
@@ -70,12 +69,6 @@ export function ScoutView({ data, app, navigate }: { data: ScoutOpponentData; ap
 
   return (
     <div className="space-y-2">
-      <StatusBanner
-        text={"SCOUTING: " + (d.opponent || "").toUpperCase()}
-        subtitle={"Week " + d.week + " - " + score.wins + "-" + score.losses + (score.ties > 0 ? "-" + score.ties : "")}
-        variant="info"
-      />
-
       <AiInsight recommendation={d.ai_recommendation} />
 
       <div className="kpi-grid">

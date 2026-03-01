@@ -73,7 +73,7 @@ export function RedditView({ data, app, navigate }: { data: RedditData; app: any
         )}
         {(data.posts || []).map(function(post, i) {
           return (
-            <div key={i} className="glass-card p-3 space-y-2 card-highlight">
+            <div key={i} className="rounded-md border bg-card p-3 space-y-2">
               <div className="flex items-start gap-3">
                 {/* Score column */}
                 <div className={"flex flex-col items-center shrink-0 pt-0.5 " + scoreColor(post.score)}>

@@ -1,7 +1,7 @@
 import { Button } from "../components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
 import { useCallTool } from "../shared/use-call-tool";
-import { StatusBanner } from "../shared/status-banner";
+
 import { ChevronLeft, ChevronRight, Loader2 } from "@/shared/icons";
 
 interface PastTeamEntry {
@@ -32,9 +32,7 @@ export function PastTeamsView({ data, app, navigate }: { data: PastTeamsData; ap
         <Button variant="outline" size="sm" disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <div className="flex-1">
-          <StatusBanner text={"Teams - " + data.year} variant="info" />
-        </div>
+        <span className="flex-1 text-center text-sm font-bold">{"Teams - " + data.year}</span>
         <Button variant="outline" size="sm" disabled={data.year >= 2026 || loading} onClick={() => changeYear(data.year + 1)}>
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -45,7 +43,7 @@ export function PastTeamsView({ data, app, navigate }: { data: PastTeamsData; ap
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         )}
-        <div className="glass-card overflow-hidden">
+        <div className="rounded-md border bg-card overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>

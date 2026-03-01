@@ -8,7 +8,6 @@ import { PlayerName } from "../shared/player-name";
 import { TrendIndicator } from "../shared/trend-indicator";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
-import { StatusBanner } from "../shared/status-banner";
 import { AlertTriangle, ArrowRightLeft, Activity, TrendingUp, Star, UserPlus, Loader2 } from "@/shared/icons";
 import { TeamLogo } from "../shared/team-logo";
 
@@ -75,12 +74,6 @@ export function WhatsNewView({ data, app, navigate }: { data: WhatsNewData; app:
 
   return (
     <div className="space-y-2">
-      <StatusBanner
-        text={totalItems + " ITEMS NEED ATTENTION"}
-        subtitle={data.check_time || data.last_check}
-        variant={totalItems > 0 ? "alert" : "success"}
-      />
-
       <AiInsight recommendation={data.ai_recommendation} />
 
       <div className="kpi-grid">

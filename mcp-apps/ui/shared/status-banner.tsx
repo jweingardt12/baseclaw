@@ -1,14 +1,14 @@
 import { cn } from "../lib/utils";
 
-var VARIANT_GRADIENT: Record<string, string> = {
-  winning: "gradient-banner-success",
-  losing: "gradient-banner-risk",
-  tied: "gradient-banner-warning",
-  alert: "gradient-banner-risk",
-  info: "gradient-banner-info",
-  success: "gradient-banner-success",
-  gold: "gradient-banner-gold",
-  neutral: "gradient-banner-neutral",
+var VARIANT_ACCENT: Record<string, string> = {
+  winning: "border-l-[var(--sem-success)]",
+  losing: "border-l-[var(--sem-risk)]",
+  tied: "border-l-[var(--sem-warning)]",
+  alert: "border-l-[var(--sem-risk)]",
+  info: "border-l-[var(--sem-info)]",
+  success: "border-l-[var(--sem-success)]",
+  gold: "border-l-[var(--color-primary)]",
+  neutral: "border-l-[var(--sem-neutral)]",
 };
 
 interface StatusBannerProps {
@@ -20,9 +20,9 @@ interface StatusBannerProps {
 
 export function StatusBanner({ text, subtitle, variant = "info", className }: StatusBannerProps) {
   return (
-    <div className={cn("gradient-banner", VARIANT_GRADIENT[variant] || VARIANT_GRADIENT.info, className)}>
-      <div className="text-2xl-app tracking-wide" style={{ color: "#fff" }}>{text}</div>
-      {subtitle && <div className="text-sm mt-0.5" style={{ color: "rgba(255,255,255,0.82)" }}>{subtitle}</div>}
+    <div className={cn("border-l-4 py-2 px-3", VARIANT_ACCENT[variant] || VARIANT_ACCENT.info, className)}>
+      <div className="text-lg font-semibold">{text}</div>
+      {subtitle && <div className="text-sm text-muted-foreground mt-0.5">{subtitle}</div>}
     </div>
   );
 }
