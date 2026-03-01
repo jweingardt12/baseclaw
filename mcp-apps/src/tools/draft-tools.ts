@@ -177,4 +177,33 @@ export function registerDraftTools(server: McpServer, distDir: string) {
       } catch (e) { return toolError(e); }
     },
   );
+
+  // yahoo_draft_board
+  registerAppTool(
+    server,
+    "yahoo_draft_board",
+    {
+      description: "Show visual draft board with all picks, position tracking, and next pick countdown",
+      annotations: { readOnlyHint: true },
+      _meta: { ui: { resourceUri: DRAFT_URI } },
+    },
+    async () => {
+      try {
+        var data = await apiGet<DraftStatusResponse>("/api/draft-status");
+        var totalPicks = data.total_picks || 0;
+        var round = data.current_round || 0;
+        var text = "Draft Board:\n"
+          + "  Total Picks: " + totalPicks + "\n"
+          + "  Current Round: " + round + "\n"
+          + "  Your Roster: " + (data.hitters || 0) + "H / " + (data.pitchers || 0) + "P";
+        if (data.draft_results && data.draft_results.length > 0) {
+          text = text + "\n  Picks made: " + data.draft_results.length;
+        }
+        return {
+          content: [{ type: "text" as const, text }],
+          structuredContent: { type: "draft-board", ai_recommendation: null, ...data },
+        };
+      } catch (e) { return toolError(e); }
+    },
+  );
 }

@@ -386,6 +386,29 @@ def api_projections_update():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/projection-disagreements", methods=["GET"])
+def api_projection_disagreements():
+    try:
+        pos_type = request.args.get("pos_type", "B")
+        count = int(request.args.get("count", "20"))
+        stats_type = "bat" if pos_type == "B" else "pit"
+        result = valuations.compute_projection_disagreements(stats_type=stats_type, count=count)
+        return jsonify({"pos_type": pos_type, "disagreements": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/park-factors", methods=["GET"])
+def api_park_factors():
+    try:
+        factors = []
+        for team, factor in sorted(valuations.PARK_FACTORS.items()):
+            factors.append({"team": team, "factor": factor})
+        return jsonify({"park_factors": factors})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # --- Season Manager (season-manager.py) ---
 # TS tools call: /api/lineup-optimize, /api/category-check, etc.
 

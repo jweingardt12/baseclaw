@@ -327,11 +327,24 @@ export interface DailyUpdateResponse {
 }
 
 // Draft responses
+export interface DraftPick {
+  round: number;
+  pick: number;
+  team_key: string;
+  team_name?: string;
+  player_name: string;
+  player_key?: string;
+  position?: string;
+}
+
 export interface DraftStatusResponse {
   total_picks: number;
   current_round: number;
   hitters: number;
   pitchers: number;
+  draft_results?: DraftPick[];
+  num_teams?: number;
+  your_team_key?: string;
 }
 
 // Python recommend returns: recommendation (not strategy), top_hitters/top_pitchers (not hitters/pitchers)

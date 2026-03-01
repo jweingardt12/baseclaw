@@ -230,12 +230,76 @@ class DraftAssistant:
         picks = self.refresh()
 
         if as_json:
-            return {
+            result = {
                 "total_picks": picks,
                 "current_round": self.current_round,
                 "hitters": self.my_hitters,
                 "pitchers": self.my_pitchers,
             }
+
+            # Include draft results for draft board view
+            try:
+                draft = self.lg.draft_results()
+                settings = self.lg.settings()
+                num_teams = int(settings.get("num_teams", 12))
+                result["num_teams"] = num_teams
+                result["your_team_key"] = TEAM_ID
+
+                # Build team name mapping
+                team_names = {}
+                try:
+                    teams = self.lg.teams()
+                    for tk, td in teams.items():
+                        team_names[str(tk)] = td.get("name", "?")
+                except Exception:
+                    pass
+
+                # Resolve player names in batches
+                player_ids = []
+                for pick in draft:
+                    pid = pick.get("player_id", "")
+                    if pid and pid not in player_ids:
+                        player_ids.append(pid)
+
+                player_info = {}
+                for i in range(0, len(player_ids), 25):
+                    batch = player_ids[i:i + 25]
+                    try:
+                        details = self.lg.player_details(batch)
+                        if details:
+                            for d in details:
+                                pid = d.get("player_id", "")
+                                pname = d.get("name", "Unknown")
+                                if isinstance(pname, dict):
+                                    pname = pname.get("full", "Unknown")
+                                pos = d.get("display_position", "")
+                                player_info[str(pid)] = {
+                                    "name": str(pname),
+                                    "position": pos,
+                                }
+                    except Exception:
+                        pass
+
+                draft_results = []
+                for pick in draft:
+                    pid = str(pick.get("player_id", ""))
+                    team_key = str(pick.get("team_key", ""))
+                    info = player_info.get(pid, {})
+                    draft_results.append({
+                        "round": pick.get("round", 0),
+                        "pick": pick.get("pick", 0),
+                        "team_key": team_key,
+                        "team_name": team_names.get(team_key, "?"),
+                        "player_name": info.get("name", "Player " + pid),
+                        "player_key": pid,
+                        "position": info.get("position", ""),
+                    })
+
+                result["draft_results"] = draft_results
+            except Exception as e:
+                result["draft_results"] = []
+
+            return result
 
         print("Total picks made:", picks)
         print("Your round:", self.current_round)

@@ -278,6 +278,16 @@ RATIO_PITCHING = ["ERA", "WHIP"]
 # Positional scarcity bonuses
 POS_BONUS = {"C": 1.5, "SS": 1.5, "2B": 0.5, "3B": 0.5, "RP": 0.5}
 
+# Park factors (2024-2025 Baseball Savant, 1.0 = neutral)
+PARK_FACTORS = {
+    "COL": 1.15, "CIN": 1.08, "BOS": 1.06, "CHC": 1.04, "ARI": 1.03,
+    "TEX": 1.02, "ATL": 1.02, "PHI": 1.01, "LAD": 1.01, "MIN": 1.01,
+    "TOR": 1.00, "NYY": 1.00, "BAL": 1.00, "HOU": 1.00, "DET": 0.99,
+    "CLE": 0.99, "WSH": 0.99, "STL": 0.98, "LAA": 0.98, "MIL": 0.98,
+    "PIT": 0.97, "CHW": 0.97, "KC": 0.97, "NYM": 0.96, "OAK": 0.96,
+    "SEA": 0.95, "TB": 0.94, "SD": 0.93, "SF": 0.93, "MIA": 0.92,
+}
+
 # Minimum thresholds (filter out tiny samples)
 MIN_PA = 200
 MIN_IP = 30
@@ -364,6 +374,52 @@ def load_pitchers_csv():
     return df
 
 
+def get_park_factor(team):
+    """Look up park factor for a team abbreviation. Returns 1.0 if unknown."""
+    if not team or pd.isna(team):
+        return 1.0
+    return PARK_FACTORS.get(str(team).strip().upper(), 1.0)
+
+
+def apply_park_factors(df, stats_type):
+    """Apply park factor adjustments to a DataFrame of derived stats.
+    For hitters: counting stats scaled by park factor, ratios by sqrt(factor).
+    For pitchers: ERA/ER scaled by inverse factor (boost pitchers in hitter parks).
+    Returns modified DataFrame (in-place).
+    """
+    if "Team" not in df.columns:
+        return df
+
+    pf = df["Team"].apply(get_park_factor)
+    pf_sqrt = np.sqrt(pf)
+
+    if stats_type == "bat":
+        # Counting stats: divide by park factor to normalize
+        for col in ["R", "HR", "RBI", "H", "TB", "XBH"]:
+            if col in df.columns:
+                df[col] = df[col] / pf
+        # Ratio stats: modest adjustment via sqrt
+        for col in ["AVG", "OBP"]:
+            if col in df.columns:
+                df[col] = df[col] / pf_sqrt
+        # K and NSB are not park-dependent
+    else:
+        # Pitchers: ERA/ER benefit from hitter-friendly parks (divide by factor)
+        inv_pf = 1.0 / pf
+        for col in ["ERA", "ER"]:
+            if col in df.columns:
+                df[col] = df[col] * inv_pf
+        # WHIP gets modest inverse adjustment
+        inv_pf_sqrt = 1.0 / pf_sqrt
+        if "WHIP" in df.columns:
+            df["WHIP"] = df["WHIP"] * inv_pf_sqrt
+
+    # Store park factor on the DataFrame for downstream use
+    df["ParkFactor"] = pf
+
+    return df
+
+
 def derive_hitter_stats(df):
     """Derive league-specific stats from FanGraphs columns"""
     out = pd.DataFrame()
@@ -405,6 +461,9 @@ def derive_hitter_stats(df):
     # NSB = SB - CS
     out["NSB"] = df.get("SB", 0) - df.get("CS", 0)
 
+    # Apply park factor adjustments before z-score computation
+    out = apply_park_factors(out, "bat")
+
     return out
 
 
@@ -441,6 +500,9 @@ def derive_pitcher_stats(df):
         out["ER"] = df["ER"]
     else:
         out["ER"] = (df.get("ERA", 0) * df.get("IP", 0) / 9.0).round(0)
+
+    # Apply park factor adjustments before z-score computation
+    out = apply_park_factors(out, "pit")
 
     return out
 
@@ -572,6 +634,107 @@ def compute_pitcher_zscores(df):
     working["Z_Final"] = working["Z_Total"] + working["Z_PosAdj"]
 
     return working
+
+
+def compute_projection_disagreements(stats_type="bat", count=20):
+    """Compare z-scores across projection systems to find disagreements.
+    Returns list of players sorted by disagreement level (highest first).
+    """
+    systems = ["steamer", "zips", "depthcharts"]
+    system_zscores = {}
+
+    for system in systems:
+        sys_path = _proj_csv_path(stats_type, proj_type=system)
+        if not os.path.exists(sys_path):
+            continue
+        try:
+            df = pd.read_csv(sys_path)
+            df.columns = df.columns.str.strip()
+            if stats_type == "bat":
+                derived = derive_hitter_stats(df)
+                scored = compute_hitter_zscores(derived)
+            else:
+                derived = derive_pitcher_stats(df)
+                scored = compute_pitcher_zscores(derived)
+
+            if scored is not None and "Z_Final" in scored.columns:
+                lookup = {}
+                for _, row in scored.iterrows():
+                    name = str(row.get("Name", "")).strip()
+                    if name:
+                        lookup[name.lower()] = round(_safe_float(row.get("Z_Final", 0)), 2)
+                system_zscores[system] = lookup
+        except Exception as e:
+            print("Warning: could not load " + system + " for disagreement check: " + str(e))
+
+    if len(system_zscores) < 2:
+        return []
+
+    # Get consensus z-scores for reference
+    hitters, pitchers, source = _get_loaded_data()
+    consensus_df = hitters if stats_type == "bat" else pitchers
+    consensus_lookup = {}
+    if consensus_df is not None and "Z_Final" in consensus_df.columns:
+        for _, row in consensus_df.iterrows():
+            name = str(row.get("Name", "")).strip()
+            if name:
+                consensus_lookup[name.lower()] = {
+                    "z_final": round(_safe_float(row.get("Z_Final", 0)), 2),
+                    "team": str(row.get("Team", "")),
+                    "pos": str(row.get("Pos", "")),
+                    "name_display": name,
+                }
+
+    # Find all players in 2+ systems
+    all_names = set()
+    for lookup in system_zscores.values():
+        all_names.update(lookup.keys())
+
+    disagreements = []
+    for name_lower in all_names:
+        z_values = []
+        per_system = {}
+        for system in systems:
+            z = system_zscores.get(system, {}).get(name_lower)
+            if z is not None:
+                z_values.append(z)
+                per_system[system] = z
+
+        if len(z_values) < 2:
+            continue
+
+        std_dev = float(np.std(z_values))
+        z_range = max(z_values) - min(z_values)
+        consensus_info = consensus_lookup.get(name_lower, {})
+
+        if std_dev < 0.3:
+            continue
+
+        entry = {
+            "name": consensus_info.get("name_display", name_lower.title()),
+            "team": consensus_info.get("team", ""),
+            "pos": consensus_info.get("pos", ""),
+            "consensus_z": consensus_info.get("z_final", 0),
+            "disagreement": round(std_dev, 2),
+            "z_range": round(z_range, 2),
+        }
+        for system in systems:
+            entry[system + "_z"] = per_system.get(system)
+
+        # Determine disagreement level
+        if std_dev >= 1.5:
+            entry["level"] = "extreme"
+        elif std_dev >= 1.0:
+            entry["level"] = "high"
+        elif std_dev >= 0.5:
+            entry["level"] = "moderate"
+        else:
+            entry["level"] = "low"
+
+        disagreements.append(entry)
+
+    disagreements.sort(key=lambda x: x.get("disagreement", 0), reverse=True)
+    return disagreements[:count]
 
 
 def get_pos_bonus(pos_str):
@@ -1157,14 +1320,18 @@ def cmd_rankings(args, as_json=False):
         players = []
         for i, (_, row) in enumerate(df.iterrows(), 1):
             z = _safe_float(row.get("Z_Final", 0))
-            players.append({
+            entry = {
                 "rank": i,
                 "name": str(row.get("Name", "?")),
                 "team": str(row.get("Team", "")),
                 "pos": str(row.get("Pos", "")),
                 "z_score": round(z, 2),
                 "mlb_id": get_mlb_id(str(row.get("Name", ""))),
-            })
+            }
+            pf = row.get("ParkFactor")
+            if pf is not None and not pd.isna(pf):
+                entry["park_factor"] = round(float(pf), 2)
+            players.append(entry)
         enrich_with_intel(players)
         return {"source": source, "pos_type": pos_type, "players": players}
 
@@ -1296,7 +1463,7 @@ def cmd_value(args, as_json=False):
     if as_json:
         players = []
         for p in results:
-            skip = {"Name", "Team", "Pos", "_type"}
+            skip = {"Name", "Team", "Pos", "_type", "ParkFactor"}
             raw_stats = {}
             z_scores = {}
             for k in p.keys():
@@ -1310,14 +1477,18 @@ def cmd_value(args, as_json=False):
                     z_scores[label] = round(float(val), 2) if isinstance(val, (int, float)) else val
                 else:
                     raw_stats[k] = round(float(val), 3) if isinstance(val, float) else val
-            players.append({
+            entry = {
                 "name": str(p.get("Name", "?")),
                 "type": str(p.get("_type", "?")),
                 "team": str(p.get("Team", "")),
                 "pos": str(p.get("Pos", "")),
                 "raw_stats": raw_stats,
                 "z_scores": z_scores,
-            })
+            }
+            pf = p.get("ParkFactor")
+            if pf is not None and not pd.isna(pf):
+                entry["park_factor"] = round(float(pf), 2)
+            players.append(entry)
         enrich_with_intel(players)
         return {"players": players}
 

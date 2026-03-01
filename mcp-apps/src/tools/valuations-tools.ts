@@ -3,7 +3,7 @@ import { registerAppTool, registerAppResource, RESOURCE_MIME_TYPE } from "@model
 import { z } from "zod";
 import * as fs from "fs/promises";
 import * as path from "path";
-import { apiGet, toolError } from "../api/python-client.js";
+import { apiGet, apiPost, toolError } from "../api/python-client.js";
 import { generateRankingsInsight, generateCompareInsight } from "../insights.js";
 import { str, type RankingsResponse, type CompareResponse, type ValueResponse } from "../api/types.js";
 
@@ -132,7 +132,10 @@ export function registerValuationsTools(server: McpServer, distDir: string) {
         }
         const zFinal = p.z_scores["Final"] || 0;
         const tier = (p.intel && p.intel.statcast && p.intel.statcast.quality_tier) ? " {" + p.intel.statcast.quality_tier + "}" : "";
-        const lines = ["Value Breakdown: " + p.name + " (" + str(p.pos) + ", " + str(p.team) + ", z=" + zFinal.toFixed(2) + ")" + tier];
+        var parkLabel = "";
+        var pf = (p as any).park_factor;
+        if (pf != null) parkLabel = "  PF=" + Number(pf).toFixed(2);
+        const lines = ["Value Breakdown: " + p.name + " (" + str(p.pos) + ", " + str(p.team) + ", z=" + zFinal.toFixed(2) + ")" + tier + parkLabel];
         const categories: Array<{ category: string; z_score: number; raw_stat: number | null }> = [];
         for (const [cat, z] of Object.entries(p.z_scores)) {
           if (cat === "Final") continue;
@@ -151,8 +154,71 @@ export function registerValuationsTools(server: McpServer, distDir: string) {
             pos: p.pos,
             player_type: p.type,
             z_final: zFinal,
+            park_factor: pf || null,
             categories,
           },
+        };
+      } catch (e) { return toolError(e); }
+    },
+  );
+
+  // yahoo_projections_update
+  registerAppTool(
+    server,
+    "yahoo_projections_update",
+    {
+      description: "Force-refresh player projections from FanGraphs. Use before draft to get latest data. proj_type: 'consensus' (default, blends all systems), 'steamer', 'zips', or 'depthcharts'",
+      inputSchema: {
+        proj_type: z.string().describe("Projection system: consensus, steamer, zips, or depthcharts").default("consensus"),
+      },
+      annotations: { readOnlyHint: false },
+      _meta: { ui: { resourceUri: VALUATIONS_URI } },
+    },
+    async ({ proj_type }) => {
+      try {
+        var data = await apiPost<any>("/api/projections-update", { proj_type });
+        var lines = ["Projections Updated (" + proj_type + "):"];
+        for (var key of Object.keys(data)) {
+          if (key !== "error") {
+            lines.push("  " + key + ": " + String(data[key]));
+          }
+        }
+        return {
+          content: [{ type: "text" as const, text: lines.join("\n") }],
+          structuredContent: { type: "projections-update", proj_type, ...data },
+        };
+      } catch (e) { return toolError(e); }
+    },
+  );
+
+  // yahoo_projection_disagreements
+  registerAppTool(
+    server,
+    "yahoo_projection_disagreements",
+    {
+      description: "Show players where projection systems (Steamer, ZiPS, Depth Charts) disagree most on value. Useful for finding draft sleepers/busts",
+      inputSchema: {
+        pos_type: z.string().describe("B for batters, P for pitchers").default("B"),
+        count: z.number().describe("Number of players to show").default(20),
+      },
+      annotations: { readOnlyHint: true },
+      _meta: { ui: { resourceUri: VALUATIONS_URI } },
+    },
+    async ({ pos_type, count }) => {
+      try {
+        var data = await apiGet<any>("/api/projection-disagreements", { pos_type, count: String(count) });
+        var lines = ["Projection Disagreements (" + (pos_type === "B" ? "Hitters" : "Pitchers") + "):"];
+        var disag = data.disagreements || [];
+        for (var d of disag) {
+          var systems = [];
+          if (d.steamer_z != null) systems.push("Stm=" + d.steamer_z.toFixed(1));
+          if (d.zips_z != null) systems.push("ZiP=" + d.zips_z.toFixed(1));
+          if (d.depthcharts_z != null) systems.push("DC=" + d.depthcharts_z.toFixed(1));
+          lines.push("  " + str(d.name).padEnd(22) + " consensus=" + (d.consensus_z || 0).toFixed(1) + "  " + systems.join(" ") + "  [" + (d.level || "?") + "]");
+        }
+        return {
+          content: [{ type: "text" as const, text: lines.join("\n") }],
+          structuredContent: { type: "projection-disagreements", ...data },
         };
       } catch (e) { return toolError(e); }
     },
