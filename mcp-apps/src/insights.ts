@@ -32,6 +32,10 @@ import type {
   ILStashAdvisorResponse,
   OptimalMovesResponse,
   PlayoffPlannerResponse,
+  RivalHistoryOverviewResponse,
+  RivalHistoryDetailResponse,
+  AchievementsResponse,
+  WeeklyNarrativeResponse,
 } from "./api/types.js";
 
 export function generateLineupInsight(data: LineupOptimizeResponse): string | null {
@@ -414,6 +418,70 @@ export function generatePlayoffPlannerInsight(data: PlayoffPlannerResponse): str
   var targets = data.target_categories || [];
   if (targets.length > 0) {
     parts.push("Target: " + targets.slice(0, 3).join(", ") + ".");
+  }
+  return parts.join(" ");
+}
+
+export function generateRivalHistoryInsight(data: RivalHistoryOverviewResponse | RivalHistoryDetailResponse): string | null {
+  if ("rivals" in data) {
+    var rivals = (data as RivalHistoryOverviewResponse).rivals || [];
+    if (rivals.length === 0) return null;
+    var best = rivals[0];
+    var worst = rivals[rivals.length - 1];
+    var parts: string[] = [];
+    parts.push("Best record vs " + best.opponent + " (" + best.record + ").");
+    if (worst.wins < worst.losses) {
+      parts.push("Toughest rival: " + worst.opponent + " (" + worst.record + ").");
+    }
+    return parts.join(" ");
+  }
+  var detail = data as RivalHistoryDetailResponse;
+  var dParts: string[] = [];
+  dParts.push(detail.all_time_record + " all-time vs " + detail.opponent + ".");
+  var edge = detail.category_edge || { you_dominate: [], they_dominate: [] };
+  if (edge.you_dominate.length > 0) {
+    dParts.push("You dominate: " + edge.you_dominate.slice(0, 3).join(", ") + ".");
+  }
+  if (edge.they_dominate.length > 0) {
+    dParts.push("They dominate: " + edge.they_dominate.slice(0, 3).join(", ") + ".");
+  }
+  return dParts.join(" ");
+}
+
+export function generateAchievementsInsight(data: AchievementsResponse): string | null {
+  var earned = data.total_earned || 0;
+  var total = data.total_available || 0;
+  var parts: string[] = [];
+  parts.push(earned + "/" + total + " achievements earned.");
+  var recent = (data.achievements || []).filter(function (a) { return a.earned; });
+  if (recent.length > 0) {
+    var names = recent.slice(0, 3).map(function (a) { return a.name; });
+    parts.push("Unlocked: " + names.join(", ") + ".");
+  }
+  var next = (data.achievements || []).filter(function (a) { return !a.earned; });
+  if (next.length > 0) {
+    parts.push("Next up: " + next[0].name + " - " + next[0].description + ".");
+  }
+  return parts.join(" ");
+}
+
+export function generateWeeklyNarrativeInsight(data: WeeklyNarrativeResponse): string | null {
+  var parts: string[] = [];
+  var resultWord = data.result === "win" ? "Victory" : data.result === "loss" ? "Defeat" : "Draw";
+  parts.push("Week " + data.week + " " + resultWord + " (" + data.score + ") vs " + data.opponent + ".");
+  if (data.mvp_category && data.mvp_category.name) {
+    parts.push("MVP: " + data.mvp_category.name + " (" + data.mvp_category.your_value + " vs " + data.mvp_category.opp_value + ").");
+  }
+  if (data.weakness && data.weakness.name) {
+    parts.push("Weakness: " + data.weakness.name + ".");
+  }
+  if (data.standings_change && data.standings_change.direction === "up") {
+    parts.push("Climbed to #" + data.standings_change.to + ".");
+  } else if (data.standings_change && data.standings_change.direction === "down") {
+    parts.push("Dropped to #" + data.standings_change.to + ".");
+  }
+  if (data.key_moves && data.key_moves.length > 0) {
+    parts.push(data.key_moves.length + " roster move" + (data.key_moves.length === 1 ? "" : "s") + " this week.");
   }
   return parts.join(" ");
 }

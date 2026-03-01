@@ -7,6 +7,7 @@ import os
 import sqlite3
 import importlib
 import urllib.request
+import random
 from datetime import datetime, date, timedelta
 
 import yahoo_fantasy_api as yfa
@@ -5997,6 +5998,1454 @@ def cmd_playoff_planner(args, as_json=False):
     print("Summary: " + summary)
 
 
+def cmd_trash_talk(args, as_json=False):
+    """Generate trash talk lines based on your current matchup context"""
+    intensity = "competitive"
+    if args:
+        if args[0] in ("friendly", "competitive", "savage"):
+            intensity = args[0]
+
+    if not as_json:
+        print("Trash Talk Generator (" + intensity + ")")
+        print("=" * 50)
+
+    sc, gm, lg = get_league()
+
+    # ── 1. Get matchup data ──
+    try:
+        stat_cats = lg.stat_categories()
+        stat_id_to_name = {}
+        for cat in stat_cats:
+            sid = str(cat.get("stat_id", ""))
+            display = cat.get("display_name", cat.get("name", "Stat " + sid))
+            stat_id_to_name[sid] = display
+    except Exception as e:
+        stat_cats = []
+        stat_id_to_name = {}
+        if not as_json:
+            print("  Warning: could not fetch stat categories: " + str(e))
+
+    try:
+        raw = lg.matchups()
+    except Exception as e:
+        if as_json:
+            return {"error": "Error fetching matchup data: " + str(e)}
+        print("Error fetching matchup data: " + str(e))
+        return
+
+    if not raw:
+        if as_json:
+            return {"error": "No matchup data available"}
+        print("No matchup data available")
+        return
+
+    opp_name = None
+    wins = 0
+    losses = 0
+    ties = 0
+    winning_cats = []
+    losing_cats = []
+    my_best_stat = None
+    my_best_stat_val = None
+    opp_worst_stat = None
+    opp_worst_stat_val = None
+    week = "?"
+
+    try:
+        league_data = raw.get("fantasy_content", {}).get("league", [])
+        if len(league_data) < 2:
+            if as_json:
+                return {"error": "No matchup data in response"}
+            print("No matchup data in response")
+            return
+
+        sb_data = league_data[1].get("scoreboard", {})
+        week = sb_data.get("week", "?")
+        matchup_block = sb_data.get("0", {}).get("matchups", {})
+        count = int(matchup_block.get("count", 0))
+
+        for i in range(count):
+            matchup = matchup_block.get(str(i), {}).get("matchup", {})
+            teams_data = matchup.get("0", {}).get("teams", {})
+            team1_data = teams_data.get("0", {})
+            team2_data = teams_data.get("1", {})
+
+            def _get_name(tdata):
+                if isinstance(tdata, dict):
+                    team_info = tdata.get("team", [])
+                    if isinstance(team_info, list) and len(team_info) > 0:
+                        for item in team_info[0] if isinstance(team_info[0], list) else team_info:
+                            if isinstance(item, dict) and "name" in item:
+                                return item.get("name", "?")
+                return "?"
+
+            def _get_key(tdata):
+                if isinstance(tdata, dict):
+                    team_info = tdata.get("team", [])
+                    if isinstance(team_info, list) and len(team_info) > 0:
+                        for item in team_info[0] if isinstance(team_info[0], list) else team_info:
+                            if isinstance(item, dict) and "team_key" in item:
+                                return item.get("team_key", "")
+                return ""
+
+            name1 = _get_name(team1_data)
+            name2 = _get_name(team2_data)
+            key1 = _get_key(team1_data)
+            key2 = _get_key(team2_data)
+
+            if TEAM_ID not in key1 and TEAM_ID not in key2:
+                continue
+
+            # Found our matchup
+            if TEAM_ID in key1:
+                my_data = team1_data
+                opp_data = team2_data
+                opp_name = name2
+            else:
+                my_data = team2_data
+                opp_data = team1_data
+                opp_name = name1
+
+            my_key = _get_key(my_data)
+
+            def _get_stats(tdata):
+                stats = {}
+                team_info = tdata.get("team", [])
+                if isinstance(team_info, list):
+                    for block in team_info:
+                        if isinstance(block, dict) and "team_stats" in block:
+                            raw_stats = block.get("team_stats", {}).get("stats", [])
+                            for s in raw_stats:
+                                stat = s.get("stat", {})
+                                sid = str(stat.get("stat_id", ""))
+                                val = stat.get("value", "0")
+                                stats[sid] = val
+                return stats
+
+            my_stats = _get_stats(my_data)
+            opp_stats = _get_stats(opp_data)
+
+            # Extract stat winners
+            stat_winners = matchup.get("stat_winners", [])
+            cat_results = {}
+            for sw in stat_winners:
+                w = sw.get("stat_winner", {})
+                sid = str(w.get("stat_id", ""))
+                if w.get("is_tied"):
+                    cat_results[sid] = "tie"
+                else:
+                    winner_key = w.get("winner_team_key", "")
+                    if winner_key == my_key:
+                        cat_results[sid] = "win"
+                    else:
+                        cat_results[sid] = "loss"
+
+            # Build category tallies
+            best_margin = 0
+            worst_margin = 0
+            for sid in cat_results:
+                cat_name = stat_id_to_name.get(sid, "Stat " + sid)
+                result = cat_results.get(sid, "tie")
+                if result == "win":
+                    wins += 1
+                    winning_cats.append(cat_name)
+                    try:
+                        my_num = float(my_stats.get(sid, "0"))
+                        opp_num = float(opp_stats.get(sid, "0"))
+                        margin = abs(my_num - opp_num)
+                        if margin > best_margin:
+                            best_margin = margin
+                            my_best_stat = cat_name
+                            my_best_stat_val = str(my_stats.get(sid, "0"))
+                    except (ValueError, TypeError):
+                        pass
+                elif result == "loss":
+                    losses += 1
+                    losing_cats.append(cat_name)
+                    try:
+                        my_num = float(my_stats.get(sid, "0"))
+                        opp_num = float(opp_stats.get(sid, "0"))
+                        margin = abs(my_num - opp_num)
+                        if margin > worst_margin:
+                            worst_margin = margin
+                            opp_worst_stat = cat_name
+                            opp_worst_stat_val = str(opp_stats.get(sid, "0"))
+                    except (ValueError, TypeError):
+                        pass
+                else:
+                    ties += 1
+
+            break  # Found our matchup
+
+    except Exception as e:
+        if as_json:
+            return {"error": "Error parsing matchup: " + str(e)}
+        print("Error parsing matchup: " + str(e))
+        return
+
+    if not opp_name:
+        if as_json:
+            return {"error": "Could not find your matchup this week"}
+        print("Could not find your matchup this week")
+        return
+
+    # ── 2. Get standings for rank context ──
+    my_rank = "?"
+    opp_rank = "?"
+    try:
+        standings = lg.standings()
+        for idx, t in enumerate(standings, 1):
+            tk = str(t.get("team_key", ""))
+            tname = t.get("name", "")
+            if TEAM_ID in tk:
+                my_rank = idx
+            if tname == opp_name:
+                opp_rank = idx
+    except Exception:
+        pass
+
+    # ── 3. Build score string ──
+    score = str(wins) + "-" + str(losses)
+    if ties > 0:
+        score = score + "-" + str(ties)
+
+    # ── 4. Generate trash talk lines from templates ──
+    context = {
+        "your_rank": my_rank,
+        "their_rank": opp_rank,
+        "score": score,
+        "week": week,
+        "winning_cats": winning_cats,
+        "losing_cats": losing_cats,
+        "best_stat": my_best_stat,
+        "best_stat_val": my_best_stat_val,
+    }
+
+    friendly_templates = [
+        "Hey " + opp_name + ", nice team... for a rebuilding year.",
+        "I'm sure " + opp_name + " looked great on draft day. What happened?",
+        "Don't worry, " + opp_name + ". There's always next week. And the week after that. And...",
+        opp_name + ", your roster is like a participation trophy -- everyone gets one.",
+        "I'd wish " + opp_name + " good luck, but even luck can't fix that lineup.",
+        "Hey " + opp_name + ", if fantasy baseball had a mercy rule, this would be it.",
+        "My bench players send their regards, " + opp_name + ".",
+    ]
+
+    competitive_templates = [
+        opp_name + " is to fantasy baseball what the Rockies are to run prevention.",
+        "Losing " + str(losses) + " categories and somehow still talking, " + opp_name + "?",
+        "Week " + str(week) + " score is " + score + " and it's not getting better for " + opp_name + ".",
+        "I've seen better rosters in 8-team leagues, " + opp_name + ".",
+        "The only thing " + opp_name + " is winning is the race to last place.",
+        opp_name + " drafted like they were reading the list upside down.",
+        "Your weekly moves can't save you from my lineup, " + opp_name + ".",
+    ]
+
+    savage_templates = [
+        "Your team's ERA looks like a phone number, " + opp_name + ".",
+        "The only thing " + opp_name + "'s roster and a dumpster fire have in common is the fire department can't help either one.",
+        "I'd trade you advice, " + opp_name + ", but you'd probably drop it.",
+        opp_name + "'s team is proof that autodraft needs a warning label.",
+        "Even your bye-week players are outperforming your starters, " + opp_name + ".",
+        "If " + opp_name + "'s roster was a stock, the SEC would investigate for fraud.",
+        opp_name + "'s team photo should be on a milk carton -- because those wins are missing.",
+    ]
+
+    # Add contextual lines based on rank differences
+    if isinstance(my_rank, int) and isinstance(opp_rank, int):
+        rank_diff = opp_rank - my_rank
+        if rank_diff > 0:
+            competitive_templates.append(
+                "I'm ranked " + str(my_rank) + " and you're ranked " + str(opp_rank) + ". Do the math, " + opp_name + "."
+            )
+            savage_templates.append(
+                str(rank_diff) + " spots separate us in the standings, " + opp_name + ". That's not a gap, it's an abyss."
+            )
+            friendly_templates.append(
+                "Ranked " + str(opp_rank) + "? At least you're consistent, " + opp_name + "."
+            )
+
+    # Add lines based on winning categories
+    if wins > losses:
+        competitive_templates.append(
+            "Up " + score + " this week. Your move, " + opp_name + ". Actually, don't bother."
+        )
+        savage_templates.append(
+            score + ". That's not a matchup, " + opp_name + ". That's a public service announcement."
+        )
+
+    if my_best_stat and my_best_stat_val:
+        competitive_templates.append(
+            "My " + my_best_stat + " at " + my_best_stat_val + " is doing things your whole roster can't, " + opp_name + "."
+        )
+        savage_templates.append(
+            "My " + my_best_stat + " alone is carrying harder than " + opp_name + "'s entire draft class."
+        )
+
+    if len(winning_cats) >= 3:
+        sample_cats = ", ".join(random.sample(winning_cats, min(3, len(winning_cats))))
+        competitive_templates.append(
+            "Dominating " + sample_cats + " and it's not even close, " + opp_name + "."
+        )
+
+    # Select templates based on intensity
+    if intensity == "friendly":
+        pool = friendly_templates
+    elif intensity == "savage":
+        pool = savage_templates
+    else:
+        pool = competitive_templates
+
+    num_lines = min(random.randint(3, 5), len(pool))
+    lines = random.sample(pool, num_lines)
+
+    # Pick the featured line (longest one tends to be the most impactful)
+    featured = max(lines, key=len)
+
+    result = {
+        "opponent": opp_name,
+        "intensity": intensity,
+        "week": week,
+        "context": {
+            "your_rank": my_rank,
+            "their_rank": opp_rank,
+            "score": score,
+        },
+        "lines": lines,
+        "featured_line": featured,
+    }
+
+    if as_json:
+        return result
+
+    print("")
+    print("vs. " + opp_name + " (Week " + str(week) + ")")
+    print("Score: " + score)
+    print("Your Rank: " + str(my_rank) + " | Their Rank: " + str(opp_rank))
+    print("")
+    print("--- Trash Talk (" + intensity + ") ---")
+    print("")
+    for line in lines:
+        print("  > " + line)
+    print("")
+    print("Featured: " + featured)
+
+
+def cmd_rival_history(args, as_json=False):
+    """Show head-to-head record against each league opponent with detailed matchup history"""
+    if not as_json:
+        print("Rival History")
+        print("=" * 50)
+
+    sc, gm, lg = get_league()
+
+    opponent_filter = ""
+    if args:
+        opponent_filter = " ".join(args).strip().lower()
+
+    # Get stat categories for names
+    try:
+        stat_cats = lg.stat_categories()
+        stat_id_to_name = {}
+        for cat in stat_cats:
+            sid = str(cat.get("stat_id", ""))
+            display = cat.get("display_name", cat.get("name", "Stat " + sid))
+            stat_id_to_name[sid] = display
+    except Exception:
+        stat_cats = []
+        stat_id_to_name = {}
+
+    # Get our team name
+    my_team_name = ""
+    try:
+        teams = lg.teams()
+        for tk, td in teams.items():
+            if TEAM_ID in str(tk):
+                my_team_name = td.get("name", "")
+                break
+    except Exception:
+        pass
+
+    # Get current week to know how many weeks to scan
+    try:
+        current_week = lg.current_week()
+    except Exception:
+        current_week = 1
+
+    # Scan completed weeks (1 through current_week - 1)
+    last_completed = current_week - 1
+    if last_completed < 1:
+        if as_json:
+            return {"your_team": my_team_name, "rivals": [], "error": "No completed weeks yet"}
+        print("No completed weeks yet")
+        return
+
+    # Helpers to extract data from Yahoo nested matchup structure
+    def _extract_name(tdata):
+        if isinstance(tdata, dict):
+            team_info = tdata.get("team", [])
+            if isinstance(team_info, list) and len(team_info) > 0:
+                items = team_info[0] if isinstance(team_info[0], list) else team_info
+                for item in items:
+                    if isinstance(item, dict) and "name" in item:
+                        return item.get("name", "?")
+        return "?"
+
+    def _extract_key(tdata):
+        if isinstance(tdata, dict):
+            team_info = tdata.get("team", [])
+            if isinstance(team_info, list) and len(team_info) > 0:
+                items = team_info[0] if isinstance(team_info[0], list) else team_info
+                for item in items:
+                    if isinstance(item, dict) and "team_key" in item:
+                        return item.get("team_key", "")
+        return ""
+
+    def _extract_stats(tdata):
+        stats = {}
+        team_info = tdata.get("team", [])
+        if isinstance(team_info, list):
+            for block in team_info:
+                if isinstance(block, dict) and "team_stats" in block:
+                    raw_stats = block.get("team_stats", {}).get("stats", [])
+                    for s in raw_stats:
+                        stat = s.get("stat", {})
+                        sid = str(stat.get("stat_id", ""))
+                        val = stat.get("value", "0")
+                        stats[sid] = val
+        return stats
+
+    # Collect all matchup results across weeks
+    all_matchups = []  # list of {week, opp_name, wins, losses, ties, cat_detail}
+
+    for week_num in range(1, last_completed + 1):
+        try:
+            raw = lg.matchups(week=week_num)
+        except Exception:
+            continue
+
+        if not raw:
+            continue
+
+        try:
+            league_data = raw.get("fantasy_content", {}).get("league", [])
+            if len(league_data) < 2:
+                continue
+            sb_data = league_data[1].get("scoreboard", {})
+            matchup_block = sb_data.get("0", {}).get("matchups", {})
+            count = int(matchup_block.get("count", 0))
+
+            for i in range(count):
+                matchup = matchup_block.get(str(i), {}).get("matchup", {})
+                teams_data = matchup.get("0", {}).get("teams", {})
+                team1_data = teams_data.get("0", {})
+                team2_data = teams_data.get("1", {})
+
+                key1 = _extract_key(team1_data)
+                key2 = _extract_key(team2_data)
+
+                if TEAM_ID not in key1 and TEAM_ID not in key2:
+                    continue
+
+                # Found our matchup
+                if TEAM_ID in key1:
+                    my_data = team1_data
+                    opp_data = team2_data
+                else:
+                    my_data = team2_data
+                    opp_data = team1_data
+
+                opp_name = _extract_name(opp_data)
+                my_key = _extract_key(my_data)
+                my_stats = _extract_stats(my_data)
+                opp_stats = _extract_stats(opp_data)
+
+                # Count wins/losses/ties from stat_winners
+                stat_winners = matchup.get("stat_winners", [])
+                wins = 0
+                losses = 0
+                ties = 0
+                cat_detail = []  # per-category results for detail mode
+
+                for sw in stat_winners:
+                    w = sw.get("stat_winner", {})
+                    sid = str(w.get("stat_id", ""))
+                    cat_name = stat_id_to_name.get(sid, "Stat " + sid)
+                    if w.get("is_tied"):
+                        ties += 1
+                        cat_detail.append({"category": cat_name, "result": "tie", "my_value": str(my_stats.get(sid, "-")), "opp_value": str(opp_stats.get(sid, "-"))})
+                    else:
+                        winner_key = w.get("winner_team_key", "")
+                        if winner_key == my_key:
+                            wins += 1
+                            cat_detail.append({"category": cat_name, "result": "win", "my_value": str(my_stats.get(sid, "-")), "opp_value": str(opp_stats.get(sid, "-"))})
+                        else:
+                            losses += 1
+                            cat_detail.append({"category": cat_name, "result": "loss", "my_value": str(my_stats.get(sid, "-")), "opp_value": str(opp_stats.get(sid, "-"))})
+
+                all_matchups.append({
+                    "week": week_num,
+                    "opp_name": opp_name,
+                    "wins": wins,
+                    "losses": losses,
+                    "ties": ties,
+                    "cat_detail": cat_detail,
+                })
+                break  # Only one matchup per week for our team
+        except Exception:
+            continue
+
+    if not all_matchups:
+        if as_json:
+            return {"your_team": my_team_name, "rivals": [], "error": "No matchup data found"}
+        print("No matchup data found")
+        return
+
+    # Aggregate by opponent
+    rival_data = {}  # opp_name -> {wins, losses, ties, matchups: [...]}
+    for m in all_matchups:
+        opp = m.get("opp_name", "?")
+        if opp not in rival_data:
+            rival_data[opp] = {"wins": 0, "losses": 0, "ties": 0, "matchups": []}
+        # Determine matchup-level result
+        if m.get("wins", 0) > m.get("losses", 0):
+            rival_data[opp]["wins"] += 1
+            result = "win"
+        elif m.get("losses", 0) > m.get("wins", 0):
+            rival_data[opp]["losses"] += 1
+            result = "loss"
+        else:
+            rival_data[opp]["ties"] += 1
+            result = "tie"
+
+        score_str = str(m.get("wins", 0)) + "-" + str(m.get("losses", 0)) + "-" + str(m.get("ties", 0))
+        rival_data[opp]["matchups"].append({
+            "week": m.get("week"),
+            "score": score_str,
+            "result": result,
+            "cat_detail": m.get("cat_detail", []),
+        })
+
+    # ── Detail mode: filter to one opponent ──
+    if opponent_filter:
+        matched_opp = None
+        for opp in rival_data:
+            if opponent_filter in opp.lower():
+                matched_opp = opp
+                break
+
+        if not matched_opp:
+            if as_json:
+                return {"error": "No opponent found matching: " + opponent_filter}
+            print("No opponent found matching: " + opponent_filter)
+            return
+
+        rd = rival_data[matched_opp]
+        record_str = str(rd.get("wins", 0)) + "-" + str(rd.get("losses", 0)) + "-" + str(rd.get("ties", 0))
+
+        # Build matchup list
+        matchup_list = []
+        biggest_win = None
+        closest_match = None
+        biggest_margin = -1
+        smallest_margin = 999
+
+        for mu in rd.get("matchups", []):
+            score_parts = mu.get("score", "0-0-0").split("-")
+            w = int(score_parts[0]) if len(score_parts) > 0 else 0
+            l = int(score_parts[1]) if len(score_parts) > 1 else 0
+            t = int(score_parts[2]) if len(score_parts) > 2 else 0
+            margin = abs(w - l)
+
+            # Find MVP category (biggest differential win)
+            mvp_cat = ""
+            best_diff = 0
+            for cd in mu.get("cat_detail", []):
+                if cd.get("result") == "win":
+                    try:
+                        my_v = float(cd.get("my_value", "0"))
+                        opp_v = float(cd.get("opp_value", "0"))
+                        diff = abs(my_v - opp_v)
+                        if diff > best_diff:
+                            best_diff = diff
+                            mvp_cat = cd.get("category", "")
+                    except (ValueError, TypeError):
+                        pass
+
+            note = ""
+            if margin <= 1:
+                note = "Closest matchup"
+            elif margin >= 5:
+                note = "Dominant " + mu.get("result", "")
+
+            matchup_entry = {
+                "week": mu.get("week"),
+                "score": mu.get("score"),
+                "result": mu.get("result"),
+                "mvp_category": mvp_cat,
+                "note": note,
+            }
+            matchup_list.append(matchup_entry)
+
+            if mu.get("result") == "win" and margin > biggest_margin:
+                biggest_margin = margin
+                biggest_win = matchup_entry
+            if margin < smallest_margin:
+                smallest_margin = margin
+                closest_match = matchup_entry
+
+        # Category edge analysis
+        you_dominate = {}
+        they_dominate = {}
+        for mu in rd.get("matchups", []):
+            for cd in mu.get("cat_detail", []):
+                cat = cd.get("category", "")
+                if not cat:
+                    continue
+                if cd.get("result") == "win":
+                    you_dominate[cat] = you_dominate.get(cat, 0) + 1
+                elif cd.get("result") == "loss":
+                    they_dominate[cat] = they_dominate.get(cat, 0) + 1
+
+        total_matchups = len(rd.get("matchups", []))
+        threshold = max(1, total_matchups * 0.6)
+
+        your_cats = [c for c, n in sorted(you_dominate.items(), key=lambda x: -x[1]) if n >= threshold]
+        their_cats = [c for c, n in sorted(they_dominate.items(), key=lambda x: -x[1]) if n >= threshold]
+
+        # Build narrative
+        narrative_parts = []
+        if rd.get("wins", 0) > rd.get("losses", 0):
+            narrative_parts.append("You own " + matched_opp + " with a " + record_str + " record.")
+        elif rd.get("losses", 0) > rd.get("wins", 0):
+            narrative_parts.append(matched_opp + " has your number at " + record_str + ".")
+        else:
+            narrative_parts.append("Dead even rivalry at " + record_str + ".")
+
+        if your_cats:
+            narrative_parts.append("You dominate in " + ", ".join(your_cats[:3]) + ".")
+        if their_cats:
+            narrative_parts.append("They beat you in " + ", ".join(their_cats[:3]) + ".")
+
+        narrative = " ".join(narrative_parts)
+
+        detail_result = {
+            "your_team": my_team_name,
+            "opponent": matched_opp,
+            "all_time_record": record_str,
+            "wins": rd.get("wins", 0),
+            "losses": rd.get("losses", 0),
+            "ties": rd.get("ties", 0),
+            "matchups": matchup_list,
+            "category_edge": {
+                "you_dominate": your_cats,
+                "they_dominate": their_cats,
+            },
+            "biggest_win": biggest_win,
+            "closest_match": closest_match,
+            "narrative": narrative,
+        }
+
+        if as_json:
+            return detail_result
+
+        print("Rival History: " + my_team_name + " vs " + matched_opp)
+        print("All-Time Record: " + record_str)
+        print("")
+        print("Matchups:")
+        for mu in matchup_list:
+            r_marker = mu.get("result", "?")[0].upper()
+            line = "  Week " + str(mu.get("week", "?")).rjust(2) + "  [" + r_marker + "] " + mu.get("score", "")
+            if mu.get("mvp_category"):
+                line += "  MVP: " + mu.get("mvp_category", "")
+            if mu.get("note"):
+                line += "  (" + mu.get("note", "") + ")"
+            print(line)
+        print("")
+        if your_cats:
+            print("You dominate: " + ", ".join(your_cats))
+        if their_cats:
+            print("They dominate: " + ", ".join(their_cats))
+        print("")
+        print(narrative)
+        return
+
+    # ── Overview mode: all rivals ──
+    rivals = []
+    for opp, rd in sorted(rival_data.items(), key=lambda x: -(x[1].get("wins", 0) - x[1].get("losses", 0))):
+        w = rd.get("wins", 0)
+        l = rd.get("losses", 0)
+        t = rd.get("ties", 0)
+        record_str = str(w) + "-" + str(l) + "-" + str(t)
+
+        # Dominance label
+        total = w + l + t
+        if total == 0:
+            dominance = "unknown"
+        elif w >= total * 0.75:
+            dominance = "dominant"
+        elif w > l:
+            dominance = "strong"
+        elif w == l:
+            dominance = "even"
+        elif l >= total * 0.75:
+            dominance = "dominated"
+        else:
+            dominance = "weak"
+
+        # Last meeting
+        last_mu = rd.get("matchups", [])[-1] if rd.get("matchups") else None
+        last_result = ""
+        last_week = 0
+        if last_mu:
+            r = last_mu.get("result", "?")
+            last_result = r[0].upper() + " " + last_mu.get("score", "")
+            last_week = last_mu.get("week", 0)
+
+        rivals.append({
+            "opponent": opp,
+            "record": record_str,
+            "wins": w,
+            "losses": l,
+            "ties": t,
+            "last_result": last_result,
+            "last_week": last_week,
+            "dominance": dominance,
+        })
+
+    result = {
+        "your_team": my_team_name,
+        "rivals": rivals,
+    }
+
+    if as_json:
+        return result
+
+    print("Head-to-Head Rival History: " + my_team_name)
+    print("")
+    print("  " + "Opponent".ljust(28) + "Record".ljust(10) + "Last".ljust(16) + "Status")
+    print("  " + "-" * 60)
+    for r in rivals:
+        last_str = r.get("last_result", "")
+        if r.get("last_week"):
+            last_str += " (wk " + str(r.get("last_week")) + ")"
+        print("  " + r.get("opponent", "?").ljust(28) + r.get("record", "").ljust(10)
+              + last_str.ljust(16) + r.get("dominance", ""))
+
+
+def cmd_achievements(args, as_json=False):
+    """Track and display achievement milestones for the season"""
+    sc, gm, lg, team = get_league_context()
+
+    achievements = []
+
+    # ---------- Standings & Record Data ----------
+    standings = []
+    my_standing = {}
+    my_team_name = ""
+    try:
+        standings = lg.standings()
+        for i, t in enumerate(standings, 1):
+            tk = t.get("team_key", "")
+            if TEAM_ID in str(tk):
+                my_standing = t
+                my_standing["rank"] = i
+                my_team_name = t.get("name", "Unknown")
+                break
+    except Exception as e:
+        print("Warning: could not fetch standings: " + str(e))
+
+    wins = int(my_standing.get("outcome_totals", {}).get("wins", 0))
+    losses = int(my_standing.get("outcome_totals", {}).get("losses", 0))
+    ties = int(my_standing.get("outcome_totals", {}).get("ties", 0))
+    my_rank = my_standing.get("rank", 0)
+    num_teams = len(standings) if standings else 12
+
+    # ---------- Matchup History (scan past weeks) ----------
+    current_week = 1
+    try:
+        current_week = lg.current_week()
+    except Exception:
+        pass
+
+    weekly_results = []
+    best_week_cats_won = 0
+    best_week_cats_won_week = 0
+    biggest_blowout_margin = 0
+    biggest_blowout_week = 0
+    closest_win_margin = 999
+    closest_win_week = 0
+
+    yf_mod = importlib.import_module("yahoo-fantasy")
+    for wk in range(1, current_week):
+        try:
+            detail = yf_mod.cmd_matchup_detail([str(wk)], as_json=True)
+            if not detail or detail.get("error"):
+                continue
+            score = detail.get("score", {})
+            w = int(score.get("wins", 0))
+            l = int(score.get("losses", 0))
+            t_val = int(score.get("ties", 0))
+            week_won = w > l
+
+            weekly_results.append({
+                "week": wk,
+                "won": week_won,
+                "lost": w < l,
+                "tied": w == l,
+                "cats_won": w,
+                "cats_lost": l,
+                "cats_tied": t_val,
+            })
+
+            if w > best_week_cats_won:
+                best_week_cats_won = w
+                best_week_cats_won_week = wk
+
+            margin = w - l
+            if margin > biggest_blowout_margin:
+                biggest_blowout_margin = margin
+                biggest_blowout_week = wk
+
+            if week_won and margin < closest_win_margin:
+                closest_win_margin = margin
+                closest_win_week = wk
+
+        except Exception:
+            continue
+
+    # ---------- Win Streak Calculations ----------
+    current_streak = 0
+    longest_streak = 0
+    streak = 0
+    for wr in weekly_results:
+        if wr.get("won"):
+            streak += 1
+            if streak > longest_streak:
+                longest_streak = streak
+        else:
+            streak = 0
+    for wr in reversed(weekly_results):
+        if wr.get("won"):
+            current_streak += 1
+        else:
+            break
+
+    # ---------- Transaction Count ----------
+    my_moves = 0
+    my_trades = 0
+    try:
+        team_details = team.details() if hasattr(team, "details") else None
+        if team_details:
+            if isinstance(team_details, list) and len(team_details) > 0:
+                d = team_details[0] if isinstance(team_details[0], dict) else {}
+            elif isinstance(team_details, dict):
+                d = team_details
+            else:
+                d = {}
+            my_moves = int(d.get("number_of_moves", 0) or 0)
+            my_trades = int(d.get("number_of_trades", 0) or 0)
+    except Exception:
+        pass
+
+    # ---------- Category History from DB ----------
+    best_era = None
+    best_era_week = 0
+    most_hr_week_val = 0
+    most_hr_week = 0
+    try:
+        db = get_db()
+        rows = db.execute("SELECT week, category, value, rank FROM category_history ORDER BY week").fetchall()
+        for row in rows:
+            wk = row[0]
+            cat = row[1]
+            val = row[2]
+
+            if cat.upper() == "ERA" and val is not None:
+                try:
+                    era_val = float(val)
+                    if best_era is None or era_val < best_era:
+                        best_era = era_val
+                        best_era_week = wk
+                except (ValueError, TypeError):
+                    pass
+
+            if cat.upper() in ("HR",) and val is not None:
+                try:
+                    hr_val = int(float(val))
+                    if hr_val > most_hr_week_val:
+                        most_hr_week_val = hr_val
+                        most_hr_week = wk
+                except (ValueError, TypeError):
+                    pass
+
+        db.close()
+    except Exception:
+        pass
+
+    # ---------- Build Achievement List ----------
+
+    # 1. Hot Streak
+    achievements.append({
+        "name": "Hot Streak",
+        "description": "Win 3+ consecutive matchups",
+        "earned": longest_streak >= 3,
+        "value": str(longest_streak) + " wins" if longest_streak >= 3 else str(longest_streak) + " best streak",
+        "icon": "fire",
+    })
+
+    # 2. Ironman Streak
+    achievements.append({
+        "name": "Ironman Streak",
+        "description": "Win 5+ consecutive matchups",
+        "earned": longest_streak >= 5,
+        "value": str(longest_streak) + " wins" if longest_streak >= 5 else str(longest_streak) + " best streak",
+        "icon": "muscle",
+    })
+
+    # 3. Category Dominator
+    achievements.append({
+        "name": "Category Dominator",
+        "description": "Win 15+ categories in a single week",
+        "earned": best_week_cats_won >= 15,
+        "value": str(best_week_cats_won) + " cats (week " + str(best_week_cats_won_week) + ")" if best_week_cats_won > 0 else None,
+        "icon": "crown",
+    })
+
+    # 4. Blowout King
+    achievements.append({
+        "name": "Blowout King",
+        "description": "Win a matchup by 10+ category margin",
+        "earned": biggest_blowout_margin >= 10,
+        "value": "+" + str(biggest_blowout_margin) + " (week " + str(biggest_blowout_week) + ")" if biggest_blowout_margin > 0 else None,
+        "icon": "explosion",
+    })
+
+    # 5. Squeaker
+    has_squeaker = closest_win_margin == 1 and closest_win_week > 0
+    achievements.append({
+        "name": "Squeaker",
+        "description": "Win a matchup by exactly 1 category",
+        "earned": has_squeaker,
+        "value": "Week " + str(closest_win_week) if has_squeaker else None,
+        "icon": "sweat",
+    })
+
+    # 6. ERA Ace
+    achievements.append({
+        "name": "ERA Ace",
+        "description": "Post a weekly ERA under 2.00",
+        "earned": best_era is not None and best_era < 2.0,
+        "value": str(round(best_era, 2)) + " ERA (week " + str(best_era_week) + ")" if best_era is not None and best_era < 2.0 else None,
+        "icon": "star",
+    })
+
+    # 7. HR Derby
+    achievements.append({
+        "name": "HR Derby",
+        "description": "Hit 20+ HR in a single week",
+        "earned": most_hr_week_val >= 20,
+        "value": str(most_hr_week_val) + " HR (week " + str(most_hr_week) + ")" if most_hr_week_val >= 20 else (str(most_hr_week_val) + " best" if most_hr_week_val > 0 else None),
+        "icon": "baseball",
+    })
+
+    # 8. Wheeler Dealer
+    achievements.append({
+        "name": "Wheeler Dealer",
+        "description": "Make 30+ roster moves in a season",
+        "earned": my_moves >= 30,
+        "value": str(my_moves) + " moves",
+        "icon": "handshake",
+    })
+
+    # 9. Trade Baron
+    achievements.append({
+        "name": "Trade Baron",
+        "description": "Complete 3+ trades in a season",
+        "earned": my_trades >= 3,
+        "value": str(my_trades) + " trades",
+        "icon": "scales",
+    })
+
+    # 10. Top Dog
+    achievements.append({
+        "name": "Top Dog",
+        "description": "Reach 1st place in the standings",
+        "earned": my_rank == 1,
+        "value": _ordinal(my_rank) + " place" if my_rank > 0 else None,
+        "icon": "trophy",
+    })
+
+    # 11. Podium Finish
+    achievements.append({
+        "name": "Podium Finish",
+        "description": "Reach top 3 in the standings",
+        "earned": 0 < my_rank <= 3,
+        "value": _ordinal(my_rank) + " place" if my_rank > 0 else None,
+        "icon": "medal",
+    })
+
+    # 12. Winning Record
+    achievements.append({
+        "name": "Winning Record",
+        "description": "Have more wins than losses",
+        "earned": wins > losses,
+        "value": str(wins) + "-" + str(losses) + ("-" + str(ties) if ties else ""),
+        "icon": "chart_up",
+    })
+
+    # 13. Perfect Week
+    total_cats = 20
+    try:
+        stat_cats = lg.stat_categories()
+        total_cats = len(stat_cats) if stat_cats else 20
+    except Exception:
+        pass
+    perfect_week = best_week_cats_won >= total_cats and best_week_cats_won > 0
+    achievements.append({
+        "name": "Perfect Week",
+        "description": "Win every category in a single matchup",
+        "earned": perfect_week,
+        "value": str(best_week_cats_won) + "/" + str(total_cats) + " cats (week " + str(best_week_cats_won_week) + ")" if best_week_cats_won > 0 else None,
+        "icon": "hundred",
+    })
+
+    # 14. Comeback Kid
+    had_loss_streak = False
+    temp_loss = 0
+    for wr in weekly_results:
+        if wr.get("lost"):
+            temp_loss += 1
+            if temp_loss >= 2:
+                had_loss_streak = True
+        else:
+            temp_loss = 0
+    achievements.append({
+        "name": "Comeback Kid",
+        "description": "Win 2+ in a row after a 2+ game losing streak",
+        "earned": had_loss_streak and current_streak >= 2,
+        "value": str(current_streak) + " win streak after slump" if had_loss_streak and current_streak >= 2 else None,
+        "icon": "rocket",
+    })
+
+    # 15. Season Veteran
+    weeks_played = wins + losses + ties
+    achievements.append({
+        "name": "Season Veteran",
+        "description": "Complete 10+ matchup weeks",
+        "earned": weeks_played >= 10,
+        "value": str(weeks_played) + " weeks played",
+        "icon": "calendar",
+    })
+
+    # Count earned
+    total_earned = len([a for a in achievements if a.get("earned")])
+    total_available = len(achievements)
+
+    result = {
+        "total_earned": total_earned,
+        "total_available": total_available,
+        "team_name": my_team_name,
+        "record": str(wins) + "-" + str(losses) + ("-" + str(ties) if ties else ""),
+        "current_rank": my_rank,
+        "current_streak": current_streak,
+        "longest_streak": longest_streak,
+        "achievements": achievements,
+    }
+
+    if as_json:
+        return result
+
+    print("Achievements - " + my_team_name)
+    print("=" * 50)
+    print("Record: " + str(wins) + "-" + str(losses) + ("-" + str(ties) if ties else ""))
+    print("Rank: " + _ordinal(my_rank) + " of " + str(num_teams))
+    print("Earned: " + str(total_earned) + " / " + str(total_available))
+    print("")
+
+    for a in achievements:
+        marker = "[X]" if a.get("earned") else "[ ]"
+        val = a.get("value", "")
+        val_str = " (" + str(val) + ")" if val else ""
+        print("  " + marker + " " + a.get("name", "?").ljust(22) + a.get("description", "") + val_str)
+
+
+def cmd_weekly_narrative(args, as_json=False):
+    """Generate a narrative-style weekly recap with highlights, MVP category, and standings movement"""
+    if not as_json:
+        print("Weekly Narrative Recap")
+        print("=" * 50)
+
+    sc, gm, lg = get_league()
+
+    # ── 1. Stat categories ──
+    try:
+        stat_cats = lg.stat_categories()
+        stat_id_to_name = {}
+        for cat in stat_cats:
+            sid = str(cat.get("stat_id", ""))
+            display = cat.get("display_name", cat.get("name", "Stat " + sid))
+            stat_id_to_name[sid] = display
+    except Exception as e:
+        stat_cats = []
+        stat_id_to_name = {}
+        if not as_json:
+            print("  Warning: could not fetch stat categories: " + str(e))
+
+    # Determine lower-is-better stat IDs
+    lower_is_better_sids = set()
+    for cat in stat_cats:
+        sid = str(cat.get("stat_id", ""))
+        sort_order = cat.get("sort_order", "1")
+        if str(sort_order) == "0":
+            lower_is_better_sids.add(sid)
+
+    # ── 2. Get matchup data ──
+    try:
+        raw = lg.matchups()
+    except Exception as e:
+        if as_json:
+            return {"error": "Error fetching matchup data: " + str(e)}
+        print("Error fetching matchup data: " + str(e))
+        return
+
+    if not raw:
+        if as_json:
+            return {"error": "No matchup data available"}
+        print("No matchup data available")
+        return
+
+    try:
+        league_data = raw.get("fantasy_content", {}).get("league", [])
+        if len(league_data) < 2:
+            if as_json:
+                return {"error": "No matchup data in response"}
+            print("No matchup data in response")
+            return
+
+        sb_data = league_data[1].get("scoreboard", {})
+        week = sb_data.get("week", "?")
+        matchup_block = sb_data.get("0", {}).get("matchups", {})
+        count = int(matchup_block.get("count", 0))
+
+        found_matchup = False
+        for i in range(count):
+            matchup = matchup_block.get(str(i), {}).get("matchup", {})
+            teams_data = matchup.get("0", {}).get("teams", {})
+            team1_data = teams_data.get("0", {})
+            team2_data = teams_data.get("1", {})
+
+            # Extract team name
+            def _get_name_nar(tdata):
+                if isinstance(tdata, dict):
+                    team_info = tdata.get("team", [])
+                    if isinstance(team_info, list) and len(team_info) > 0:
+                        for item in team_info[0] if isinstance(team_info[0], list) else team_info:
+                            if isinstance(item, dict) and "name" in item:
+                                return item.get("name", "?")
+                return "?"
+
+            # Extract team key
+            def _get_key_nar(tdata):
+                if isinstance(tdata, dict):
+                    team_info = tdata.get("team", [])
+                    if isinstance(team_info, list) and len(team_info) > 0:
+                        for item in team_info[0] if isinstance(team_info[0], list) else team_info:
+                            if isinstance(item, dict) and "team_key" in item:
+                                return item.get("team_key", "")
+                return ""
+
+            name1 = _get_name_nar(team1_data)
+            name2 = _get_name_nar(team2_data)
+            key1 = _get_key_nar(team1_data)
+            key2 = _get_key_nar(team2_data)
+
+            if TEAM_ID not in key1 and TEAM_ID not in key2:
+                continue
+
+            found_matchup = True
+
+            # Determine which team is ours
+            if TEAM_ID in key1:
+                my_data = team1_data
+                opp_data = team2_data
+                opp_name = name2
+                my_name = name1
+            else:
+                my_data = team2_data
+                opp_data = team1_data
+                opp_name = name1
+                my_name = name2
+
+            my_key = _get_key_nar(my_data)
+
+            # Extract stats
+            def _get_stats_nar(tdata):
+                stats = {}
+                team_info = tdata.get("team", [])
+                if isinstance(team_info, list):
+                    for block in team_info:
+                        if isinstance(block, dict) and "team_stats" in block:
+                            raw_stats = block.get("team_stats", {}).get("stats", [])
+                            for s in raw_stats:
+                                stat = s.get("stat", {})
+                                sid = str(stat.get("stat_id", ""))
+                                val = stat.get("value", "0")
+                                stats[sid] = val
+                return stats
+
+            my_stats = _get_stats_nar(my_data)
+            opp_stats = _get_stats_nar(opp_data)
+
+            # Extract stat winners
+            stat_winners = matchup.get("stat_winners", [])
+            cat_results = {}
+            for sw in stat_winners:
+                w = sw.get("stat_winner", {})
+                sid = str(w.get("stat_id", ""))
+                if w.get("is_tied"):
+                    cat_results[sid] = "tie"
+                else:
+                    winner_key = w.get("winner_team_key", "")
+                    if winner_key == my_key:
+                        cat_results[sid] = "win"
+                    else:
+                        cat_results[sid] = "loss"
+
+            # ── 3. Per-category analysis with margins ──
+            categories = []
+            wins = 0
+            losses = 0
+            ties = 0
+            best_advantage = None
+            best_advantage_margin = -999
+            worst_loss = None
+            worst_loss_margin = -999
+
+            for sid in sorted(cat_results.keys(), key=lambda x: int(x) if x.isdigit() else 0):
+                cat_name = stat_id_to_name.get(sid, "Stat " + sid)
+                my_val = my_stats.get(sid, "-")
+                opp_val = opp_stats.get(sid, "-")
+                cat_result = cat_results.get(sid, "tie")
+
+                if cat_result == "win":
+                    wins += 1
+                elif cat_result == "loss":
+                    losses += 1
+                else:
+                    ties += 1
+
+                # Calculate normalized margin for MVP/weakness detection
+                margin_val = 0
+                try:
+                    my_num = float(my_val)
+                    opp_num = float(opp_val)
+                    avg = (abs(my_num) + abs(opp_num)) / 2.0
+                    if avg > 0:
+                        if sid in lower_is_better_sids:
+                            margin_val = (opp_num - my_num) / avg
+                        else:
+                            margin_val = (my_num - opp_num) / avg
+                    else:
+                        margin_val = 0
+                except (ValueError, TypeError):
+                    margin_val = 0
+
+                cat_entry = {
+                    "name": cat_name,
+                    "your_value": str(my_val),
+                    "opp_value": str(opp_val),
+                    "result": cat_result,
+                }
+                categories.append(cat_entry)
+
+                # Track MVP category (biggest relative advantage in a win)
+                if cat_result == "win" and margin_val > best_advantage_margin:
+                    best_advantage_margin = margin_val
+                    best_advantage = cat_entry
+
+                # Track weakness (biggest relative deficit in a loss)
+                if cat_result == "loss" and margin_val < worst_loss_margin:
+                    worst_loss_margin = margin_val
+                    worst_loss = cat_entry
+
+            score_str = str(wins) + "-" + str(losses) + "-" + str(ties)
+            if wins > losses:
+                result_str = "win"
+            elif wins < losses:
+                result_str = "loss"
+            else:
+                result_str = "tie"
+
+            # ── 4. Get current standings ──
+            current_rank = "?"
+            standings_change = {"from": "?", "to": "?", "direction": "none"}
+            try:
+                standings = lg.standings()
+                for idx, t in enumerate(standings, 1):
+                    if TEAM_ID in str(t.get("team_key", "")):
+                        current_rank = idx
+                        standings_change["to"] = idx
+                        break
+
+                # Infer rank change from win/loss records of nearby teams
+                if current_rank != "?":
+                    my_standing = standings[current_rank - 1]
+                    my_wins = int(my_standing.get("outcome_totals", {}).get("wins", 0))
+                    my_losses = int(my_standing.get("outcome_totals", {}).get("losses", 0))
+                    if result_str == "win":
+                        prev_rank = current_rank
+                        for idx, t in enumerate(standings, 1):
+                            if idx == current_rank:
+                                continue
+                            t_wins = int(t.get("outcome_totals", {}).get("wins", 0))
+                            t_losses = int(t.get("outcome_totals", {}).get("losses", 0))
+                            if idx > current_rank and t_wins >= my_wins - 1 and t_losses <= my_losses + 1:
+                                prev_rank = max(prev_rank, idx)
+                        standings_change = {
+                            "from": prev_rank,
+                            "to": current_rank,
+                            "direction": "up" if prev_rank > current_rank else "none",
+                        }
+                    elif result_str == "loss":
+                        prev_rank = current_rank
+                        for idx, t in enumerate(standings, 1):
+                            if idx == current_rank:
+                                continue
+                            t_wins = int(t.get("outcome_totals", {}).get("wins", 0))
+                            t_losses = int(t.get("outcome_totals", {}).get("losses", 0))
+                            if idx < current_rank and t_wins <= my_wins + 1 and t_losses >= my_losses - 1:
+                                prev_rank = min(prev_rank, idx)
+                        standings_change = {
+                            "from": prev_rank,
+                            "to": current_rank,
+                            "direction": "down" if prev_rank < current_rank else "none",
+                        }
+                    else:
+                        standings_change = {"from": current_rank, "to": current_rank, "direction": "none"}
+            except Exception as e:
+                if not as_json:
+                    print("  Warning: could not fetch standings: " + str(e))
+
+            # ── 5. Check recent transactions for our team ──
+            key_moves = []
+            try:
+                yf_mod = importlib.import_module("yahoo-fantasy")
+                tx_data = yf_mod.cmd_transactions([], as_json=True)
+                transactions = tx_data.get("transactions", [])
+                for tx in transactions[:20]:
+                    tx_team = tx.get("team", "")
+                    if tx_team and tx_team == my_name:
+                        tx_type = tx.get("type", "?")
+                        tx_player = tx.get("player", "?")
+                        if tx_type == "add":
+                            key_moves.append("Added " + tx_player)
+                        elif tx_type == "drop":
+                            key_moves.append("Dropped " + tx_player)
+                        elif tx_type == "trade":
+                            key_moves.append("Traded " + tx_player)
+            except Exception as e:
+                if not as_json:
+                    print("  Warning: could not fetch transactions: " + str(e))
+
+            # ── 6. Build narrative text ──
+            narrative_parts = []
+
+            if result_str == "win":
+                narrative_parts.append("Week " + str(week) + " Recap: You defeated " + opp_name + " " + score_str + ".")
+            elif result_str == "loss":
+                narrative_parts.append("Week " + str(week) + " Recap: You fell to " + opp_name + " " + score_str + ".")
+            else:
+                narrative_parts.append("Week " + str(week) + " Recap: You tied " + opp_name + " " + score_str + ".")
+
+            if best_advantage:
+                narrative_parts.append(
+                    best_advantage.get("name", "?") + " was your hero at " + best_advantage.get("your_value", "?")
+                    + " vs " + best_advantage.get("opp_value", "?") + "."
+                )
+
+            if worst_loss:
+                narrative_parts.append(
+                    worst_loss.get("name", "?") + " let you down at " + worst_loss.get("your_value", "?")
+                    + " vs " + worst_loss.get("opp_value", "?") + "."
+                )
+
+            if standings_change.get("direction") == "up":
+                narrative_parts.append(
+                    "You climbed from " + str(standings_change.get("from", "?"))
+                    + " to " + str(standings_change.get("to", "?")) + " in the standings."
+                )
+            elif standings_change.get("direction") == "down":
+                narrative_parts.append(
+                    "You slipped from " + str(standings_change.get("from", "?"))
+                    + " to " + str(standings_change.get("to", "?")) + " in the standings."
+                )
+            elif current_rank != "?":
+                narrative_parts.append("You held steady at " + str(current_rank) + " in the standings.")
+
+            if key_moves:
+                narrative_parts.append("Key move: " + key_moves[0] + ".")
+
+            narrative = " ".join(narrative_parts)
+
+            # Build MVP/weakness output dicts
+            mvp_category = {}
+            if best_advantage:
+                mvp_category = {
+                    "name": best_advantage.get("name", "?"),
+                    "your_value": best_advantage.get("your_value", "?"),
+                    "opp_value": best_advantage.get("opp_value", "?"),
+                }
+
+            weakness = {}
+            if worst_loss:
+                weakness = {
+                    "name": worst_loss.get("name", "?"),
+                    "your_value": worst_loss.get("your_value", "?"),
+                    "opp_value": worst_loss.get("opp_value", "?"),
+                }
+
+            result_data = {
+                "week": week,
+                "result": result_str,
+                "score": score_str,
+                "opponent": opp_name,
+                "categories": categories,
+                "mvp_category": mvp_category,
+                "weakness": weakness,
+                "standings_change": standings_change,
+                "current_rank": current_rank,
+                "key_moves": key_moves,
+                "narrative": narrative,
+            }
+
+            if as_json:
+                return result_data
+
+            # CLI output
+            print("")
+            print(narrative)
+            print("")
+            print("Category Breakdown:")
+            for cat in categories:
+                marker = "W" if cat.get("result") == "win" else ("L" if cat.get("result") == "loss" else "T")
+                print("  [" + marker + "] " + cat.get("name", "?").ljust(12) + str(cat.get("your_value", "")).rjust(8) + " vs " + str(cat.get("opp_value", "")).rjust(8))
+            print("")
+            if key_moves:
+                print("Key Moves: " + ", ".join(key_moves))
+            print("Current Rank: " + str(current_rank))
+            return
+
+        if not found_matchup:
+            if as_json:
+                return {"error": "Could not find your matchup"}
+            print("Could not find your matchup")
+    except Exception as e:
+        if as_json:
+            return {"error": "Error building weekly narrative: " + str(e)}
+        print("Error building weekly narrative: " + str(e))
+
+
 COMMANDS = {
     "lineup-optimize": cmd_lineup_optimize,
     "category-check": cmd_category_check,
@@ -6028,6 +7477,10 @@ COMMANDS = {
     "il-stash": cmd_il_stash_advisor,
     "optimal-moves": cmd_optimal_moves,
     "playoff-planner": cmd_playoff_planner,
+    "trash-talk": cmd_trash_talk,
+    "rival-history": cmd_rival_history,
+    "achievements": cmd_achievements,
+    "weekly-narrative": cmd_weekly_narrative,
 }
 
 if __name__ == "__main__":

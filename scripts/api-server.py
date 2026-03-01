@@ -908,6 +908,15 @@ def api_optimal_moves():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/weekly-narrative")
+def api_weekly_narrative():
+    try:
+        result = season_manager.cmd_weekly_narrative([], as_json=True)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/roster-history")
 def api_roster_history():
     try:
@@ -1685,6 +1694,36 @@ def api_cache_clear():
         key = data.get("key")
         _cache_manager.clear(key)
         return jsonify({"cleared": key or "all"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/trash-talk")
+def api_trash_talk():
+    try:
+        intensity = request.args.get("intensity", "competitive")
+        result = season_manager.cmd_trash_talk([intensity], as_json=True)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/rival-history")
+def api_rival_history():
+    try:
+        opponent = request.args.get("opponent", "")
+        args = [opponent] if opponent else []
+        result = season_manager.cmd_rival_history(args, as_json=True)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/achievements")
+def api_achievements():
+    try:
+        result = season_manager.cmd_achievements([], as_json=True)
+        return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

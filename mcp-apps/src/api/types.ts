@@ -1520,3 +1520,109 @@ export interface PlayoffPlannerResponse {
   summary: string;
 }
 
+// Trash Talk response
+export interface TrashTalkResponse {
+  opponent: string;
+  intensity: string;
+  week: number | string;
+  context: {
+    your_rank: number | string;
+    their_rank: number | string;
+    score: string;
+  };
+  lines: string[];
+  featured_line: string;
+}
+
+// Rival History responses
+export interface RivalMatchupEntry {
+  week: number;
+  score: string;
+  result: "win" | "loss" | "tie";
+  mvp_category: string;
+  note: string;
+}
+
+export interface RivalCategoryDetail {
+  category: string;
+  result: "win" | "loss" | "tie";
+  my_value: string;
+  opp_value: string;
+}
+
+export interface RivalOverviewEntry {
+  opponent: string;
+  record: string;
+  wins: number;
+  losses: number;
+  ties: number;
+  last_result: string;
+  last_week: number;
+  dominance: string;
+}
+
+export interface RivalHistoryOverviewResponse {
+  your_team: string;
+  rivals: RivalOverviewEntry[];
+  error?: string;
+}
+
+export interface RivalHistoryDetailResponse {
+  your_team: string;
+  opponent: string;
+  all_time_record: string;
+  wins: number;
+  losses: number;
+  ties: number;
+  matchups: RivalMatchupEntry[];
+  category_edge: {
+    you_dominate: string[];
+    they_dominate: string[];
+  };
+  biggest_win: RivalMatchupEntry | null;
+  closest_match: RivalMatchupEntry | null;
+  narrative: string;
+}
+
+// Achievements response
+export interface Achievement {
+  name: string;
+  description: string;
+  earned: boolean;
+  value: string | null;
+  icon: string;
+}
+
+export interface AchievementsResponse {
+  total_earned: number;
+  total_available: number;
+  team_name: string;
+  record: string;
+  current_rank: number;
+  current_streak: number;
+  longest_streak: number;
+  achievements: Achievement[];
+}
+
+// Weekly Narrative response
+export interface WeeklyNarrativeCategoryResult {
+  name: string;
+  your_value: string;
+  opp_value: string;
+  result: string;
+}
+
+export interface WeeklyNarrativeResponse {
+  week: string | number;
+  result: string;
+  score: string;
+  opponent: string;
+  categories: WeeklyNarrativeCategoryResult[];
+  mvp_category: { name: string; your_value: string; opp_value: string };
+  weakness: { name: string; your_value: string; opp_value: string };
+  standings_change: { from: string | number; to: string | number; direction: string };
+  current_rank: string | number;
+  key_moves: string[];
+  narrative: string;
+}
+

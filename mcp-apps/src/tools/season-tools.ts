@@ -23,6 +23,9 @@ import {
   generateILStashInsight,
   generateOptimalMovesInsight,
   generatePlayoffPlannerInsight,
+  generateRivalHistoryInsight,
+  generateAchievementsInsight,
+  generateWeeklyNarrativeInsight,
 } from "../insights.js";
 import {
   str,
@@ -53,6 +56,11 @@ import {
   type ILStashAdvisorResponse,
   type OptimalMovesResponse,
   type PlayoffPlannerResponse,
+  type TrashTalkResponse,
+  type RivalHistoryOverviewResponse,
+  type RivalHistoryDetailResponse,
+  type AchievementsResponse,
+  type WeeklyNarrativeResponse,
 } from "../api/types.js";
 
 export const SEASON_URI = "ui://fbb-mcp/season.html";
@@ -1202,6 +1210,193 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
           structuredContent: { type: "playoff-planner", ai_recommendation, ...data },
+        };
+      } catch (e) { return toolError(e); }
+    },
+  );
+
+  // yahoo_trash_talk
+  registerAppTool(
+    server,
+    "yahoo_trash_talk",
+    {
+      description: "Generate trash talk for your current matchup opponent. Intensity: friendly, competitive, or savage",
+      inputSchema: { intensity: z.string().describe("Trash talk intensity: friendly, competitive, or savage").default("competitive") },
+      annotations: { readOnlyHint: true },
+      _meta: { ui: { resourceUri: SEASON_URI } },
+    },
+    async ({ intensity }) => {
+      try {
+        var data = await apiGet<TrashTalkResponse>("/api/trash-talk?intensity=" + encodeURIComponent(intensity));
+        var lines: string[] = [
+          "Trash Talk vs. " + data.opponent + " (Week " + data.week + ")",
+          "Intensity: " + data.intensity,
+          "Score: " + data.context.score,
+          "Your Rank: " + data.context.your_rank + " | Their Rank: " + data.context.their_rank,
+          "",
+        ];
+        for (var line of data.lines) {
+          lines.push("  > " + line);
+        }
+        lines.push("");
+        lines.push("Featured: " + data.featured_line);
+        return {
+          content: [{ type: "text" as const, text: lines.join("\n") }],
+          structuredContent: { type: "trash-talk", ai_recommendation: null, ...data },
+        };
+      } catch (e) { return toolError(e); }
+    },
+  );
+
+  // yahoo_rival_history
+  registerAppTool(
+    server,
+    "yahoo_rival_history",
+    {
+      description: "View your head-to-head record against each league opponent with detailed matchup history",
+      inputSchema: { opponent: z.string().describe("Opponent team name to filter to (empty for all rivals overview)").default("") },
+      annotations: { readOnlyHint: true },
+      _meta: { ui: { resourceUri: SEASON_URI } },
+    },
+    async ({ opponent }) => {
+      try {
+        var params: Record<string, string> = {};
+        if (opponent) params.opponent = opponent;
+        var data = await apiGet<RivalHistoryOverviewResponse | RivalHistoryDetailResponse>("/api/rival-history", params);
+        if ((data as any).error) {
+          return toolError((data as any).error);
+        }
+
+        var lines: string[] = [];
+
+        if ("rivals" in data) {
+          // Overview mode
+          var overview = data as RivalHistoryOverviewResponse;
+          lines.push("Head-to-Head Rival History: " + overview.your_team);
+          lines.push("");
+          lines.push("  " + "Opponent".padEnd(28) + "Record".padEnd(10) + "Last".padEnd(16) + "Status");
+          lines.push("  " + "-".repeat(60));
+          for (var r of overview.rivals) {
+            var lastStr = r.last_result;
+            if (r.last_week) lastStr += " (wk " + r.last_week + ")";
+            lines.push("  " + str(r.opponent).padEnd(28) + str(r.record).padEnd(10) + str(lastStr).padEnd(16) + str(r.dominance));
+          }
+        } else {
+          // Detail mode
+          var detail = data as RivalHistoryDetailResponse;
+          lines.push("Rival History: " + detail.your_team + " vs " + detail.opponent);
+          lines.push("All-Time Record: " + detail.all_time_record);
+          lines.push("");
+          lines.push("Matchups:");
+          for (var mu of detail.matchups) {
+            var marker = str(mu.result).charAt(0).toUpperCase();
+            var muLine = "  Week " + str(mu.week).padStart(2) + "  [" + marker + "] " + mu.score;
+            if (mu.mvp_category) muLine += "  MVP: " + mu.mvp_category;
+            if (mu.note) muLine += "  (" + mu.note + ")";
+            lines.push(muLine);
+          }
+          var edge = detail.category_edge || { you_dominate: [], they_dominate: [] };
+          if (edge.you_dominate.length > 0) {
+            lines.push("");
+            lines.push("You dominate: " + edge.you_dominate.join(", "));
+          }
+          if (edge.they_dominate.length > 0) {
+            lines.push("They dominate: " + edge.they_dominate.join(", "));
+          }
+          if (detail.narrative) {
+            lines.push("");
+            lines.push(detail.narrative);
+          }
+        }
+        var ai_recommendation = generateRivalHistoryInsight(data);
+        return {
+          content: [{ type: "text" as const, text: lines.join("\n") }],
+          structuredContent: { type: "rival-history", ai_recommendation, ...data },
+        };
+      } catch (e) { return toolError(e); }
+    },
+  );
+
+  // yahoo_achievements
+  registerAppTool(
+    server,
+    "yahoo_achievements",
+    {
+      description: "View your fantasy baseball achievements and milestones for the season",
+      annotations: { readOnlyHint: true },
+      _meta: { ui: { resourceUri: SEASON_URI } },
+    },
+    async () => {
+      try {
+        var data = await apiGet<AchievementsResponse>("/api/achievements");
+        if ((data as any).error) {
+          return toolError((data as any).error);
+        }
+        var lines = [
+          "Achievements - " + str(data.team_name),
+          "Record: " + str(data.record) + " | Rank: " + str(data.current_rank),
+          "Earned: " + str(data.total_earned) + " / " + str(data.total_available),
+          "",
+        ];
+        for (var a of data.achievements) {
+          var marker = a.earned ? "[X]" : "[ ]";
+          var val = a.value ? " (" + str(a.value) + ")" : "";
+          lines.push("  " + marker + " " + str(a.name).padEnd(22) + str(a.description) + val);
+        }
+        var ai_recommendation = generateAchievementsInsight(data);
+        return {
+          content: [{ type: "text" as const, text: lines.join("\n") }],
+          structuredContent: { type: "achievements", ai_recommendation, ...data },
+        };
+      } catch (e) { return toolError(e); }
+    },
+  );
+
+  // yahoo_weekly_narrative
+  registerAppTool(
+    server,
+    "yahoo_weekly_narrative",
+    {
+      description: "Get a narrative recap of your most recent week with highlights, MVP category, and standings movement",
+      annotations: { readOnlyHint: true },
+      _meta: { ui: { resourceUri: SEASON_URI } },
+    },
+    async () => {
+      try {
+        var data = await apiGet<WeeklyNarrativeResponse>("/api/weekly-narrative");
+        var lines: string[] = [];
+        lines.push("Week " + data.week + " Narrative Recap");
+        lines.push("=".repeat(40));
+        lines.push("");
+        lines.push(data.narrative);
+        lines.push("");
+        lines.push("Score: " + data.score + " (" + data.result + ") vs " + data.opponent);
+        lines.push("");
+        lines.push("Category Breakdown:");
+        for (var cat of (data.categories || [])) {
+          var marker = cat.result === "win" ? "W" : cat.result === "loss" ? "L" : "T";
+          lines.push("  [" + marker + "] " + str(cat.name).padEnd(12) + str(cat.your_value).padStart(8) + " vs " + str(cat.opp_value).padStart(8));
+        }
+        if (data.mvp_category && data.mvp_category.name) {
+          lines.push("");
+          lines.push("MVP Category: " + data.mvp_category.name + " (" + data.mvp_category.your_value + " vs " + data.mvp_category.opp_value + ")");
+        }
+        if (data.weakness && data.weakness.name) {
+          lines.push("Weakness: " + data.weakness.name + " (" + data.weakness.your_value + " vs " + data.weakness.opp_value + ")");
+        }
+        if (data.standings_change && data.standings_change.direction !== "none") {
+          lines.push("Standings: " + data.standings_change.from + " -> " + data.standings_change.to + " (" + data.standings_change.direction + ")");
+        } else if (data.current_rank) {
+          lines.push("Standings: #" + data.current_rank + " (unchanged)");
+        }
+        if (data.key_moves && data.key_moves.length > 0) {
+          lines.push("");
+          lines.push("Key Moves: " + data.key_moves.join(", "));
+        }
+        var ai_recommendation = generateWeeklyNarrativeInsight(data);
+        return {
+          content: [{ type: "text" as const, text: lines.join("\n") }],
+          structuredContent: { type: "weekly-narrative", ai_recommendation, ...data },
         };
       } catch (e) { return toolError(e); }
     },
