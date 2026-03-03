@@ -37,13 +37,13 @@ describe("Button", () => {
   it("applies sm size classes", () => {
     render(<Button size="sm">Small</Button>);
     const btn = screen.getByText("Small");
-    expect(btn.className).toContain("h-9");
+    expect(btn.className).toContain("h-7");
   });
 
   it("applies lg size classes", () => {
     render(<Button size="lg">Large</Button>);
     const btn = screen.getByText("Large");
-    expect(btn.className).toContain("h-11");
+    expect(btn.className).toContain("h-9");
   });
 
   it("disabled state adds disabled attribute", () => {

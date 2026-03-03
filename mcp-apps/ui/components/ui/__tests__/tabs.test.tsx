@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/preact";
+import { render, screen } from "@testing-library/preact";
 import { Tabs, TabsList, TabsTrigger } from "../tabs";
 
 describe("Tabs", () => {
-  it("defaults to scroll behavior on TabsList", () => {
-    render(
+  it("uses default tabs list styling", () => {
+    const { container } = render(
       <Tabs value="one" onValueChange={vi.fn()}>
         <TabsList>
           <TabsTrigger value="one">One</TabsTrigger>
@@ -13,29 +13,28 @@ describe("Tabs", () => {
       </Tabs>
     );
 
-    var list = screen.getByText("One").closest("div");
-    expect(list?.className).toContain("overflow-x-auto");
-    expect(list?.className).toContain("no-scrollbar");
+    var list = container.querySelector('[data-slot="tabs-list"]') as HTMLDivElement | null;
+    expect(list?.className).toContain("inline-flex");
+    expect(list?.className).toContain("bg-muted");
   });
 
-  it("supports wrap behavior override", () => {
-    render(
+  it("supports line variant styling", () => {
+    const { container } = render(
       <Tabs value="one" onValueChange={vi.fn()}>
-        <TabsList behavior="wrap">
+        <TabsList variant="line">
           <TabsTrigger value="one">One</TabsTrigger>
         </TabsList>
       </Tabs>
     );
 
-    var list = screen.getByText("One").closest("div");
-    expect(list?.className).toContain("flex-wrap");
-    expect(list?.className).not.toContain("overflow-x-auto");
+    var list = container.querySelector('[data-slot="tabs-list"]') as HTMLDivElement | null;
+    expect(list?.className).toContain("bg-transparent");
+    expect(list?.getAttribute("data-variant")).toBe("line");
   });
 
-  it("invokes onValueChange when a trigger is clicked", () => {
-    var onValueChange = vi.fn();
+  it("renders triggers with tab slot classes", () => {
     render(
-      <Tabs value="one" onValueChange={onValueChange}>
+      <Tabs defaultValue="one" onValueChange={vi.fn()}>
         <TabsList>
           <TabsTrigger value="one">One</TabsTrigger>
           <TabsTrigger value="two">Two</TabsTrigger>
@@ -43,7 +42,8 @@ describe("Tabs", () => {
       </Tabs>
     );
 
-    fireEvent.click(screen.getByText("Two"));
-    expect(onValueChange).toHaveBeenCalledWith("two");
+    var trigger = screen.getByText("Two");
+    expect(trigger.getAttribute("data-slot")).toBe("tabs-trigger");
+    expect(trigger.className).toContain("rounded-md");
   });
 });

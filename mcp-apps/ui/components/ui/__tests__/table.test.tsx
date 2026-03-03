@@ -21,6 +21,6 @@ describe("Table", () => {
 
     var wrapper = container.querySelector("div");
     expect(wrapper?.className).toContain("overflow-x-auto");
-    expect(screen.getByRole("table").className).toContain("min-w-[32rem]");
+    expect(screen.getByRole("table").className).toContain("w-full");
   });
 });

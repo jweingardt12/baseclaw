@@ -86,6 +86,8 @@ export interface ViewDef {
   id: string;
   label: string;
   component: any;
+  description?: string;
+  featured?: boolean;
   props?: Record<string, any>;
 }
 
@@ -96,7 +98,92 @@ export interface ViewGroup {
 
 function noop() {}
 
-export const VIEW_GROUPS: ViewGroup[] = [
+const VIEW_META: Record<string, { description: string; featured?: boolean }> = {
+  "standings": { description: "League standings with win-loss-tie records and category totals." },
+  "matchups": { description: "Weekly head-to-head pairings for every team in the league." },
+  "matchup-detail": { description: "Your live matchup with category-by-category score comparison." },
+  "scoreboard": { description: "Live scoring snapshot across all active league matchups." },
+  "info": { description: "League settings, roster format, and scoring configuration summary." },
+  "stat-categories": { description: "Full scoring categories used to determine weekly results." },
+  "transactions": { description: "Recent adds, drops, and trades across the league." },
+  "transaction-trends": { description: "Most added and dropped players across Yahoo leagues." },
+  "league-pulse": { description: "Manager activity leaderboard based on moves and trades." },
+  "power-rankings": { description: "Team strength rankings based on projected roster value.", featured: true },
+  "season-pace": { description: "Playoff odds, pace projections, and magic-number tracking." },
+
+  "category-check": { description: "See where your team ranks in each category versus league peers." },
+  "injury-report": { description: "Injury status review with IL move suggestions and urgency." },
+  "waiver-analyze": { description: "Top waiver targets scored by category impact and fit.", featured: true },
+  "trade-eval": { description: "Evaluate a proposed trade by net value and category swing." },
+  "lineup-optimize": { description: "Optimize starters and bench slots for today\'s games.", featured: true },
+  "streaming": { description: "Recommended streaming pitchers based on schedule and matchup." },
+  "daily-update": { description: "Quick daily ops view: lineup, injuries, and high-priority actions.", featured: true },
+  "trade-builder": { description: "Build and compare multi-player trade packages by value." },
+  "category-simulate": { description: "Simulate category changes from a specific add/drop move." },
+  "scout-opponent": { description: "Opponent scouting report with strengths, weaknesses, and exploitable spots." },
+  "matchup-strategy": { description: "Category game plan for this week\'s head-to-head matchup.", featured: true },
+  "set-lineup": { description: "Manually place players into specific roster positions." },
+  "pending-trades": { description: "Review incoming and outgoing trade offers awaiting action." },
+  "trade-action": { description: "Accept or reject a pending trade and add a response note." },
+  "whats-new": { description: "Digest of injuries, activity, trends, and notable updates." },
+  "trade-finder": { description: "Find trade targets and partner teams with complementary needs.", featured: true },
+  "week-planner": { description: "Games-per-day planner to spot off-days and lineup gaps." },
+  "closer-monitor": { description: "Track saves roles, bullpen shifts, and available closers." },
+  "pitcher-matchup": { description: "Starter matchup quality based on opponent offensive profile." },
+  "category-trends": { description: "Time-series trend of your category rankings over the season." },
+  "morning-briefing": { description: "All-in-one daily briefing with prioritized action items.", featured: true },
+  "punt-advisor": { description: "Recommend categories to target or deprioritize strategically." },
+  "playoff-planner": { description: "Path-to-playoffs planner with tactical roster recommendations.", featured: true },
+  "optimal-moves": { description: "Best add/drop move sequences to maximize roster value." },
+  "il-stash-advisor": { description: "Stash-versus-drop guidance for injured players." },
+  "trash-talk": { description: "Generate matchup-themed trash talk at multiple intensity levels." },
+  "rival-history": { description: "Historical head-to-head results versus each league rival." },
+  "achievements": { description: "Season milestones, streaks, and fantasy achievement badges." },
+  "weekly-narrative": { description: "Narrative recap of your most recent scoring week." },
+  "faab-recommend": { description: "Suggested FAAB bid sizing based on need and budget." },
+  "ownership-trends": { description: "Ownership trend lines to catch rising and fading players." },
+  "roster-stats": { description: "Aggregated player stats for a roster by period or week." },
+
+  "draft-status": { description: "Current draft room state with picks made and roster structure." },
+  "draft-recommend": { description: "Best draft pick recommendation from available player pool." },
+  "best-available": { description: "Top available players ranked by projected fantasy value." },
+  "draft-cheatsheet": { description: "Round-by-round drafting guide and positional strategy." },
+
+  "roster": { description: "Your full active roster with positions and eligibility." },
+  "free-agents": { description: "Available free agents with quick add and compare workflows." },
+  "action-add": { description: "Result view for add/drop/swap actions and confirmations." },
+  "who-owns": { description: "Check which team currently owns a specific player." },
+
+  "rankings": { description: "Overall player rankings powered by z-score valuations." },
+  "compare": { description: "Side-by-side player comparison across scoring categories." },
+  "value": { description: "Detailed valuation breakdown for a single player." },
+
+  "mlb-teams": { description: "Directory of all MLB teams and abbreviations." },
+  "mlb-roster": { description: "Current MLB roster for a selected team." },
+  "mlb-player": { description: "Player bio and profile details from MLB data." },
+  "mlb-stats": { description: "Season stat lines for a specific MLB player." },
+  "mlb-injuries": { description: "League-wide MLB injury updates and status notes." },
+  "mlb-standings": { description: "MLB division standings and team records." },
+  "mlb-schedule": { description: "Daily MLB game schedule for matchup planning." },
+
+  "league-history": { description: "All-time league outcomes, champions, and year-over-year results." },
+  "record-book": { description: "Historical records for best seasons and manager performance." },
+  "past-standings": { description: "Standings table for a selected prior season." },
+  "past-draft": { description: "Historical draft picks by year with player context." },
+  "past-teams": { description: "Team and manager snapshots for prior seasons." },
+  "past-trades": { description: "Historical trade ledger with players exchanged." },
+  "past-matchup": { description: "Past weekly matchup results and category outcomes." },
+
+  "intel-player": { description: "Deep player intelligence: Statcast, trends, and signal checks." },
+  "intel-breakouts": { description: "Breakout candidates where expected metrics outpace results." },
+  "intel-busts": { description: "Bust risk candidates where production may regress." },
+  "intel-reddit": { description: "Hot topics and discussion trends from r/fantasybaseball." },
+  "intel-trending": { description: "Players with rising fantasy buzz and engagement." },
+  "intel-prospects": { description: "Prospect call-ups and promotion watchlist updates." },
+  "intel-transactions": { description: "Fantasy-relevant MLB transactions and roster movement." },
+};
+
+const RAW_VIEW_GROUPS: ViewGroup[] = [
   {
     name: "Standings",
     views: [
@@ -213,3 +300,11 @@ export const VIEW_GROUPS: ViewGroup[] = [
     ],
   },
 ];
+
+export const VIEW_GROUPS: ViewGroup[] = RAW_VIEW_GROUPS.map((group) => ({
+  ...group,
+  views: group.views.map((view) => ({
+    ...view,
+    ...(VIEW_META[view.id] || {}),
+  })),
+}));

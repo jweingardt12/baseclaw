@@ -14,7 +14,7 @@ describe("Card", () => {
     );
 
     var card = container.querySelector("div");
-    expect(card?.className).toContain("rounded-lg");
+    expect(card?.className).toContain("rounded-xl");
     expect(card?.className).toContain("bg-card");
   });
 });
