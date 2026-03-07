@@ -45,23 +45,31 @@ async function main() {
     const enablePreview = process.env.ENABLE_PREVIEW === "true";
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const previewDir = path.join(__dirname, "preview");
+    const draftDir = path.join(__dirname, "offline-draft");
+
+    // API proxy — always enabled (needed by preview app and offline draft dashboard)
+    app.use("/api", express.json(), (req, res) => {
+      const url = "http://localhost:8766" + req.originalUrl;
+      const proxyReq = http.request(url, { method: req.method, headers: { "Content-Type": "application/json" } }, (proxyRes) => {
+        res.status(proxyRes.statusCode || 500);
+        proxyRes.pipe(res);
+      });
+      proxyReq.on("error", () => res.status(502).json({ error: "Python API unavailable" }));
+      if (req.method === "POST" && req.body) proxyReq.write(JSON.stringify(req.body));
+      proxyReq.end();
+    });
+
+    // Offline draft dashboard — always available at /draft
+    app.use("/draft", express.static(draftDir));
+    app.get("/draft", (_req, res) => {
+      res.sendFile(path.join(draftDir, "offline-draft.html"));
+    });
+    console.log("Offline draft dashboard available at /draft");
 
     if (enablePreview) {
       app.use("/preview", express.static(previewDir));
       app.get("/preview", (_req, res) => {
         res.sendFile(path.join(previewDir, "preview.html"));
-      });
-
-      // API proxy — before auth since Flask binds to 127.0.0.1 (container-internal only)
-      app.use("/api", express.json(), (req, res) => {
-        const url = "http://localhost:8766" + req.originalUrl;
-        const proxyReq = http.request(url, { method: req.method, headers: { "Content-Type": "application/json" } }, (proxyRes) => {
-          res.status(proxyRes.statusCode || 500);
-          proxyRes.pipe(res);
-        });
-        proxyReq.on("error", () => res.status(502).json({ error: "Python API unavailable" }));
-        if (req.method === "POST" && req.body) proxyReq.write(JSON.stringify(req.body));
-        proxyReq.end();
       });
       console.log("Preview app enabled at /preview");
     }

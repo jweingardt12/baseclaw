@@ -21,6 +21,7 @@ import valuations
 import history
 import intel
 import news
+offline_draft_mod = importlib.import_module("offline-draft")
 import yahoo_browser
 
 app = Flask(__name__)
@@ -369,6 +370,148 @@ def api_best_available():
         pos_type = request.args.get("pos_type", "B")
         count = request.args.get("count", "25")
         result = draft_assistant.cmd_best_available([pos_type, count], as_json=True)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# --- Offline Draft (offline-draft.py) ---
+# Dashboard at /draft calls these endpoints directly
+
+
+@app.route("/api/offline-draft/start", methods=["POST"])
+def api_offline_draft_start():
+    try:
+        body = request.get_json() or {}
+        draft = offline_draft_mod.OfflineDraft()
+        result = draft.start(
+            teams=body.get("teams", []),
+            num_rounds=body.get("num_rounds", 23),
+            my_team=body.get("my_team", ""),
+            snake=body.get("snake", True),
+            sheet_id=body.get("sheet_id"),
+            sheet_range=body.get("sheet_range", "Sheet1"),
+            roster_positions=body.get("roster_positions"),
+        )
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/offline-draft/pick", methods=["POST"])
+def api_offline_draft_pick():
+    try:
+        body = request.get_json() or {}
+        draft = offline_draft_mod.OfflineDraft()
+        result = draft.pick(
+            player_name=body.get("player_name", ""),
+            team_name=body.get("team_name"),
+        )
+        if "error" in result:
+            return jsonify(result), 400
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/offline-draft/undo", methods=["POST"])
+def api_offline_draft_undo():
+    try:
+        draft = offline_draft_mod.OfflineDraft()
+        result = draft.undo()
+        if "error" in result:
+            return jsonify(result), 400
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/offline-draft/sync")
+def api_offline_draft_sync():
+    try:
+        draft = offline_draft_mod.OfflineDraft()
+        result = draft.sync_from_sheet()
+        if "error" in result:
+            return jsonify(result), 400
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/offline-draft/status")
+def api_offline_draft_status():
+    try:
+        draft = offline_draft_mod.OfflineDraft()
+        return jsonify(draft.status())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/offline-draft/recommend")
+def api_offline_draft_recommend():
+    try:
+        draft = offline_draft_mod.OfflineDraft()
+        result = draft.recommend()
+        if "error" in result:
+            return jsonify(result), 400
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/offline-draft/best-available")
+def api_offline_draft_best_available():
+    try:
+        pos_type = request.args.get("pos_type", "all")
+        limit = int(request.args.get("limit", "25"))
+        draft = offline_draft_mod.OfflineDraft()
+        players = draft.get_available(pos_type=pos_type, limit=limit)
+        return jsonify({"pos_type": pos_type, "players": players})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/offline-draft/board")
+def api_offline_draft_board():
+    try:
+        draft = offline_draft_mod.OfflineDraft()
+        result = draft.board()
+        if "error" in result:
+            return jsonify(result), 400
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/offline-draft/my-team")
+def api_offline_draft_my_team():
+    try:
+        draft = offline_draft_mod.OfflineDraft()
+        result = draft.my_team_roster()
+        if "error" in result:
+            return jsonify(result), 400
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/offline-draft/players")
+def api_offline_draft_players():
+    try:
+        query = request.args.get("q", "")
+        limit = int(request.args.get("limit", "10"))
+        draft = offline_draft_mod.OfflineDraft()
+        players = draft.search_players(query, limit=limit)
+        return jsonify({"query": query, "players": players})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/offline-draft/reset", methods=["POST"])
+def api_offline_draft_reset():
+    try:
+        draft = offline_draft_mod.OfflineDraft()
+        result = draft.reset()
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
