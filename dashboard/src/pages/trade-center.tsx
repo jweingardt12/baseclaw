@@ -9,7 +9,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
-import { Check, X, Search, Loader2 } from "lucide-react";
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia } from "@/components/ui/empty";
+import { Check, X, Search, Loader2, ArrowLeftRight } from "lucide-react";
+import { toast } from "sonner";
 import { TeamAvatar } from "@/components/team-avatar";
 import * as api from "@/lib/api";
 
@@ -27,12 +29,14 @@ export function TradeCenterPage() {
 
   const acceptMutation = useMutation({
     mutationFn: (id: string) => api.acceptTrade(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["trades"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["trades"] }); toast.success("Trade accepted"); },
+    onError: () => toast.error("Failed to accept trade"),
   });
 
   const rejectMutation = useMutation({
     mutationFn: (id: string) => api.rejectTrade(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["trades"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["trades"] }); toast.success("Trade rejected"); },
+    onError: () => toast.error("Failed to reject trade"),
   });
 
   return (
@@ -62,7 +66,13 @@ export function TradeCenterPage() {
           ) : trades.error ? (
             <p className="text-sm text-destructive">Failed to load trades</p>
           ) : trades.data?.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">No pending trades</p>
+            <Empty className="py-8">
+              <EmptyMedia variant="icon"><ArrowLeftRight className="size-4" /></EmptyMedia>
+              <EmptyHeader>
+                <EmptyTitle>No pending trades</EmptyTitle>
+                <EmptyDescription>Use the Builder or Finder tabs to initiate a trade.</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           ) : (
             trades.data?.map((trade) => (
               <Card key={trade.id}>

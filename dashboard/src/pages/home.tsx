@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { LineChart, Line } from "recharts";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Loader2, AlertTriangle, CheckCircle, Info, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { TeamAvatar } from "@/components/team-avatar";
@@ -23,6 +24,7 @@ export function HomePage() {
   const roster = useQuery({ queryKey: ["roster"], queryFn: api.getRoster });
   const categories = useQuery({ queryKey: ["categories"], queryFn: api.getCategoryCheck });
   const matchup = useQuery({ queryKey: ["matchup"], queryFn: api.getMatchup });
+  const scoreboard = useQuery({ queryKey: ["scoreboard"], queryFn: api.getScoreboard });
   const autonomy = useQuery({ queryKey: ["autonomy"], queryFn: api.getAutonomyConfig });
 
   const isWriteEnabled = autonomy.data?.mode !== "off";
@@ -30,8 +32,12 @@ export function HomePage() {
   const optimizeMutation = useMutation({
     mutationFn: api.autoOptimizeLineup,
     onMutate: () => setOptimizing(true),
-    onSuccess: () => {
-      toast.success("Lineup optimized successfully");
+    onSuccess: (data) => {
+      if (data.changes?.length > 0) {
+        toast.success("Lineup optimized: " + data.changes.join(", "));
+      } else {
+        toast.success("Lineup already optimal — no changes needed");
+      }
       setOptimizing(false);
     },
     onError: () => {
@@ -296,6 +302,42 @@ export function HomePage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* League Scoreboard */}
+      <Card>
+        <CardHeader>
+          <CardTitle>League Scoreboard</CardTitle>
+          <CardDescription>All matchups across the league</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {scoreboard.isLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : scoreboard.error ? (
+            <Alert variant="destructive">
+              <AlertTriangle className="size-4" />
+              <AlertDescription>Failed to load scoreboard</AlertDescription>
+            </Alert>
+          ) : (
+            <Table>
+              <TableBody>
+                {scoreboard.data?.matchups.map((m, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">{m.team1}</TableCell>
+                    <TableCell className="text-right tabular-nums">{m.score1}</TableCell>
+                    <TableCell className="text-center text-muted-foreground">vs</TableCell>
+                    <TableCell className="tabular-nums">{m.score2}</TableCell>
+                    <TableCell className="text-right font-medium">{m.team2}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

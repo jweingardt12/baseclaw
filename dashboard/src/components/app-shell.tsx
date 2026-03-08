@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/sidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from "@/components/ui/breadcrumb";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,9 +90,22 @@ function ThemeToggle() {
   );
 }
 
+const pageNames: Record<string, string> = {
+  "/": "Dashboard",
+  "/roster": "Roster",
+  "/free-agents": "Free Agents",
+  "/standings": "Standings",
+  "/trade-center": "Trade Center",
+  "/intelligence": "Intelligence",
+  "/week-planner": "Week Planner",
+  "/league-history": "League History",
+  "/settings": "Settings",
+};
+
 export function AppShell() {
   const location = useLocation();
   const [chatOpen, setChatOpen] = useState(false);
+  const currentPageName = pageNames[location.pathname] ?? location.pathname.replace("/", "").replace("-", " ");
 
   return (
     <SidebarProvider>
@@ -163,9 +177,13 @@ export function AppShell() {
         <header className="hidden md:flex h-14 items-center gap-3 border-b px-4">
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-5" />
-          <span className="text-sm font-medium text-muted-foreground capitalize">
-            {location.pathname === "/" ? "Dashboard" : location.pathname.replace("/", "").replace("-", " ")}
-          </span>
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage>{currentPageName}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </header>
 
         {/* Mobile top bar */}

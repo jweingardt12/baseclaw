@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,6 +11,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, LineChart, Line, XAxis, YAxis } from "recharts";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { toast } from "sonner";
 import { PlayerAvatar } from "@/components/player-avatar";
 import * as api from "@/lib/api";
 import type { RosterPlayer } from "@/lib/api";
@@ -24,11 +27,25 @@ const positionGroups = {
 };
 
 export function RosterPage() {
+  const queryClient = useQueryClient();
   const roster = useQuery({ queryKey: ["roster"], queryFn: api.getRoster });
   const autonomy = useQuery({ queryKey: ["autonomy"], queryFn: api.getAutonomyConfig });
   const [selectedPlayer, setSelectedPlayer] = useState<RosterPlayer | null>(null);
   const [tab, setTab] = useState("All");
+  const [dropTarget, setDropTarget] = useState<RosterPlayer | null>(null);
   const isWriteEnabled = autonomy.data?.mode !== "off";
+
+  const dropMutation = useMutation({
+    mutationFn: (name: string) => api.dropPlayer(name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["roster"] });
+      toast.success(`Dropped ${dropTarget?.name}`);
+      setDropTarget(null);
+    },
+    onError: () => {
+      toast.error("Failed to drop player");
+    },
+  });
 
   const filtered = roster.data?.filter((p) => {
     const group = positionGroups[tab as keyof typeof positionGroups];
@@ -105,7 +122,7 @@ export function RosterPage() {
                                   size="sm"
                                   variant="ghost"
                                   disabled={!isWriteEnabled}
-                                  onClick={() => api.dropPlayer(player.name)}
+                                  onClick={() => setDropTarget(player)}
                                 >
                                   Drop
                                 </Button>
@@ -174,75 +191,99 @@ export function RosterPage() {
                 </div>
               </div>
 
-              {/* Statcast Radar */}
-              {selectedPlayer.statcast && (
-                <Card>
-                  <CardHeader><CardTitle className="text-sm">Statcast Profile</CardTitle></CardHeader>
-                  <CardContent>
-                    <ChartContainer config={{ value: { color: "hsl(var(--chart-1))" } }} className="h-56 w-full">
-                      <RadarChart
-                        accessibilityLayer
-                        data={Object.entries(selectedPlayer.statcast).map(([key, value]) => ({ metric: key, value }))}
-                      >
-                        <PolarGrid />
-                        <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11 }} />
-                        <Radar dataKey="value" fill="var(--color-value)" fillOpacity={0.3} stroke="var(--color-value)" strokeWidth={2} />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                      </RadarChart>
-                    </ChartContainer>
-                  </CardContent>
-                </Card>
-              )}
+              <Accordion type="single" collapsible>
+                {/* Statcast Radar */}
+                {selectedPlayer.statcast && (
+                  <AccordionItem value="statcast">
+                    <AccordionTrigger className="text-sm font-medium">Statcast Profile</AccordionTrigger>
+                    <AccordionContent>
+                      <ChartContainer config={{ value: { color: "hsl(var(--chart-1))" } }} className="h-56 w-full">
+                        <RadarChart
+                          accessibilityLayer
+                          data={Object.entries(selectedPlayer.statcast).map(([key, value]) => ({ metric: key, value }))}
+                        >
+                          <PolarGrid />
+                          <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11 }} />
+                          <Radar dataKey="value" fill="var(--color-value)" fillOpacity={0.3} stroke="var(--color-value)" strokeWidth={2} />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                        </RadarChart>
+                      </ChartContainer>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
 
-              {/* Trends */}
-              {selectedPlayer.trends && selectedPlayer.trends.length > 0 && (
-                <Card>
-                  <CardHeader><CardTitle className="text-sm">Performance Trend</CardTitle></CardHeader>
-                  <CardContent>
-                    <ChartContainer config={{ value: { color: "hsl(var(--chart-2))" } }} className="h-40 w-full">
-                      <LineChart accessibilityLayer data={selectedPlayer.trends}>
-                        <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                        <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={30} />
-                        <Line type="monotone" dataKey="value" stroke="var(--color-value)" strokeWidth={2} dot={false} />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                      </LineChart>
-                    </ChartContainer>
-                  </CardContent>
-                </Card>
-              )}
+                {/* Trends */}
+                {selectedPlayer.trends && selectedPlayer.trends.length > 0 && (
+                  <AccordionItem value="trends">
+                    <AccordionTrigger className="text-sm font-medium">Performance Trend</AccordionTrigger>
+                    <AccordionContent>
+                      <ChartContainer config={{ value: { color: "hsl(var(--chart-2))" } }} className="h-40 w-full">
+                        <LineChart accessibilityLayer data={selectedPlayer.trends}>
+                          <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                          <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={30} />
+                          <Line type="monotone" dataKey="value" stroke="var(--color-value)" strokeWidth={2} dot={false} />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                        </LineChart>
+                      </ChartContainer>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
 
-              {/* Splits */}
-              {selectedPlayer.splits && selectedPlayer.splits.length > 0 && (
-                <Card>
-                  <CardHeader><CardTitle className="text-sm">Splits</CardTitle></CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Split</TableHead>
-                          {Object.keys(selectedPlayer.splits[0].stats).map((k) => (
-                            <TableHead key={k} className="text-right">{k}</TableHead>
-                          ))}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {selectedPlayer.splits.map((split) => (
-                          <TableRow key={split.split}>
-                            <TableCell className="font-medium">{split.split}</TableCell>
-                            {Object.values(split.stats).map((v, i) => (
-                              <TableCell key={i} className="text-right">{typeof v === "number" ? v.toFixed(3) : v}</TableCell>
+                {/* Splits */}
+                {selectedPlayer.splits && selectedPlayer.splits.length > 0 && (
+                  <AccordionItem value="splits">
+                    <AccordionTrigger className="text-sm font-medium">Splits</AccordionTrigger>
+                    <AccordionContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Split</TableHead>
+                            {Object.keys(selectedPlayer.splits[0].stats).map((k) => (
+                              <TableHead key={k} className="text-right">{k}</TableHead>
                             ))}
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              )}
+                        </TableHeader>
+                        <TableBody>
+                          {selectedPlayer.splits.map((split) => (
+                            <TableRow key={split.split}>
+                              <TableCell className="font-medium">{split.split}</TableCell>
+                              {Object.values(split.stats).map((v, i) => (
+                                <TableCell key={i} className="text-right">{typeof v === "number" ? v.toFixed(3) : v}</TableCell>
+                              ))}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+              </Accordion>
             </div>
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Drop Player Confirmation */}
+      <AlertDialog open={!!dropTarget} onOpenChange={(v) => !v && setDropTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Drop {dropTarget?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove them from your roster. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => dropTarget && dropMutation.mutate(dropTarget.name)}
+              disabled={dropMutation.isPending}
+            >
+              Drop Player
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

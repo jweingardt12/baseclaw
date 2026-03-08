@@ -10,12 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { UserPlus, Search } from "lucide-react";
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group";
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia } from "@/components/ui/empty";
+import { UserPlus, Search, Users } from "lucide-react";
+import { toast } from "sonner";
 import { PlayerAvatar } from "@/components/player-avatar";
 import * as api from "@/lib/api";
 import type { FreeAgent } from "@/lib/api";
@@ -33,14 +36,20 @@ export function FreeAgentsPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [confirmPlayer, setConfirmPlayer] = useState<FreeAgent | null>(null);
   const [faabBid, setFaabBid] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   const addMutation = useMutation({
     mutationFn: ({ name, faab }: { name: string; faab?: number }) => api.addPlayer(name, faab),
     onSuccess: () => {
+      toast.success("Added " + confirmPlayer?.name);
       queryClient.invalidateQueries({ queryKey: ["freeAgents"] });
       queryClient.invalidateQueries({ queryKey: ["roster"] });
       setConfirmPlayer(null);
       setFaabBid("");
+    },
+    onError: () => {
+      toast.error("Failed to add player");
     },
   });
 
@@ -105,7 +114,7 @@ export function FreeAgentsPage() {
           ) : (
             <ScrollArea className="h-[calc(100vh-320px)]">
               <div className="space-y-2">
-                {filtered?.map((player) => (
+                {filtered?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((player) => (
                   <Card key={player.name}>
                     <CardContent className="flex items-center justify-between p-3">
                       <div className="flex items-center gap-3">
@@ -143,10 +152,39 @@ export function FreeAgentsPage() {
                   </Card>
                 ))}
                 {filtered?.length === 0 && (
-                  <p className="py-8 text-center text-sm text-muted-foreground">No free agents match filters</p>
+                  <Empty className="py-8">
+                    <EmptyMedia variant="icon"><Users className="size-4" /></EmptyMedia>
+                    <EmptyHeader>
+                      <EmptyTitle>No free agents match filters</EmptyTitle>
+                      <EmptyDescription>Try adjusting your position or ownership filters.</EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
                 )}
               </div>
             </ScrollArea>
+            {filtered && filtered.length > PAGE_SIZE && (
+              <Pagination className="mt-4">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      className={page <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  <PaginationItem>
+                    <span className="text-sm text-muted-foreground px-2">
+                      Page {page} of {Math.ceil(filtered.length / PAGE_SIZE)}
+                    </span>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() => setPage((p) => Math.min(Math.ceil(filtered!.length / PAGE_SIZE), p + 1))}
+                      className={page >= Math.ceil(filtered.length / PAGE_SIZE) ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
           )}
         </TabsContent>
       </Tabs>
@@ -200,12 +238,17 @@ export function FreeAgentsPage() {
               </Table>
               <div className="space-y-1.5">
                 <Label>FAAB Bid (suggested: ${confirmPlayer.faabSuggested})</Label>
-                <Input
-                  type="number"
-                  placeholder={String(confirmPlayer.faabSuggested)}
-                  value={faabBid}
-                  onChange={(e) => setFaabBid(e.target.value)}
-                />
+                <InputGroup>
+                  <InputGroupAddon align="inline-start">
+                    <InputGroupText>$</InputGroupText>
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    type="number"
+                    placeholder={String(confirmPlayer.faabSuggested)}
+                    value={faabBid}
+                    onChange={(e) => setFaabBid(e.target.value)}
+                  />
+                </InputGroup>
               </div>
             </div>
           )}

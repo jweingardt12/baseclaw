@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,6 +27,7 @@ export function IntelligencePage() {
   const breakouts = useQuery({ queryKey: ["breakouts"], queryFn: api.getBreakoutCandidates });
   const busts = useQuery({ queryKey: ["busts"], queryFn: api.getBustCandidates });
   const news = useQuery({ queryKey: ["news"], queryFn: api.getNewsLatest });
+  const rankings = useQuery({ queryKey: ["rankings"], queryFn: api.getRankings });
 
   const filteredNews = sourceFilter ? news.data?.filter((n) => n.source === sourceFilter) : news.data;
   const newsSources = [...new Set(news.data?.map((n) => n.source) ?? [])];
@@ -38,6 +40,7 @@ export function IntelligencePage() {
         <TabsList>
           <TabsTrigger value="report">Player Report</TabsTrigger>
           <TabsTrigger value="breakout">Breakout Watch</TabsTrigger>
+          <TabsTrigger value="rankings">Rankings</TabsTrigger>
           <TabsTrigger value="news">News Feed</TabsTrigger>
         </TabsList>
 
@@ -191,6 +194,42 @@ export function IntelligencePage() {
               )}
             </div>
           </div>
+        </TabsContent>
+
+        {/* Rankings */}
+        <TabsContent value="rankings" className="mt-4">
+          {rankings.isLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : rankings.error ? (
+            <p className="text-sm text-destructive">Failed to load rankings</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-16">Rank</TableHead>
+                  <TableHead>Player</TableHead>
+                  <TableHead>Team</TableHead>
+                  <TableHead>Position</TableHead>
+                  <TableHead className="text-right">Value</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rankings.data?.players.map((p) => (
+                  <TableRow key={p.rank}>
+                    <TableCell className="tabular-nums font-medium">{p.rank}</TableCell>
+                    <TableCell>{p.name}</TableCell>
+                    <TableCell>{p.team}</TableCell>
+                    <TableCell><Badge variant="outline">{p.position}</Badge></TableCell>
+                    <TableCell className="text-right tabular-nums">{p.value.toFixed(1)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </TabsContent>
 
         {/* News Feed */}

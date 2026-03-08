@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -62,20 +63,20 @@ export function SettingsPage() {
           {config.isLoading ? (
             <Skeleton className="h-20 w-full" />
           ) : localConfig ? (
-            <div className="flex gap-2">
+            <ToggleGroup
+              type="single"
+              value={localConfig.mode}
+              onValueChange={(v) => v && updateConfig({ mode: v as AutonomyConfig["mode"] })}
+              className="w-full"
+            >
               {modes.map((m) => (
-                <Button
-                  key={m.value}
-                  variant={localConfig.mode === m.value ? "default" : "outline"}
-                  className="flex-1 flex-col h-auto py-3 gap-1"
-                  onClick={() => updateConfig({ mode: m.value })}
-                >
+                <ToggleGroupItem key={m.value} value={m.value} className="flex-1 flex-col h-auto py-3 gap-1">
                   <m.icon className="size-5" />
                   <span className="font-medium">{m.label}</span>
                   <span className="text-xs font-normal opacity-70">{m.description}</span>
-                </Button>
+                </ToggleGroupItem>
               ))}
-            </div>
+            </ToggleGroup>
           ) : null}
         </CardContent>
       </Card>
