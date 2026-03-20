@@ -30,7 +30,7 @@ export function ScheduleView({ data }: { data: MlbScheduleData }) {
                 <TableHeader className="font-bold">Away</TableHeader>
                 <TableHeader className="text-center w-10 font-bold">@</TableHeader>
                 <TableHeader className="font-bold">Home</TableHeader>
-                <TableHeader className="font-bold">Status</TableHeader>
+                <TableHeader className="hidden sm:table-cell font-bold">Status</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -50,7 +50,7 @@ export function ScheduleView({ data }: { data: MlbScheduleData }) {
                         {g.home}
                       </span>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground font-semibold">{g.status}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-sm text-muted-foreground font-semibold">{g.status}</TableCell>
                   </TableRow>
                 );
               })}

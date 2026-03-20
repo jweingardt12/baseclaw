@@ -23,7 +23,7 @@ export function RosterView({ data, app, navigate }: { data: MlbRosterData; app?:
             <TableRow>
               <TableHeader className="w-14 font-bold">#</TableHeader>
               <TableHeader className="font-bold">Player</TableHeader>
-              <TableHeader className="font-bold">Position</TableHeader>
+              <TableHeader className="hidden sm:table-cell font-bold">Position</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -32,7 +32,7 @@ export function RosterView({ data, app, navigate }: { data: MlbRosterData; app?:
                 <TableRow key={p.name + p.jersey_number}>
                   <TableCell className="font-mono font-semibold">{p.jersey_number}</TableCell>
                   <TableCell className="font-semibold"><PlayerName name={p.name} app={app} navigate={navigate} context="default" /></TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     <Badge color="zinc" className="text-xs font-bold">{p.position}</Badge>
                   </TableCell>
                 </TableRow>

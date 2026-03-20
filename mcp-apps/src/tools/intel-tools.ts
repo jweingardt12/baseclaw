@@ -19,7 +19,7 @@ import {
   type NewsSourcesResponse,
 } from "../api/types.js";
 
-const INTEL_URI = "ui://baseclaw/intel.html";
+export const INTEL_URI = "ui://baseclaw/intel.html";
 
 export function registerIntelTools(server: McpServer, distDir: string) {
   registerAppResource(
@@ -60,7 +60,7 @@ export function registerIntelTools(server: McpServer, distDir: string) {
       description: "Deep-dive Statcast + trends + plate discipline + Reddit buzz for a single player",
       inputSchema: { player_name: z.string().describe("Player name to look up") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: INTEL_URI } },
+      _meta: {},
     },
     async ({ player_name }) => {
       try {
@@ -68,17 +68,26 @@ export function registerIntelTools(server: McpServer, distDir: string) {
         const lines = ["Player Intelligence: " + str(data.name)];
         if (data.statcast) {
           const sc = data.statcast;
+          const expected = sc.expected || {};
+          const bb = sc.batted_ball || {};
+          const speed = sc.speed || {};
           lines.push("");
-          lines.push("Statcast: " + (sc.quality_tier || "unknown").toUpperCase());
-          if (sc.xwoba != null) lines.push("  xwOBA: " + sc.xwoba + " (" + (sc.xwoba_pct_rank || "?") + "th pct)");
-          if (sc.avg_exit_velo != null) lines.push("  Exit Velo: " + sc.avg_exit_velo + " (" + (sc.ev_pct_rank || "?") + "th pct)");
-          if (sc.barrel_pct_rank != null) lines.push("  Barrel Rate: " + (sc.barrel_pct_rank || "?") + "th pct");
-          if (sc.hard_hit_rate != null) lines.push("  Hard Hit: " + sc.hard_hit_rate + "% (" + (sc.hh_pct_rank || "?") + "th pct)");
+          const tier = expected.xwoba_tier || bb.ev_tier || sc.quality_tier || "unknown";
+          lines.push("Statcast: " + tier.toUpperCase());
+          if (sc.data_season && sc.data_season !== new Date().getFullYear()) {
+            lines.push("  (Using " + sc.data_season + " data - preseason)");
+          }
+          if (expected.xwoba != null) lines.push("  xwOBA: " + expected.xwoba + " (" + (expected.xwoba_pct || "?") + "th pct)");
+          if (bb.avg_exit_velo != null) lines.push("  Exit Velo: " + bb.avg_exit_velo + " (" + (bb.ev_pct || "?") + "th pct)");
+          if (bb.barrel_pct_rank != null) lines.push("  Barrel Rate: " + bb.barrel_pct_rank + "th pct");
+          if (bb.hard_hit_pct != null) lines.push("  Hard Hit: " + bb.hard_hit_pct + "% (" + (bb.hard_hit_pct_rank || "?") + "th pct)");
+          if (speed.sprint_speed != null) lines.push("  Sprint: " + speed.sprint_speed + " (" + (speed.sprint_pct || "?") + "th pct)");
+          if (sc.note) lines.push("  Note: " + sc.note);
         }
         if (data.trends) {
           const t = data.trends;
           lines.push("");
-          lines.push("Trend: " + (t.hot_cold || "neutral").toUpperCase());
+          lines.push("Trend: " + (t.status || t.hot_cold || "neutral").toUpperCase());
           if (t.last_14_days) {
             const d = t.last_14_days;
             lines.push("  14-Day: " + Object.entries(d).map(function([k,v]) { return k + "=" + v; }).join(", "));
@@ -115,7 +124,7 @@ export function registerIntelTools(server: McpServer, distDir: string) {
       description: "Find breakout candidates: players whose expected stats (xwOBA) exceed actual performance, suggesting positive regression",
       inputSchema: { pos_type: z.string().describe("B for batters, P for pitchers").default("B"), count: z.number().describe("Number of candidates to return").default(15) },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: INTEL_URI } },
+      _meta: {},
     },
     async ({ pos_type, count }) => {
       try {
@@ -144,7 +153,7 @@ export function registerIntelTools(server: McpServer, distDir: string) {
       description: "Find bust candidates: players whose actual performance (wOBA) exceeds expected stats (xwOBA), suggesting negative regression",
       inputSchema: { pos_type: z.string().describe("B for batters, P for pitchers").default("B"), count: z.number().describe("Number of candidates to return").default(15) },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: INTEL_URI } },
+      _meta: {},
     },
     async ({ pos_type, count }) => {
       try {
@@ -172,7 +181,7 @@ export function registerIntelTools(server: McpServer, distDir: string) {
     {
       description: "What r/fantasybaseball is talking about right now - hot posts, trending topics",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: INTEL_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -198,7 +207,7 @@ export function registerIntelTools(server: McpServer, distDir: string) {
     {
       description: "Players with rising buzz on Reddit - high engagement posts about specific players",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: INTEL_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -224,7 +233,7 @@ export function registerIntelTools(server: McpServer, distDir: string) {
     {
       description: "Recent MLB prospect call-ups and roster moves that could impact fantasy",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: INTEL_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -251,7 +260,7 @@ export function registerIntelTools(server: McpServer, distDir: string) {
       description: "Recent fantasy-relevant MLB transactions (IL, call-up, DFA, trade). Use days param to control lookback window.",
       inputSchema: { days: z.number().describe("Number of days to look back").default(7) },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: INTEL_URI } },
+      _meta: {},
     },
     async ({ days }) => {
       try {
@@ -281,7 +290,7 @@ export function registerIntelTools(server: McpServer, distDir: string) {
         days_ago: z.number().describe("How many days back to compare (30 or 60)").default(30),
       },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: INTEL_URI } },
+      _meta: {},
     },
     async ({ player_name, days_ago }) => {
       try {
@@ -333,7 +342,7 @@ export function registerIntelTools(server: McpServer, distDir: string) {
         limit: z.number().optional().describe("Max entries to return (default 30)"),
       },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: INTEL_URI } },
+      _meta: {},
     },
     async ({ sources, player, limit }) => {
       try {
@@ -369,7 +378,7 @@ export function registerIntelTools(server: McpServer, distDir: string) {
     {
       description: "List available news sources and their status (enabled/disabled, last fetch time, item count)",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: INTEL_URI } },
+      _meta: {},
     },
     async () => {
       try {

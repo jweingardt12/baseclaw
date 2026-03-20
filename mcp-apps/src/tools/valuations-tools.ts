@@ -1,45 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { registerAppTool, registerAppResource, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
+import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
-import * as fs from "fs/promises";
-import * as path from "path";
 import { apiGet, apiPost, toolError } from "../api/python-client.js";
 import { generateRankingsInsight, generateCompareInsight } from "../insights.js";
 import { str, type RankingsResponse, type CompareResponse, type ValueResponse } from "../api/types.js";
 
-const VALUATIONS_URI = "ui://baseclaw/valuations.html";
-
-export function registerValuationsTools(server: McpServer, distDir: string) {
-  registerAppResource(
-    server,
-    "Valuations View",
-    VALUATIONS_URI,
-    {
-      description: "Z-score rankings, player comparisons, and valuations",
-      _meta: {
-        ui: {
-          csp: {
-            resourceDomains: [
-              "img.mlbstatic.com",
-              "www.mlbstatic.com",
-              "s.yimg.com",
-              "securea.mlb.com",
-            ],
-          },
-          permissions: { clipboardWrite: {} },
-          prefersBorder: true,
-        },
-      },
-    },
-    async () => ({
-      contents: [{
-        uri: VALUATIONS_URI,
-        mimeType: RESOURCE_MIME_TYPE,
-        text: await fs.readFile(path.join(distDir, "valuations.html"), "utf-8"),
-      }],
-    }),
-  );
-
+export function registerValuationsTools(server: McpServer) {
   // yahoo_rankings
   registerAppTool(
     server,
@@ -48,7 +14,7 @@ export function registerValuationsTools(server: McpServer, distDir: string) {
       description: "Show top players ranked by z-score value. pos_type: B for batters, P for pitchers",
       inputSchema: { pos_type: z.string().describe("B for batters, P for pitchers").default("B"), count: z.number().describe("Number of players to return").default(25) },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: VALUATIONS_URI } },
+      _meta: {},
     },
     async ({ pos_type, count }) => {
       try {
@@ -76,7 +42,7 @@ export function registerValuationsTools(server: McpServer, distDir: string) {
       description: "Compare two players side by side with z-score breakdowns",
       inputSchema: { player1: z.string().describe("First player name"), player2: z.string().describe("Second player name") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: VALUATIONS_URI } },
+      _meta: {},
     },
     async ({ player1, player2 }) => {
       try {
@@ -118,7 +84,7 @@ export function registerValuationsTools(server: McpServer, distDir: string) {
       description: "Show a player's full z-score breakdown across all categories",
       inputSchema: { player_name: z.string().describe("Player name to look up") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: VALUATIONS_URI } },
+      _meta: {},
     },
     async ({ player_name }) => {
       try {
@@ -172,7 +138,7 @@ export function registerValuationsTools(server: McpServer, distDir: string) {
         proj_type: z.string().describe("Projection system: consensus, steamer, zips, or fangraphsdc").default("consensus"),
       },
       annotations: { readOnlyHint: false },
-      _meta: { ui: { resourceUri: VALUATIONS_URI } },
+      _meta: {},
     },
     async ({ proj_type }) => {
       try {
@@ -201,7 +167,7 @@ export function registerValuationsTools(server: McpServer, distDir: string) {
         count: z.number().describe("Number of biggest movers to return").default(25),
       },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: VALUATIONS_URI } },
+      _meta: {},
     },
     async ({ count }) => {
       try {
@@ -246,7 +212,7 @@ export function registerValuationsTools(server: McpServer, distDir: string) {
         count: z.number().describe("Number of players to show").default(20),
       },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: VALUATIONS_URI } },
+      _meta: {},
     },
     async ({ pos_type, count }) => {
       try {

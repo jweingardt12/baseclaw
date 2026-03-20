@@ -30,8 +30,8 @@ export function StandingsView({ data }: { data: { divisions: MlbDivision[] } }) 
                 <TableRow>
                   <TableHeader className="font-bold">Team</TableHeader>
                   <TableHeader className="text-center w-12 font-bold">W</TableHeader>
-                  <TableHeader className="text-center w-12 font-bold">L</TableHeader>
-                  <TableHeader className="text-center w-14 font-bold">GB</TableHeader>
+                  <TableHeader className="hidden sm:table-cell text-center w-12 font-bold">L</TableHeader>
+                  <TableHeader className="hidden sm:table-cell text-center w-14 font-bold">GB</TableHeader>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -45,8 +45,8 @@ export function StandingsView({ data }: { data: { divisions: MlbDivision[] } }) 
                         </span>
                       </TableCell>
                       <TableCell className="text-center font-mono font-semibold">{t.wins}</TableCell>
-                      <TableCell className="text-center font-mono font-semibold">{t.losses}</TableCell>
-                      <TableCell className="text-center font-mono text-muted-foreground">{t.games_back}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-center font-mono font-semibold">{t.losses}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-center font-mono text-muted-foreground">{t.games_back}</TableCell>
                     </TableRow>
                   );
                 })}

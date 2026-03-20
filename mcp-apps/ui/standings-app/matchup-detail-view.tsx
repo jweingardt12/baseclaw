@@ -51,7 +51,7 @@ function CategoryRow({ cat, isSwing }: { cat: MatchupCategory; isSwing: boolean 
         </span>
       </td>
       <td className={"text-right px-3 py-1.5 font-mono text-sm " + myWeight}>{cat.my_value}</td>
-      <td className={"text-right px-3 py-1.5 font-mono text-sm " + oppWeight}>{cat.opp_value}</td>
+      <td className={"hidden sm:table-cell text-right px-3 py-1.5 font-mono text-sm " + oppWeight}>{cat.opp_value}</td>
       <td className={"text-center px-2 py-1.5 text-xs font-bold " + resultColor}>{resultLetter}</td>
     </tr>
   );
@@ -142,7 +142,7 @@ export function MatchupDetailView({ data, app, navigate }: { data: MatchupDetail
               <tr className="border-b text-xs text-muted-foreground">
                 <th className="text-left px-3 py-2 font-medium">Cat</th>
                 <th className="text-right px-3 py-2 font-medium">You</th>
-                <th className="text-right px-3 py-2 font-medium">Opp</th>
+                <th className="hidden sm:table-cell text-right px-3 py-2 font-medium">Opp</th>
                 <th className="text-center px-2 py-2 font-medium w-10"></th>
               </tr>
             </thead>

@@ -1,8 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { registerAppTool, registerAppResource, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
+import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
-import * as fs from "fs/promises";
-import * as path from "path";
 import { apiGet, toolError } from "../api/python-client.js";
 import {
   str,
@@ -16,39 +14,7 @@ import {
   type RosterHistoryResponse,
 } from "../api/types.js";
 
-const HISTORY_URI = "ui://baseclaw/history.html";
-
-export function registerHistoryTools(server: McpServer, distDir: string) {
-  registerAppResource(
-    server,
-    "History View",
-    HISTORY_URI,
-    {
-      description: "League history, records, and past season data",
-      _meta: {
-        ui: {
-          csp: {
-            resourceDomains: [
-              "img.mlbstatic.com",
-              "www.mlbstatic.com",
-              "s.yimg.com",
-              "securea.mlb.com",
-            ],
-          },
-          permissions: { clipboardWrite: {} },
-          prefersBorder: true,
-        },
-      },
-    },
-    async () => ({
-      contents: [{
-        uri: HISTORY_URI,
-        mimeType: RESOURCE_MIME_TYPE,
-        text: await fs.readFile(path.join(distDir, "history.html"), "utf-8"),
-      }],
-    }),
-  );
-
+export function registerHistoryTools(server: McpServer) {
   // yahoo_league_history
   registerAppTool(
     server,
@@ -56,7 +22,7 @@ export function registerHistoryTools(server: McpServer, distDir: string) {
     {
       description: "All-time season results: champions, your finishes, and W-L-T records",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: HISTORY_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -83,7 +49,7 @@ export function registerHistoryTools(server: McpServer, distDir: string) {
     {
       description: "All-time records: career W-L, best seasons, most active managers, playoff appearances, #1 draft picks",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: HISTORY_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -117,7 +83,7 @@ export function registerHistoryTools(server: McpServer, distDir: string) {
       description: "Full standings for a past season with W-L-T records and managers",
       inputSchema: { year: z.number().describe("Season year (e.g. 2024)") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: HISTORY_URI } },
+      _meta: {},
     },
     async ({ year }) => {
       try {
@@ -142,7 +108,7 @@ export function registerHistoryTools(server: McpServer, distDir: string) {
       description: "Draft picks for a past season with player names resolved",
       inputSchema: { year: z.number().describe("Season year (e.g. 2024)"), count: z.number().describe("Number of picks to return").default(25) },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: HISTORY_URI } },
+      _meta: {},
     },
     async ({ year, count }) => {
       try {
@@ -167,7 +133,7 @@ export function registerHistoryTools(server: McpServer, distDir: string) {
       description: "Team names, managers, move counts, and trade counts for a past season",
       inputSchema: { year: z.number().describe("Season year (e.g. 2024)") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: HISTORY_URI } },
+      _meta: {},
     },
     async ({ year }) => {
       try {
@@ -192,7 +158,7 @@ export function registerHistoryTools(server: McpServer, distDir: string) {
       description: "Trade history for a past season showing players exchanged between teams",
       inputSchema: { year: z.number().describe("Season year (e.g. 2024)"), count: z.number().describe("Number of trades to return").default(10) },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: HISTORY_URI } },
+      _meta: {},
     },
     async ({ year, count }) => {
       try {
@@ -225,7 +191,7 @@ export function registerHistoryTools(server: McpServer, distDir: string) {
       description: "Matchup results for a specific week in a past season with category win counts",
       inputSchema: { year: z.number().describe("Season year (e.g. 2024)"), week: z.number().describe("Week number") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: HISTORY_URI } },
+      _meta: {},
     },
     async ({ year, week }) => {
       try {
@@ -254,7 +220,7 @@ export function registerHistoryTools(server: McpServer, distDir: string) {
         team_key: z.string().describe("Team key (optional, defaults to your team)").default(""),
       },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: HISTORY_URI } },
+      _meta: {},
     },
     async ({ week, date, team_key }) => {
       try {

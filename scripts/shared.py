@@ -12,6 +12,7 @@ import http.client
 import ssl
 import urllib.request
 import threading
+import unicodedata
 
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
@@ -368,6 +369,8 @@ def normalize_player_name(name):
     if not name:
         return ""
     name = name.strip().lower()
+    # Strip accents (e.g. García -> garcia, Muñoz -> munoz)
+    name = "".join(c for c in unicodedata.normalize("NFD", name) if unicodedata.category(c) != "Mn")
     # Handle "Last, First" format
     if "," in name:
         parts = name.split(",", 1)

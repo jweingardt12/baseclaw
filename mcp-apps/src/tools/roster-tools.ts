@@ -6,7 +6,7 @@ import * as path from "path";
 import { apiGet, apiPost, toolError } from "../api/python-client.js";
 import { str, type RosterResponse, type FreeAgentsResponse, type PlayerListResponse, type SearchResponse, type ActionResponse, type WaiverClaimResponse, type WaiverClaimSwapResponse, type WhoOwnsResponse, type PercentOwnedResponse, type ChangeTeamNameResponse, type ChangeTeamLogoResponse, type PlayerStatsResponse, type WaiversResponse, type TakenPlayersResponse } from "../api/types.js";
 
-const ROSTER_URI = "ui://baseclaw/roster.html";
+export const ROSTER_URI = "ui://baseclaw/roster.html";
 
 export function registerRosterTools(server: McpServer, distDir: string, writesEnabled: boolean = false) {
   // Register the app resource for roster UI
@@ -162,7 +162,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
       description: "Search for a player by name among free agents",
       inputSchema: { player_name: z.string().describe("Player name to search for") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: ROSTER_URI } },
+      _meta: {},
     },
     async ({ player_name }) => {
       try {
@@ -307,7 +307,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
     {
       description: "Check if the browser session for write operations (add, drop, trade, etc.) is valid. If not valid, user needs to run './yf browser-login'.",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: ROSTER_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -378,7 +378,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
       description: "Check who owns a specific player by player ID",
       inputSchema: { player_id: z.string().describe("Yahoo player ID to look up") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: ROSTER_URI } },
+      _meta: {},
     },
     async ({ player_id }) => {
       try {
@@ -415,7 +415,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
       description: "Get percent owned for specific players by Yahoo player ID. Returns ownership percentage across all Yahoo leagues",
       inputSchema: { ids: z.string().describe("Comma-separated Yahoo player IDs (e.g. '10660,9542')") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: ROSTER_URI } },
+      _meta: {},
     },
     async ({ ids }) => {
       try {
@@ -451,7 +451,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
         date: z.string().describe("Date YYYY-MM-DD (when period=date)").default(""),
       },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: ROSTER_URI } },
+      _meta: {},
     },
     async ({ player_name, period, week, date }) => {
       try {
@@ -482,7 +482,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
     {
       description: "Show players currently on waivers (in claim period, not yet free agents)",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: ROSTER_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -516,7 +516,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
         position: z.string().describe("Filter by position (e.g. OF, SP, C). Empty for all.").default(""),
       },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: ROSTER_URI } },
+      _meta: {},
     },
     async ({ position }) => {
       try {

@@ -1262,20 +1262,21 @@ def load_all():
 
 
 def get_player_by_name(name, hitters, pitchers):
-    """Find a player by partial name match"""
-    name_lower = name.lower()
+    """Find a player by partial name match (accent-insensitive)"""
+    from shared import normalize_player_name
+    norm = normalize_player_name(name)
     results = []
 
     if hitters is not None:
         for _, row in hitters.iterrows():
-            if name_lower in str(row.get("Name", "")).lower():
+            if norm in normalize_player_name(str(row.get("Name", ""))):
                 r = row.to_dict()
                 r["_type"] = "B"
                 results.append(r)
 
     if pitchers is not None:
         for _, row in pitchers.iterrows():
-            if name_lower in str(row.get("Name", "")).lower():
+            if norm in normalize_player_name(str(row.get("Name", ""))):
                 r = row.to_dict()
                 r["_type"] = "P"
                 results.append(r)

@@ -6,7 +6,7 @@
 
 Your fantasy baseball team, managed by AI.
 
-BaseClaw is an MCP server that gives Claude full access to your Yahoo Fantasy Baseball league — your roster, the waiver wire, Statcast data, trade analytics, and 126 tools to act on it all. Ask questions in plain English or let an autonomous agent run your team on autopilot.
+BaseClaw is an MCP server that gives Claude full access to your Yahoo Fantasy Baseball league — your roster, the waiver wire, Statcast data, trade analytics, and 126 tools to act on it all. Core dashboards and action tools render interactive UI directly in Claude; everything else returns clean text. Ask questions in plain English or let an autonomous agent run your team on autopilot.
 
 ## Table of Contents
 
@@ -65,7 +65,7 @@ Claude decides which tools to call based on your question. Complex questions cha
 
 4. **Browser automation** — Write operations (add, drop, trade, lineup changes) use Playwright to automate the Yahoo Fantasy website directly, since Yahoo's API no longer grants write scope to new developer apps. Read operations still use the fast OAuth API.
 
-5. **Inline UI apps** — Tool results aren't just text. Nine React + Catalyst + Recharts HTML apps with 75 views render interactive tables, charts, radar plots, heatmaps, and dashboards directly inside Claude's response using MCP Apps (`@modelcontextprotocol/ext-apps`).
+5. **Inline UI apps** — Core dashboards and action tools render interactive React UIs directly inside Claude's response. Four Catalyst + Recharts HTML apps with 75 views power tables, charts, radar plots, heatmaps, and dashboards via MCP Apps (`@modelcontextprotocol/ext-apps`). Read-only lookups return clean text to keep the chat uncluttered — 24 tools get visual UI, the rest are text-only.
 
 6. **Workflow tools for agents** — Eleven aggregated tools (`yahoo_morning_briefing`, `yahoo_game_day_manager`, `yahoo_trade_pipeline`, etc.) each combine 5-7+ individual API calls server-side and return concise, decision-ready output in a single tool call. Designed for autonomous agents that need to minimize token usage and tool call count — a full daily routine takes just 2-3 tool calls instead of 15+.
 
@@ -284,7 +284,7 @@ Customize `AGENTS.md` to adjust strategy, risk tolerance, or reporting style.
 
 ## MCP Tools
 
-126 tools across 10 tool files, each with rich inline HTML UI apps rendered directly in Claude.
+126 tools across 10 tool files. Core dashboards and action tools (24) render interactive UI in Claude; the rest return text.
 
 <details>
 <summary><strong>Roster Management</strong> (17 tools)</summary>
@@ -528,7 +528,7 @@ The `./yf` helper script provides direct CLI access to all functionality:
 │  │                   │  │                     │  │
 │  │  yahoo_fantasy_api│  │  MCP SDK + ext-apps │  │
 │  │  pybaseball       │  │  126 tool defs      │  │
-│  │  MLB-StatsAPI     │  │  9 apps / 75 views  │  │
+│  │  MLB-StatsAPI     │  │  4 apps / 75 views  │  │
 │  │  Playwright       │  │  11 workflow tools  │  │
 │  │  CacheManager     │  │  10 tool files      │  │
 │  └──────────────────┘  └─────────────────────┘  │
@@ -627,7 +627,7 @@ baseclaw/
     ├── assets/logo-128.png         # Server icon (pixel-art baseball)
     ├── src/tools/                  # 10 tool files, 126 MCP tools
     ├── src/api/                    # Python API client + type definitions
-    └── ui/                         # 9 inline HTML apps, 75 views (React + Catalyst + Recharts)
+    └── ui/                         # 4 inline HTML apps, 75 views (React + Catalyst + Recharts)
 ```
 
 </details>

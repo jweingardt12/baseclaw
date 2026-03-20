@@ -27,6 +27,27 @@ from shared import (
 
 from yahoo_browser import is_scope_error as _is_scope_error, write_method as _write_method
 
+# Category correlations for punt analysis (shared by cmd_punt_advisor and preseason fallback)
+_CATEGORY_CORRELATIONS = {
+    "HR": ["RBI", "TB", "XBH"],
+    "RBI": ["HR", "TB"],
+    "TB": ["HR", "XBH", "RBI"],
+    "XBH": ["HR", "TB"],
+    "AVG": ["OBP", "H"],
+    "OBP": ["AVG"],
+    "H": ["AVG", "TB"],
+    "R": ["OBP", "H"],
+    "NSB": [],
+    "K": ["ERA", "WHIP"],
+    "ERA": ["WHIP", "K", "QS"],
+    "WHIP": ["ERA", "K", "QS"],
+    "QS": ["ERA", "WHIP", "W"],
+    "W": ["QS"],
+    "IP": ["K", "QS", "W"],
+    "NSV": ["HLD"],
+    "HLD": ["NSV"],
+}
+
 
 def get_db():
     """Get SQLite connection with tables initialized"""
@@ -1649,6 +1670,44 @@ def cmd_category_simulate(args, as_json=False):
         cat_ranks[cat] = {"rank": rank, "total": len(values)}
         if len(values) > num_teams:
             num_teams = len(values)
+
+    # Preseason fallback: if no category ranks (all stats 0), use z-score projections
+    if not cat_ranks:
+        try:
+            from valuations import project_category_impact
+            impact = project_category_impact([add_name], [drop_name] if drop_name else [])
+            if as_json:
+                return {
+                    "add_player": {"name": add_name},
+                    "drop_player": {"name": drop_name} if drop_name else None,
+                    "current_ranks": [],
+                    "simulated_ranks": [],
+                    "summary": "Preseason: using projection z-scores instead of live stats.",
+                    "z_score_impact": impact,
+                    "source": "projections",
+                }
+            # CLI output
+            print("(Preseason mode: using projection z-scores)")
+            print("")
+            cat_impact = impact.get("category_impact", {})
+            if cat_impact:
+                print("  " + "Category".ljust(12) + "Add Z".rjust(8) + "Drop Z".rjust(8) + " Delta".rjust(8) + "  Direction")
+                print("  " + "-" * 50)
+                for cat, info in sorted(cat_impact.items()):
+                    print("  " + cat.ljust(12)
+                          + str(info.get("add_z", 0)).rjust(8)
+                          + str(info.get("drop_z", 0)).rjust(8)
+                          + str(info.get("delta", 0)).rjust(8)
+                          + "  " + info.get("direction", "neutral"))
+            print("")
+            print("Net Z change: " + str(impact.get("net_z_change", 0)))
+            print("Assessment: " + str(impact.get("assessment", "neutral")))
+            return
+        except Exception as e:
+            if as_json:
+                return {"error": "Preseason fallback failed: " + str(e)}
+            print("Error in preseason fallback: " + str(e))
+            return
 
     # 2. Search for the player being added
     add_player_info = None
@@ -4055,7 +4114,6 @@ def cmd_closer_monitor(args, as_json=False):
                     "name": p.get("name", "Unknown"),
                     "player_id": str(p.get("player_id", "")),
                     "positions": positions,
-                    "percent_owned": p.get("percent_owned", 0),
                     "status": p.get("status", ""),
                     "mlb_id": get_mlb_id(p.get("name", "")),
                     "ownership": "my_team",
@@ -4094,7 +4152,7 @@ def cmd_closer_monitor(args, as_json=False):
             print("Your Closers/RPs:")
             for p in my_closers:
                 status = " [" + p.get("status", "") + "]" if p.get("status") else ""
-                print("  " + p.get("name", "?").ljust(25) + " " + str(p.get("percent_owned", 0)) + "% owned" + status)
+                print("  " + p.get("name", "?").ljust(25) + " (rostered)" + status)
             print("")
         print("Available Closers (by ownership %):")
         for p in rp_closers[:15]:
@@ -4847,10 +4905,8 @@ def cmd_punt_advisor(args, as_json=False):
         return
 
     if not my_team_key or my_team_key not in all_teams:
-        if as_json:
-            return {"error": "Could not find your team in matchup data"}
-        print("Could not find your team in matchup data")
-        return
+        # Preseason fallback: use projection z-scores from roster
+        return _punt_advisor_from_projections(lg, as_json)
 
     num_teams = len(all_teams)
     my_stats = all_teams.get(my_team_key, {})
@@ -4867,26 +4923,7 @@ def cmd_punt_advisor(args, as_json=False):
             my_team_name = "My Team"
 
     # ── 4. Compute per-category ranks and gaps ──
-    # Category correlations: punting one affects related ones
-    CORRELATIONS = {
-        "HR": ["RBI", "TB", "XBH"],
-        "RBI": ["HR", "TB"],
-        "TB": ["HR", "XBH", "RBI"],
-        "XBH": ["HR", "TB"],
-        "AVG": ["OBP", "H"],
-        "OBP": ["AVG"],
-        "H": ["AVG", "TB"],
-        "R": ["OBP", "H"],
-        "NSB": [],
-        "K": ["ERA", "WHIP"],
-        "ERA": ["WHIP", "K", "QS"],
-        "WHIP": ["ERA", "K", "QS"],
-        "QS": ["ERA", "WHIP", "W"],
-        "W": ["QS"],
-        "IP": ["K", "QS", "W"],
-        "NSV": ["HLD"],
-        "HLD": ["NSV"],
-    }
+    CORRELATIONS = _CATEGORY_CORRELATIONS
 
     categories = []
     for sid, cat_name in stat_id_to_name.items():
@@ -4974,10 +5011,8 @@ def cmd_punt_advisor(args, as_json=False):
         })
 
     if not categories:
-        if as_json:
-            return {"error": "No category data could be computed"}
-        print("No category data could be computed")
-        return
+        # Preseason fallback: all stats are empty/zero, use projections
+        return _punt_advisor_from_projections(lg, as_json)
 
     # Sort by rank (best first)
     categories.sort(key=lambda c: c.get("rank", 99))
@@ -5090,6 +5125,130 @@ def cmd_punt_advisor(args, as_json=False):
         rank_str = str(cat.get("rank", "?")) + "/" + str(cat.get("total", "?"))
         print("  " + cat.get("name", "?").ljust(12) + rank_str.rjust(6)
               + "  " + str(cat.get("value", "")).rjust(10) + "  " + rec)
+
+    if punt_candidates:
+        print("")
+        print("Punt Candidates: " + ", ".join(punt_candidates))
+    if target_categories:
+        print("Target Categories: " + ", ".join(target_categories))
+    if correlation_warnings:
+        print("")
+        print("Correlation Warnings:")
+        for w in correlation_warnings:
+            print("  - " + w)
+    print("")
+    print("Strategy: " + strategy_summary)
+
+
+def _punt_advisor_from_projections(lg, as_json=False):
+    """Preseason punt advisor fallback using roster z-score projections."""
+    from valuations import get_player_zscore
+
+    try:
+        team = lg.to_team(TEAM_ID)
+        roster = team.roster()
+    except Exception as e:
+        if as_json:
+            return {"error": "Could not fetch roster: " + str(e)}
+        print("Could not fetch roster: " + str(e))
+        return
+
+    # Sum per-category z-scores across the roster
+    cat_totals = {}
+    resolved = 0
+    for p in roster:
+        name = p.get("name", "")
+        if not name:
+            continue
+        info = get_player_zscore(name)
+        if not info:
+            continue
+        resolved += 1
+        for cat, z in info.get("per_category_zscores", {}).items():
+            cat_totals[cat] = cat_totals.get(cat, 0) + z
+
+    if not cat_totals:
+        if as_json:
+            return {"error": "Could not compute z-scores for roster"}
+        print("Could not compute z-scores for roster")
+        return
+
+    # Sort categories by z-score total
+    sorted_cats = sorted(cat_totals.items(), key=lambda x: x[1], reverse=True)
+
+    # Classify: top third = strength, bottom third = punt candidate
+    n = len(sorted_cats)
+    top_cutoff = max(1, n // 3)
+    bottom_cutoff = n - top_cutoff
+
+    CORRELATIONS = _CATEGORY_CORRELATIONS
+
+    categories = []
+    punt_candidates = []
+    target_categories = []
+
+    for idx, (cat, z_total) in enumerate(sorted_cats):
+        z_rounded = round(z_total, 2)
+        if idx < top_cutoff:
+            rec = "strength"
+            reasoning = "Top z-score total — natural strength"
+            target_categories.append(cat)
+        elif idx >= bottom_cutoff:
+            rec = "punt"
+            reasoning = "Lowest z-score total — punt candidate"
+            punt_candidates.append(cat)
+        else:
+            rec = "hold"
+            reasoning = "Mid-range z-score total"
+
+        categories.append({
+            "name": cat,
+            "z_total": z_rounded,
+            "recommendation": rec,
+            "reasoning": reasoning,
+        })
+
+    # Correlation warnings
+    correlation_warnings = []
+    for punt_name in punt_candidates:
+        for corr_name in CORRELATIONS.get(punt_name, []):
+            if corr_name in target_categories:
+                correlation_warnings.append(
+                    "Punting " + punt_name + " may hurt " + corr_name + " (which you're targeting)"
+                )
+
+    # Strategy summary
+    summary_parts = ["Preseason projection-based analysis."]
+    if punt_candidates:
+        summary_parts.append("Consider punting " + ", ".join(punt_candidates) + " to double down on " + ", ".join(target_categories[:4]) + ".")
+    if correlation_warnings:
+        summary_parts.append("Watch: " + "; ".join(correlation_warnings[:2]) + ".")
+    strategy_summary = " ".join(summary_parts)
+
+    result = {
+        "team_name": "My Team",
+        "num_teams": "?",
+        "categories": categories,
+        "punt_candidates": punt_candidates,
+        "target_categories": target_categories,
+        "correlation_warnings": correlation_warnings,
+        "strategy_summary": strategy_summary,
+        "source": "projections",
+        "players_resolved": resolved,
+    }
+
+    if as_json:
+        return result
+
+    # CLI output
+    print("(Preseason mode: using projection z-scores)")
+    print("")
+    print("  " + "Category".ljust(12) + "Z-Total".rjust(8) + "  Recommendation")
+    print("  " + "-" * 40)
+    for cat in categories:
+        print("  " + cat.get("name", "?").ljust(12)
+              + str(cat.get("z_total", 0)).rjust(8)
+              + "  " + cat.get("recommendation", "hold").upper())
 
     if punt_candidates:
         print("")

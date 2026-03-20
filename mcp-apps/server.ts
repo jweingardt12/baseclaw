@@ -35,11 +35,11 @@ export function createServer(): McpServer {
 
   registerRosterTools(server, DIST_DIR, WRITES_ENABLED);
   registerStandingsTools(server, DIST_DIR);
-  registerValuationsTools(server, DIST_DIR);
+  registerValuationsTools(server);
   registerSeasonTools(server, DIST_DIR, WRITES_ENABLED);
-  registerDraftTools(server, DIST_DIR);
-  registerHistoryTools(server, DIST_DIR);
-  registerMlbTools(server, DIST_DIR);
+  registerDraftTools(server);
+  registerHistoryTools(server);
+  registerMlbTools(server);
   registerIntelTools(server, DIST_DIR);
   registerWorkflowTools(server, WRITES_ENABLED);
   registerStrategyTools(server);

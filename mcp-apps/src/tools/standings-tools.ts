@@ -26,7 +26,7 @@ import {
   type SeasonPaceResponse,
 } from "../api/types.js";
 
-const STANDINGS_URI = "ui://baseclaw/standings.html";
+export const STANDINGS_URI = "ui://baseclaw/standings.html";
 
 export function registerStandingsTools(server: McpServer, distDir: string) {
   registerAppResource(
@@ -172,7 +172,7 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
     {
       description: "Show league settings and team info",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: STANDINGS_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -213,7 +213,7 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
     {
       description: "Compact league profile: waiver type (FAAB/priority), scoring format, stat categories, roster slots, and FAAB balance if applicable. Call once at session start — replaces separate yahoo_info + yahoo_stat_categories calls for agent setup.",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: STANDINGS_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -264,7 +264,7 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
       description: "Show recent league transactions. trans_type: add, drop, trade, or empty for all",
       inputSchema: { trans_type: z.string().describe("Transaction type: add, drop, trade, or empty for all").default(""), count: z.number().describe("Number of transactions to return").default(25) },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: STANDINGS_URI } },
+      _meta: {},
     },
     async ({ trans_type, count }) => {
       try {
@@ -292,7 +292,7 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
     {
       description: "Show league scoring categories",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: STANDINGS_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -318,7 +318,7 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
     {
       description: "Most added and most dropped players across all Yahoo Fantasy leagues",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: STANDINGS_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -351,7 +351,7 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
     {
       description: "Show league activity - moves and trades per team, sorted by most active",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: STANDINGS_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -384,7 +384,7 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
     {
       description: "Rank all league teams by estimated roster strength (based on aggregate player ownership %)",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: STANDINGS_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -415,7 +415,7 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
     {
       description: "Project season pace, playoff probability, and magic number for all teams",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: STANDINGS_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -449,7 +449,7 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
     {
       description: "Get positional rankings for all teams in the league. Shows each team's rank (1-12) at every position with grade (strong/neutral/weak), starting and bench players, and recommended trade partners.",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: STANDINGS_URI } },
+      _meta: {},
     },
     async () => {
       try {

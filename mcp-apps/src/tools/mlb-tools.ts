@@ -1,8 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { registerAppTool, registerAppResource, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
+import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
-import * as fs from "fs/promises";
-import * as path from "path";
 import { apiGet, toolError } from "../api/python-client.js";
 import {
   str,
@@ -17,39 +15,7 @@ import {
   type WeatherResponse,
 } from "../api/types.js";
 
-const MLB_URI = "ui://baseclaw/mlb.html";
-
-export function registerMlbTools(server: McpServer, distDir: string) {
-  registerAppResource(
-    server,
-    "MLB Data View",
-    MLB_URI,
-    {
-      description: "MLB teams, rosters, stats, injuries, standings, and schedule",
-      _meta: {
-        ui: {
-          csp: {
-            resourceDomains: [
-              "img.mlbstatic.com",
-              "www.mlbstatic.com",
-              "s.yimg.com",
-              "securea.mlb.com",
-            ],
-          },
-          permissions: { clipboardWrite: {} },
-          prefersBorder: true,
-        },
-      },
-    },
-    async () => ({
-      contents: [{
-        uri: MLB_URI,
-        mimeType: RESOURCE_MIME_TYPE,
-        text: await fs.readFile(path.join(distDir, "mlb.html"), "utf-8"),
-      }],
-    }),
-  );
-
+export function registerMlbTools(server: McpServer) {
   // mlb_teams
   registerAppTool(
     server,
@@ -57,7 +23,7 @@ export function registerMlbTools(server: McpServer, distDir: string) {
     {
       description: "List all MLB teams with abbreviations",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: MLB_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -81,7 +47,7 @@ export function registerMlbTools(server: McpServer, distDir: string) {
       description: "Get an MLB team's roster. team: abbreviation (NYY, LAD) or team ID",
       inputSchema: { team: z.string().describe("Team abbreviation (NYY, LAD) or MLB team ID") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: MLB_URI } },
+      _meta: {},
     },
     async ({ team }) => {
       try {
@@ -105,7 +71,7 @@ export function registerMlbTools(server: McpServer, distDir: string) {
       description: "Get MLB player info by MLB Stats API player ID",
       inputSchema: { player_id: z.string().describe("MLB Stats API player ID") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: MLB_URI } },
+      _meta: {},
     },
     async ({ player_id }) => {
       try {
@@ -132,7 +98,7 @@ export function registerMlbTools(server: McpServer, distDir: string) {
       description: "Get player season stats by MLB Stats API player ID",
       inputSchema: { player_id: z.string().describe("MLB Stats API player ID"), season: z.string().describe("Season year (e.g. 2025)").default("2025") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: MLB_URI } },
+      _meta: {},
     },
     async ({ player_id, season }) => {
       try {
@@ -156,7 +122,7 @@ export function registerMlbTools(server: McpServer, distDir: string) {
     {
       description: "Show current MLB injuries across all teams",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: MLB_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -181,7 +147,7 @@ export function registerMlbTools(server: McpServer, distDir: string) {
     {
       description: "Show MLB division standings",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: MLB_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -209,7 +175,7 @@ export function registerMlbTools(server: McpServer, distDir: string) {
       description: "Show MLB game schedule. Leave date empty for today, or pass YYYY-MM-DD",
       inputSchema: { date: z.string().describe("Date in YYYY-MM-DD format, empty for today").default("") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: MLB_URI } },
+      _meta: {},
     },
     async ({ date }) => {
       try {
@@ -235,7 +201,7 @@ export function registerMlbTools(server: McpServer, distDir: string) {
       description: "Show MLB draft picks by year. Returns draft selections with player names, teams, rounds, and positions",
       inputSchema: { year: z.string().describe("Draft year (e.g. '2025'). Omit for current year.").default("") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: MLB_URI } },
+      _meta: {},
     },
     async ({ year }) => {
       try {
@@ -275,7 +241,7 @@ export function registerMlbTools(server: McpServer, distDir: string) {
       description: "Check weather/venue risk for MLB games. Shows which games are in domed vs outdoor stadiums to help with lineup and streaming decisions",
       inputSchema: { date: z.string().describe("Date in YYYY-MM-DD format, empty for today").default("") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: MLB_URI } },
+      _meta: {},
     },
     async ({ date }) => {
       try {

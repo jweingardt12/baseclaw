@@ -125,7 +125,7 @@ export function TransactionsView({ data }: { data: TransactionsData }) {
                       <TableRow>
                         <TableHeader className="w-24">Type</TableHeader>
                         <TableHeader>Player</TableHeader>
-                        <TableHeader>Team</TableHeader>
+                        <TableHeader className="hidden sm:table-cell">Team</TableHeader>
                       </TableRow>
                     </TableHead>
                   )}
@@ -156,7 +156,7 @@ export function TransactionsView({ data }: { data: TransactionsData }) {
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
+                          <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <TeamLogo abbrev={t.team} />
                               {t.team || "-"}

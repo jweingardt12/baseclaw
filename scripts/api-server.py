@@ -1591,8 +1591,10 @@ def workflow_trade_analysis():
                         if str(rp.get("name", "")).lower() == str(p.get("name", "")).lower():
                             give_ids.append(str(rp.get("player_id", "")))
                             break
+                else:
+                    give_players.append({"name": name, "_error": "Player not found in projections"})
             except Exception:
-                give_players.append({"name": name, "_error": "not found"})
+                give_players.append({"name": name, "_error": "Player not found in projections"})
 
         for name in get_names:
             try:
@@ -1607,8 +1609,10 @@ def workflow_trade_analysis():
                         if str(rp.get("name", "")).lower() == str(p.get("name", "")).lower():
                             get_ids.append(str(rp.get("player_id", "")))
                             break
+                else:
+                    get_players.append({"name": name, "_error": "Player not found in projections"})
             except Exception:
-                get_players.append({"name": name, "_error": "not found"})
+                get_players.append({"name": name, "_error": "Player not found in projections"})
 
         # Run trade eval if we have IDs
         trade_eval = None

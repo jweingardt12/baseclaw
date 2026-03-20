@@ -1,8 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { registerAppTool, registerAppResource, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
+import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
-import * as fs from "fs/promises";
-import * as path from "path";
 import { apiGet, toolError } from "../api/python-client.js";
 import { generateDraftInsight } from "../insights.js";
 import {
@@ -13,40 +11,9 @@ import {
   type CheatsheetResponse,
   type BestAvailableResponse,
 } from "../api/types.js";
+import { INTEL_URI } from "./intel-tools.js";
 
-const DRAFT_URI = "ui://baseclaw/draft.html";
-
-export function registerDraftTools(server: McpServer, distDir: string) {
-  registerAppResource(
-    server,
-    "Draft Assistant View",
-    DRAFT_URI,
-    {
-      description: "Draft day tool with z-score recommendations",
-      _meta: {
-        ui: {
-          csp: {
-            resourceDomains: [
-              "img.mlbstatic.com",
-              "www.mlbstatic.com",
-              "s.yimg.com",
-              "securea.mlb.com",
-            ],
-          },
-          permissions: { clipboardWrite: {} },
-          prefersBorder: true,
-        },
-      },
-    },
-    async () => ({
-      contents: [{
-        uri: DRAFT_URI,
-        mimeType: RESOURCE_MIME_TYPE,
-        text: await fs.readFile(path.join(distDir, "draft.html"), "utf-8"),
-      }],
-    }),
-  );
-
+export function registerDraftTools(server: McpServer) {
   // yahoo_draft_status
   registerAppTool(
     server,
@@ -54,7 +21,7 @@ export function registerDraftTools(server: McpServer, distDir: string) {
     {
       description: "Show current draft status: picks made, your round, roster composition",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: DRAFT_URI } },
+      _meta: { ui: { resourceUri: INTEL_URI } },
     },
     async () => {
       try {
@@ -80,7 +47,7 @@ export function registerDraftTools(server: McpServer, distDir: string) {
     {
       description: "Get draft pick recommendation with top available hitters and pitchers by z-score",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: DRAFT_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -116,7 +83,7 @@ export function registerDraftTools(server: McpServer, distDir: string) {
     {
       description: "Show draft strategy cheat sheet with round-by-round targets",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: DRAFT_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -159,7 +126,7 @@ export function registerDraftTools(server: McpServer, distDir: string) {
       description: "Show best available players ranked by z-score. pos_type: B for batters, P for pitchers",
       inputSchema: { pos_type: z.string().describe("B for batters, P for pitchers").default("B"), count: z.number().describe("Number of players to return").default(25) },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: DRAFT_URI } },
+      _meta: {},
     },
     async ({ pos_type, count }) => {
       try {
@@ -185,7 +152,7 @@ export function registerDraftTools(server: McpServer, distDir: string) {
     {
       description: "Show visual draft board with all picks, position tracking, and next pick countdown",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: DRAFT_URI } },
+      _meta: { ui: { resourceUri: INTEL_URI } },
     },
     async () => {
       try {

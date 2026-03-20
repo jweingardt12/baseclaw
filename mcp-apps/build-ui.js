@@ -2,7 +2,7 @@ import { execSync } from "child_process";
 import { mkdirSync, renameSync, existsSync, rmSync, readdirSync } from "fs";
 import { join } from "path";
 
-const apps = ["roster", "standings", "valuations", "season", "draft", "history", "mlb", "intel"];
+const apps = ["roster", "standings", "season", "intel"];
 const distDir = "dist";
 
 // Clean dist dir of old HTML files

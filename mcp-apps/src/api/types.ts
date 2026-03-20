@@ -748,6 +748,30 @@ export interface MatchupStrategyResponse {
 
 // Player Intelligence types
 export interface PlayerIntelStatcast {
+  expected?: {
+    xwoba?: number | null;
+    xwoba_pct?: number | null;
+    xwoba_tier?: string | null;
+    xba?: number | null;
+    xba_pct?: number | null;
+  };
+  batted_ball?: {
+    avg_exit_velo?: number | null;
+    ev_pct?: number | null;
+    ev_tier?: string | null;
+    barrel_pct_rank?: number | null;
+    hard_hit_pct?: number | null;
+    hard_hit_pct_rank?: number | null;
+  };
+  speed?: {
+    sprint_speed?: number | null;
+    sprint_pct?: number | null;
+    speed_tier?: string | null;
+  };
+  data_season?: number | null;
+  quality_tier?: string | null;
+  note?: string | null;
+  // Legacy flat fields for backwards compat
   barrel_pct_rank?: number | null;
   avg_exit_velo?: number | null;
   ev_pct_rank?: number | null;
@@ -761,7 +785,6 @@ export interface PlayerIntelStatcast {
   speed_pct_rank?: number | null;
   whiff_rate?: number | null;
   chase_rate?: number | null;
-  quality_tier?: string | null;
 }
 
 export interface PlayerIntelTrends {
@@ -769,6 +792,7 @@ export interface PlayerIntelTrends {
   last_30_days?: Record<string, string | number>;
   vs_last_year?: string;
   hot_cold?: string;
+  status?: string;
 }
 
 export interface PlayerIntelContext {

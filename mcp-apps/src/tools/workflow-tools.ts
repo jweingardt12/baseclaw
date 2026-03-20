@@ -93,7 +93,7 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
     {
       description: "Complete league intelligence: standings, playoff projections, roster strength, manager activity, recent transactions, this week's matchup results across the league, and trade opportunities. Use weekly for strategic planning.",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -166,7 +166,7 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
     {
       description: "Audit roster for problems: injured players in active slots, healthy players stuck on IL, bust candidates, off-day starters. Returns issues ranked by severity (critical/warning/info) with concrete fix recommendations.",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -197,7 +197,7 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
       description: "Find the best waiver pickups for your team's weak categories, paired with recommended drops. Returns ranked add/drop pairs with projected category impact. Combines category analysis, waiver scoring, and simulation into one call.",
       inputSchema: { count: z.number().describe("Number of recommendations per position type").default(5) },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ count }) => {
       try {
@@ -277,7 +277,7 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
         get_names: z.array(z.string()).describe("Player names you would receive"),
       },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ give_names, get_names }) => {
       try {
@@ -392,7 +392,7 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
       description: "Pre-deadline waiver analysis: identifies your weak categories, ranks waiver candidates with simulated category impact. Includes FAAB bid recommendations for FAAB leagues. Run before waiver deadline to make informed claims.",
       inputSchema: { count: z.number().describe("Number of candidates per position type").default(5) },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ count }) => {
       try {
@@ -441,7 +441,7 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
     {
       description: "End-to-end trade search: finds complementary trade partners, evaluates package values, simulates category impact, and grades each proposal. Returns ready-to-propose trade packages.",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -479,7 +479,7 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
     {
       description: "End-of-week summary: matchup result, standings position, transactions, achievements, and a prose narrative. Use for weekly reporting and season tracking.",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -514,7 +514,7 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
     {
       description: "Monthly strategic assessment: current rank, playoff probability, category trajectory (improving/declining), punt strategy, and trade recommendations. Run monthly to track season-long progress.",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {

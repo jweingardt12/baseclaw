@@ -151,7 +151,7 @@ export function WeeklyNarrativeView({ data, app, navigate }: { data: WeeklyNarra
                 <TableRow>
                   <TableHeader>Category</TableHeader>
                   <TableHeader className="text-right">You</TableHeader>
-                  <TableHeader className="text-right">Opp</TableHeader>
+                  <TableHeader className="hidden sm:table-cell text-right">Opp</TableHeader>
                   <TableHeader className="text-center">Result</TableHeader>
                 </TableRow>
               </TableHead>
@@ -161,7 +161,7 @@ export function WeeklyNarrativeView({ data, app, navigate }: { data: WeeklyNarra
                     <TableRow key={c.name + "-" + idx} className={catResultBg(c.result)}>
                       <TableCell className="font-medium text-sm">{c.name}</TableCell>
                       <TableCell className="text-right font-mono text-sm">{c.your_value}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{c.opp_value}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-right font-mono text-sm">{c.opp_value}</TableCell>
                       <TableCell className="text-center">
                         {(c.result || "").toLowerCase() === "win" || (c.result || "").toLowerCase() === "w" ? (
                           <TrendingUp className="h-4 w-4 text-sem-success inline" />

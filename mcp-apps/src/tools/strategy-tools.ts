@@ -10,7 +10,6 @@ import {
   type RegressionCandidatesResponse,
   type PlayerTierResponse,
 } from "../api/types.js";
-import { SEASON_URI } from "./season-tools.js";
 
 export function registerStrategyTools(server: McpServer) {
 
@@ -22,7 +21,7 @@ export function registerStrategyTools(server: McpServer) {
       description: "Get upcoming probable starting pitchers for the next N days",
       inputSchema: { days: z.number().describe("Number of days to look ahead").default(7) },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ days }) => {
       try {
@@ -60,7 +59,7 @@ export function registerStrategyTools(server: McpServer) {
         days: z.number().describe("Number of days to analyze").default(14),
       },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ team, days }) => {
       try {
@@ -90,7 +89,7 @@ export function registerStrategyTools(server: McpServer) {
         drop_players: z.array(z.string()).describe("Player names to drop"),
       },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ add_players, drop_players }) => {
       try {
@@ -133,7 +132,7 @@ export function registerStrategyTools(server: McpServer) {
     {
       description: "Find buy-low and sell-high regression candidates based on Statcast metrics vs actual performance",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -190,7 +189,7 @@ export function registerStrategyTools(server: McpServer) {
       description: "Get a player's z-score tier and category breakdown from the valuation engine",
       inputSchema: { player_name: z.string().describe("Player name to look up") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ player_name }) => {
       try {

@@ -1,0 +1,34 @@
+{
+  "team_name": "My Team",
+  "num_teams": "?",
+  "categories": [
+    {
+      "name": "HR",
+      "z_total": 5.2,
+      "recommendation": "strength",
+      "reasoning": "Top z-score total"
+    },
+    {
+      "name": "K",
+      "z_total": 3.1,
+      "recommendation": "hold",
+      "reasoning": "Mid-range z-score total"
+    },
+    {
+      "name": "NSB",
+      "z_total": -2.5,
+      "recommendation": "punt",
+      "reasoning": "Lowest z-score total"
+    }
+  ],
+  "punt_candidates": [
+    "NSB"
+  ],
+  "target_categories": [
+    "HR"
+  ],
+  "correlation_warnings": [],
+  "strategy_summary": "Preseason projection-based analysis.",
+  "source": "projections",
+  "players_resolved": 20
+}

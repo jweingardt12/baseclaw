@@ -5,6 +5,9 @@ import { FreeAgentsView } from "./free-agents-view";
 import { PlayerListView } from "./player-list-view";
 import { ActionView } from "./action-view";
 import { WhoOwnsView } from "./who-owns-view";
+import { RankingsView } from "../valuations-app/rankings-view";
+import { CompareView } from "../valuations-app/compare-view";
+import { ValueView } from "../valuations-app/value-view";
 import "../globals.css";
 
 function RosterApp() {
@@ -22,6 +25,9 @@ function RosterApp() {
           case "waiver-claim":
           case "waiver-claim-swap": return <ActionView data={data} app={app} navigate={navigate} />;
           case "who-owns": return <WhoOwnsView data={data} app={app} navigate={navigate} />;
+          case "rankings": return <RankingsView data={data} app={app} navigate={navigate} />;
+          case "compare": return <CompareView data={data} app={app} navigate={navigate} />;
+          case "value": return <ValueView data={data} app={app} navigate={navigate} />;
           default: return <div className="p-4 text-muted-foreground">Unknown view: {toolName}</div>;
         }
       }}

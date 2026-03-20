@@ -149,7 +149,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     {
       description: "Show where you rank in each stat category vs the league",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -183,7 +183,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     {
       description: "Check roster for injured players and suggest IL moves",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -226,7 +226,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
       description: "Score free agents by how much they'd improve your weakest categories. pos_type: B or P",
       inputSchema: { pos_type: z.string().describe("B for batters, P for pitchers").default("B"), count: z.number().describe("Number of recommendations to return").default(15) },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ pos_type, count }) => {
       try {
@@ -263,7 +263,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
       description: "Recommend streaming pitchers based on schedule and two-start potential",
       inputSchema: { week: z.string().describe("Week number, empty for current week").default("") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ week }) => {
       try {
@@ -299,7 +299,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
       description: "Evaluate a trade. give_ids and get_ids are comma-separated player IDs (e.g. '12345,12346')",
       inputSchema: { give_ids: z.string().describe("Comma-separated Yahoo player IDs you would give"), get_ids: z.string().describe("Comma-separated Yahoo player IDs you would get") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ give_ids, get_ids }) => {
       try {
@@ -338,7 +338,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     {
       description: "Run all daily checks: lineup optimization and injury report",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -359,7 +359,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     {
       description: "Scout your current matchup opponent - analyze their strengths, weaknesses, and suggest counter-strategies",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -391,7 +391,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
       description: "Simulate category rank impact of adding a player. Shows how your weak/strong categories would change.",
       inputSchema: { add_name: z.string().describe("Player name to simulate adding"), drop_name: z.string().describe("Player name to simulate dropping, empty to skip").default("") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ add_name, drop_name }) => {
       try {
@@ -419,7 +419,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     {
       description: "Analyze your matchup and get a category-by-category game plan to maximize wins",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -489,7 +489,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     {
       description: "View all pending incoming and outgoing trade proposals",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -599,7 +599,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     {
       description: "Get a digest of what's new: injuries, pending trades, league activity, trending pickups, prospect call-ups",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -649,7 +649,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
       description: "Find optimal trade packages to acquire a target player, analyzing both teams' needs and z-score values. If no target given, scans league for complementary trade partners.",
       inputSchema: { target_player: z.string().describe("Name of the player you want to acquire (leave empty to scan league for trade partners)").default("") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ target_player }) => {
       try {
@@ -717,7 +717,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
       description: "Show games-per-day grid for your roster this week. Identifies off-days and two-start pitchers.",
       inputSchema: { week: z.string().describe("Week number, empty for current week").default("") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ week }) => {
       try {
@@ -749,7 +749,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     {
       description: "Monitor closer situations - your closers, available closers by ownership %, and MLB saves leaders",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -794,7 +794,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
       description: "Show pitcher matchup quality for your rostered SPs based on opponent team batting stats",
       inputSchema: { week: z.string().describe("Week number, empty for current week").default("") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ week }) => {
       try {
@@ -833,7 +833,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
         team_key: z.string().describe("Team key to check (optional, defaults to your team)").default(""),
       },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ period, week, team_key }) => {
       try {
@@ -873,7 +873,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
       description: "Recommend a FAAB bid amount for a player based on z-score value, remaining budget, and category need",
       inputSchema: { player_name: z.string().describe("Name of the player to bid on") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ player_name }) => {
       try {
@@ -920,7 +920,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
       description: "Show ownership % trend over time for a player. Tracks rising/falling ownership from season.db history.",
       inputSchema: { player_name: z.string().describe("Name of the player to look up") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ player_name }) => {
       try {
@@ -957,7 +957,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     {
       description: "Show your team's category rank trends over time from season.db history. See which categories are improving or declining.",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -1000,7 +1000,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     {
       description: "Analyze your roster and standings to recommend which categories to target or punt for optimal strategy",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -1055,7 +1055,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     {
       description: "Analyze injured players on your roster and free agents to recommend stash vs drop decisions",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -1108,7 +1108,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
       description: "Find the best sequence of add/drop moves to maximize your roster's z-score value",
       inputSchema: { count: z.number().describe("Number of moves to return (1-10)").default(5) },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ count }) => {
       try {
@@ -1161,7 +1161,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     {
       description: "Calculate your path to the playoffs with specific category gaps, recommended trades, waiver adds, and drops",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -1223,7 +1223,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
       description: "Generate trash talk for your current matchup opponent. Intensity: friendly, competitive, or savage",
       inputSchema: { intensity: z.string().describe("Trash talk intensity: friendly, competitive, or savage").default("competitive") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ intensity }) => {
       try {
@@ -1256,7 +1256,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
       description: "View your head-to-head record against each league opponent with detailed matchup history",
       inputSchema: { opponent: z.string().describe("Opponent team name to filter to (empty for all rivals overview)").default("") },
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async ({ opponent }) => {
       try {
@@ -1324,7 +1324,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     {
       description: "View your fantasy baseball achievements and milestones for the season",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {
@@ -1359,7 +1359,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     {
       description: "Get a narrative recap of your most recent week with highlights, MVP category, and standings movement",
       annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: SEASON_URI } },
+      _meta: {},
     },
     async () => {
       try {

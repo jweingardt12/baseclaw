@@ -28,7 +28,7 @@ export function InjuriesView({ data }: { data: { injuries: MlbInjury[] } }) {
             <TableRow>
               <TableHeader className="font-bold">Player</TableHeader>
               <TableHeader className="font-bold">Team</TableHeader>
-              <TableHeader className="font-bold">Description</TableHeader>
+              <TableHeader className="hidden sm:table-cell font-bold">Description</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -42,7 +42,7 @@ export function InjuriesView({ data }: { data: { injuries: MlbInjury[] } }) {
                       <Badge color="zinc" className="text-xs font-bold">{inj.team}</Badge>
                     </span>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{inj.description}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{inj.description}</TableCell>
                 </TableRow>
               );
             })}

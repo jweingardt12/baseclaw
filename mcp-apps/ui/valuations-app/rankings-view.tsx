@@ -134,7 +134,7 @@ export function RankingsView({ data, app, navigate }: { data: RankingsData; app:
             <TableRow>
               <TableHeader className="w-12">#</TableHeader>
               <TableHeader>Player</TableHeader>
-              <TableHeader>Pos</TableHeader>
+              <TableHeader className="hidden sm:table-cell">Pos</TableHeader>
               <TableHeader className="text-right">Z-Score</TableHeader>
             </TableRow>
           </TableHead>
@@ -161,7 +161,7 @@ export function RankingsView({ data, app, navigate }: { data: RankingsData; app:
                     <TableCell className="font-medium">
                       <PlayerCell player={p} app={app} navigate={navigate} context="default" />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       {p.position && <Badge color="zinc" className="text-xs">{p.position}</Badge>}
                     </TableCell>
                     <TableCell className="text-right">
