@@ -1,5 +1,6 @@
-import { Badge } from "../components/ui/badge";
-import { Card, CardContent } from "../components/ui/card";
+import { Badge } from "../catalyst/badge";
+import { Card, CardContent } from "../catalyst/card";
+import { Subheading } from "../catalyst/heading";
 import { EmptyState } from "../shared/empty-state";
 import { KpiTile } from "../shared/kpi-tile";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -21,11 +22,11 @@ interface OwnershipTrendsData {
   message?: string;
 }
 
-function directionVariant(direction: string): "success" | "risk" | "warning" | "outline" {
-  if (direction === "rising") return "success";
-  if (direction === "falling") return "risk";
-  if (direction === "stable") return "warning";
-  return "outline";
+function directionColor(direction: string): "green" | "red" | "amber" | "zinc" {
+  if (direction === "rising") return "green";
+  if (direction === "falling") return "red";
+  if (direction === "stable") return "amber";
+  return "zinc";
 }
 
 function directionLabel(direction: string): string {
@@ -54,10 +55,10 @@ export function OwnershipTrendsView({ data }: { data: OwnershipTrendsData; app?:
 
   return (
     <div className="space-y-2">
-      <h2 className="text-lg font-semibold">{data.player_name} - Ownership Trend</h2>
+      <Subheading>{data.player_name} - Ownership Trend</Subheading>
 
       <div className="flex items-center gap-2">
-        <Badge variant={directionVariant(data.direction)} className="text-xs">
+        <Badge color={directionColor(data.direction)} className="text-xs">
           {directionLabel(data.direction)}
         </Badge>
       </div>

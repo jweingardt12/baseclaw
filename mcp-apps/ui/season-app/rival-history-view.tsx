@@ -1,6 +1,8 @@
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Card, CardHeader, CardTitle, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Subheading } from "../catalyst/heading";
+import { Text } from "../catalyst/text";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
 import { KpiTile } from "../shared/kpi-tile";
 import { AiInsight } from "../shared/ai-insight";
 import { Users, Trophy, Shield } from "@/shared/icons";
@@ -97,16 +99,16 @@ function RivalOverviewView({ data }: { data: RivalHistoryOverviewResponse }) {
 
       <div className="flex items-center gap-2">
         <Users className="h-5 w-5 text-primary" />
-        <h2 className="text-lg font-semibold">Rival History</h2>
+        <Subheading>Rival History</Subheading>
       </div>
 
-      <p className="text-sm text-muted-foreground">{data.your_team}</p>
+      <Text>{data.your_team}</Text>
 
       {data.seasons_scanned && data.seasons_scanned.length > 0 && (
         <div className="flex items-center gap-1 flex-wrap">
           <span className="text-xs text-muted-foreground">Seasons:</span>
           {data.seasons_scanned.map(function (s) {
-            return <Badge key={s} variant="outline" className="text-xs">{s}</Badge>;
+            return <Badge key={s} color="zinc" className="text-xs">{s}</Badge>;
           })}
         </div>
       )}
@@ -114,14 +116,14 @@ function RivalOverviewView({ data }: { data: RivalHistoryOverviewResponse }) {
       <Card>
         <CardContent className="p-0">
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead>Opponent</TableHead>
-                <TableHead className="text-center">Record</TableHead>
-                <TableHead className="text-center hidden sm:table-cell">Last</TableHead>
-                <TableHead className="text-center">Status</TableHead>
+                <TableHeader>Opponent</TableHeader>
+                <TableHeader className="text-center">Record</TableHeader>
+                <TableHeader className="text-center hidden sm:table-cell">Last</TableHeader>
+                <TableHeader className="text-center">Status</TableHeader>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {rivals.map(function (r, idx) {
                 return (
@@ -158,7 +160,7 @@ function RivalDetailView({ data }: { data: RivalHistoryDetailResponse }) {
 
       <div className="flex items-center gap-2">
         <Shield className="h-5 w-5 text-primary" />
-        <h2 className="text-lg font-semibold">vs. {data.opponent}</h2>
+        <Subheading>vs. {data.opponent}</Subheading>
       </div>
 
       {/* Record Banner */}
@@ -234,7 +236,7 @@ function RivalDetailView({ data }: { data: RivalHistoryDetailResponse }) {
                 <p className="text-xs font-semibold text-sem-risk mb-1.5">They Dominate</p>
                 <div className="flex flex-wrap gap-1">
                   {theyDom.map(function (cat) {
-                    return <Badge key={cat} variant="destructive" className="text-xs">{cat}</Badge>;
+                    return <Badge key={cat} color="red" className="text-xs">{cat}</Badge>;
                   })}
                 </div>
               </CardContent>
@@ -251,15 +253,15 @@ function RivalDetailView({ data }: { data: RivalHistoryDetailResponse }) {
           </CardHeader>
           <CardContent className="p-0">
             <Table>
-              <TableHeader>
+              <TableHead>
                 <TableRow>
-                  <TableHead>Week</TableHead>
-                  <TableHead className="text-center">Score</TableHead>
-                  <TableHead className="text-center">Result</TableHead>
-                  <TableHead className="hidden sm:table-cell">MVP Cat</TableHead>
-                  <TableHead className="hidden sm:table-cell">Note</TableHead>
+                  <TableHeader>Week</TableHeader>
+                  <TableHeader className="text-center">Score</TableHeader>
+                  <TableHeader className="text-center">Result</TableHeader>
+                  <TableHeader className="hidden sm:table-cell">MVP Cat</TableHeader>
+                  <TableHeader className="hidden sm:table-cell">Note</TableHeader>
                 </TableRow>
-              </TableHeader>
+              </TableHead>
               <TableBody>
                 {(data.matchups || []).map(function (m, idx) {
                   return (

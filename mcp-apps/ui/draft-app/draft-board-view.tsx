@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
+import { Card, CardHeader, CardTitle, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Text } from "../catalyst/text";
 import { KpiTile } from "../shared/kpi-tile";
 import type { DraftPick, DraftStatusResponse } from "../../src/api/types";
 
@@ -164,7 +165,7 @@ export function DraftBoardView({ data }: { data: DraftBoardData }) {
                 return (
                   <Badge
                     key={pos}
-                    variant={count > 0 ? "default" : "outline"}
+                    color={count > 0 ? undefined : "zinc"}
                     className={
                       "text-xs font-mono " +
                       (count > 0
@@ -184,14 +185,14 @@ export function DraftBoardView({ data }: { data: DraftBoardData }) {
       {/* View Toggle */}
       <div className="flex gap-1">
         <Badge
-          variant={view === "grid" ? "default" : "outline"}
+          color={view === "grid" ? undefined : "zinc"}
           className="text-xs cursor-pointer"
           onClick={function () { setView("grid"); }}
         >
           Grid
         </Badge>
         <Badge
-          variant={view === "list" ? "default" : "outline"}
+          color={view === "list" ? undefined : "zinc"}
           className="text-xs cursor-pointer"
           onClick={function () { setView("list"); }}
         >
@@ -205,7 +206,7 @@ export function DraftBoardView({ data }: { data: DraftBoardData }) {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Draft Board</CardTitle>
-              <Badge variant="secondary" className="text-xs font-mono">
+              <Badge color="zinc" className="text-xs font-mono">
                 {draftResults.length + " / " + (numTeams * totalRounds) + " picks"}
               </Badge>
             </div>
@@ -318,7 +319,7 @@ export function DraftBoardView({ data }: { data: DraftBoardData }) {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Pick-by-Pick</CardTitle>
-              <Badge variant="secondary" className="text-xs font-mono">
+              <Badge color="zinc" className="text-xs font-mono">
                 {draftResults.length + " picks"}
               </Badge>
             </div>
@@ -332,7 +333,7 @@ export function DraftBoardView({ data }: { data: DraftBoardData }) {
                 return (
                   <div key={round}>
                     <div className="flex items-center gap-2 py-1">
-                      <Badge variant="outline" className="text-xs font-mono shrink-0">
+                      <Badge color="zinc" className="text-xs font-mono shrink-0">
                         {"Rd " + round}
                       </Badge>
                       <div className="flex-1 h-px bg-border" />
@@ -359,7 +360,7 @@ export function DraftBoardView({ data }: { data: DraftBoardData }) {
                             </span>
                             {posLabel && (
                               <Badge
-                                variant="outline"
+                                color="zinc"
                                 className={
                                   "text-xs shrink-0 " +
                                   (pitcher
@@ -388,7 +389,7 @@ export function DraftBoardView({ data }: { data: DraftBoardData }) {
       {draftResults.length === 0 && (
         <Card>
           <CardContent className="p-6 text-center">
-            <p className="text-muted-foreground">No picks yet. The draft board will populate as picks are made.</p>
+            <Text>No picks yet. The draft board will populate as picks are made.</Text>
           </CardContent>
         </Card>
       )}

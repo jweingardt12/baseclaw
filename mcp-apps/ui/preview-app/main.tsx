@@ -23,6 +23,7 @@ import {
 import { fetchViewData, createLiveApp } from "./live-data";
 import { createMockApp } from "./mock-app";
 import { VIEW_GROUPS, type ViewDef } from "./view-registry";
+import { ViewSkeleton } from "../shared/view-skeleton";
 
 import "./preview.css";
 
@@ -59,15 +60,6 @@ class ViewErrorBoundary extends React.Component<
     }
     return this.props.children;
   }
-}
-
-function LoadingSpinner() {
-  return (
-    <div className="flex flex-col items-center justify-center py-8 text-center">
-      <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mb-3" />
-      <p className="text-muted-foreground text-sm">Loading preview...</p>
-    </div>
-  );
 }
 
 function SunIcon() {
@@ -409,17 +401,17 @@ function PreviewApp() {
               <section className="rounded-xl border bg-background">
                 <div className="mcp-preview-canvas p-4 lg:p-5">
                   {effectiveDataSource === "live" && liveLoading ? (
-                    <LoadingSpinner />
+                    <ViewSkeleton />
                   ) : effectiveDataSource === "live" && liveError ? (
                     <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
                       <p className="text-destructive text-sm font-medium">Failed to load live data</p>
                       <p className="text-muted-foreground text-xs mt-1">{liveError}</p>
                     </div>
                   ) : effectiveDataSource === "mock" && !mockData ? (
-                    <LoadingSpinner />
+                    <ViewSkeleton />
                   ) : activeViewDef && currentData ? (
                     <ViewErrorBoundary key={activeView} viewId={activeView}>
-                      <Suspense fallback={<LoadingSpinner />}>
+                      <Suspense fallback={<ViewSkeleton />}>
                         <ViewRenderer
                           view={activeViewDef}
                           data={currentData}

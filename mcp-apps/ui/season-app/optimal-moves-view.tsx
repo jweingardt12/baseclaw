@@ -1,5 +1,6 @@
-import { Badge } from "../components/ui/badge";
-import { Card, CardContent } from "../components/ui/card";
+import { Badge } from "../catalyst/badge";
+import { Card, CardContent } from "../catalyst/card";
+import { Subheading } from "../catalyst/heading";
 import { AiInsight } from "../shared/ai-insight";
 import { EmptyState } from "../shared/empty-state";
 import { KpiTile } from "../shared/kpi-tile";
@@ -52,10 +53,10 @@ export function OptimalMovesView({ data, app, navigate }: { data: OptimalMovesRe
         <KpiTile value={signedZ(data.net_improvement)} label="Net Improvement" color={data.net_improvement >= 0 ? "success" : "risk"} />
       </div>
 
-      <h2 className="text-lg font-semibold flex items-center gap-2">
+      <Subheading className="flex items-center gap-2">
         <TrendingUp size={18} />
         Optimal Roster Moves
-      </h2>
+      </Subheading>
 
       {moves.length === 0 && (
         <EmptyState title="No beneficial moves found" description="Your roster is already optimized!" />
@@ -69,7 +70,7 @@ export function OptimalMovesView({ data, app, navigate }: { data: OptimalMovesRe
           <Card key={i} className={improvement > 0 ? "border-green-500/20" : ""}>
             <CardContent className="p-3">
               <div className="flex items-center justify-between mb-2">
-                <Badge variant="outline" className="text-xs">Move #{move.rank || i + 1}</Badge>
+                <Badge color="zinc" className="text-xs">Move #{move.rank || i + 1}</Badge>
                 <Badge className={improvement > 0 ? "bg-sem-success text-xs" : "bg-sem-risk text-xs"}>
                   {signedZ(improvement)} Z
                 </Badge>
@@ -82,7 +83,7 @@ export function OptimalMovesView({ data, app, navigate }: { data: OptimalMovesRe
                   <p className="text-xs text-muted-foreground mb-0.5">Drop</p>
                   <div className="flex items-center gap-1.5">
                     <PlayerName name={move.drop.name} playerId={move.drop.player_id} app={app} navigate={navigate} context="optimal-moves" />
-                    <Badge variant="outline" className="text-xs shrink-0">{move.drop.pos}</Badge>
+                    <Badge color="zinc" className="text-xs shrink-0">{move.drop.pos}</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground font-mono">
                     z={formatFixed(move.drop.z_score, 2, "0.00")}
@@ -97,7 +98,7 @@ export function OptimalMovesView({ data, app, navigate }: { data: OptimalMovesRe
                   <p className="text-xs text-muted-foreground mb-0.5">Add</p>
                   <div className="flex items-center gap-1.5">
                     <PlayerName name={move.add.name} playerId={move.add.player_id} app={app} navigate={navigate} context="optimal-moves" />
-                    <Badge variant="outline" className="text-xs shrink-0">{move.add.pos}</Badge>
+                    <Badge color="zinc" className="text-xs shrink-0">{move.add.pos}</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground font-mono">
                     z={formatFixed(move.add.z_score, 2, "0.00")}
@@ -110,10 +111,10 @@ export function OptimalMovesView({ data, app, navigate }: { data: OptimalMovesRe
               {(gained.length > 0 || lost.length > 0) && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {gained.map(function (cat) {
-                    return <Badge key={"g-" + cat} variant="success" className="text-xs">{cat}</Badge>;
+                    return <Badge key={"g-" + cat} color="green" className="text-xs">{cat}</Badge>;
                   })}
                   {lost.map(function (cat) {
-                    return <Badge key={"l-" + cat} variant="destructive" className="text-xs">{cat}</Badge>;
+                    return <Badge key={"l-" + cat} color="red" className="text-xs">{cat}</Badge>;
                   })}
                 </div>
               )}

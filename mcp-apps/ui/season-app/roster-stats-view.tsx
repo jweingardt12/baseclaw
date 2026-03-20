@@ -1,5 +1,6 @@
-import { Badge } from "../components/ui/badge";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Badge } from "../catalyst/badge";
+import { Subheading } from "../catalyst/heading";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
 import { cn } from "../lib/utils";
 import { EmptyState } from "../shared/empty-state";
 import { formatFixed } from "../shared/number-format";
@@ -54,15 +55,15 @@ function formatStat(value: string | number | undefined): string {
 function StatsTable({ players, statColumns, app, navigate }: { players: RosterStatsPlayer[]; statColumns: string[]; app?: any; navigate?: (data: any) => void }) {
   return (
     <Table>
-      <TableHeader>
+      <TableHead>
         <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Pos</TableHead>
+          <TableHeader>Name</TableHeader>
+          <TableHeader>Pos</TableHeader>
           {statColumns.map(function (stat) {
-            return <TableHead key={stat} className={cn("text-right", HIDE_ON_MOBILE[stat] && "hidden sm:table-cell")}>{stat}</TableHead>;
+            return <TableHeader key={stat} className={cn("text-right", HIDE_ON_MOBILE[stat] && "hidden sm:table-cell")}>{stat}</TableHeader>;
           })}
         </TableRow>
-      </TableHeader>
+      </TableHead>
       <TableBody>
         {players.map(function (p, i) {
           return (
@@ -71,7 +72,7 @@ function StatsTable({ players, statColumns, app, navigate }: { players: RosterSt
                 <PlayerName name={p.name} playerId={p.player_id} mlbId={p.mlb_id} app={app} navigate={navigate} context="roster" />
               </TableCell>
               <TableCell>
-                <Badge variant="outline" className="text-xs">{p.position}</Badge>
+                <Badge color="zinc" className="text-xs">{p.position}</Badge>
               </TableCell>
               {statColumns.map(function (stat) {
                 return (
@@ -101,18 +102,18 @@ export function RosterStatsView({ data, app, navigate }: { data: RosterStatsData
 
   return (
     <div className="space-y-2">
-      <h2 className="text-lg font-semibold">Roster Stats: {periodLabel}{weekLabel}</h2>
+      <Subheading>Roster Stats: {periodLabel}{weekLabel}</Subheading>
 
       {batters.length > 0 && (
         <div className="space-y-1">
-          <h3 className="text-sm font-semibold text-muted-foreground">Batters ({batters.length})</h3>
+          <Subheading level={3} className="text-sm text-muted-foreground">Batters ({batters.length})</Subheading>
           <StatsTable players={batters} statColumns={batterCols} app={app} navigate={navigate} />
         </div>
       )}
 
       {pitchers.length > 0 && (
         <div className="space-y-1">
-          <h3 className="text-sm font-semibold text-muted-foreground">Pitchers ({pitchers.length})</h3>
+          <Subheading level={3} className="text-sm text-muted-foreground">Pitchers ({pitchers.length})</Subheading>
           <StatsTable players={pitchers} statColumns={pitcherCols} app={app} navigate={navigate} />
         </div>
       )}

@@ -1,4 +1,6 @@
-import { Button } from "../components/ui/button";
+import { Button } from "../catalyst/button";
+import { Subheading } from "../catalyst/heading";
+import { Text } from "../catalyst/text";
 import { useCallTool } from "../shared/use-call-tool";
 import { AiInsight } from "../shared/ai-insight";
 import { CheckCircle, XCircle, ArrowLeft, Loader2 } from "@/shared/icons";
@@ -30,7 +32,7 @@ export function ActionView({ data, app, navigate }: { data: ActionData; app: any
       <div className={"surface-card overflow-hidden"}>
         <div className={"p-4 " + (data.success ? "bg-sem-success-subtle" : "bg-destructive/5")}>
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-base">{title}</h3>
+            <Subheading>{title}</Subheading>
             {data.success
               ? <CheckCircle size={20} className="text-sem-success animate-success-pop" />
               : <XCircle size={20} className="text-destructive animate-error-shake" />
@@ -39,16 +41,16 @@ export function ActionView({ data, app, navigate }: { data: ActionData; app: any
         </div>
         <div className="p-4">
           <p className="text-base">{data.message}</p>
-          {data.player_id && <p className="text-xs text-muted-foreground mt-2">{"Player ID: " + data.player_id}</p>}
-          {data.add_id && <p className="text-xs text-muted-foreground mt-1">{"Added ID: " + data.add_id}</p>}
-          {data.drop_id && <p className="text-xs text-muted-foreground mt-1">{"Dropped ID: " + data.drop_id}</p>}
+          {data.player_id && <Text className="mt-2">{"Player ID: " + data.player_id}</Text>}
+          {data.add_id && <Text className="mt-1">{"Added ID: " + data.add_id}</Text>}
+          {data.drop_id && <Text className="mt-1">{"Dropped ID: " + data.drop_id}</Text>}
         </div>
       </div>
 
       <AiInsight recommendation={data.ai_recommendation} />
 
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={handleBackToRoster}>
+        <Button outline onClick={handleBackToRoster}>
           <ArrowLeft size={14} className="mr-1" />
           Back to Roster
         </Button>

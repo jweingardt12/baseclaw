@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Card, CardHeader, CardTitle, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Button } from "../catalyst/button";
+import { Subheading } from "../catalyst/heading";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
 import { useCallTool } from "../shared/use-call-tool";
 import { mlbHeadshotUrl } from "../shared/mlb-images";
 import { TeamLogo } from "../shared/team-logo";
@@ -130,10 +131,10 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
       </div>
 
       {/* Header */}
-      <h2 className="text-lg font-semibold flex items-center gap-2">
+      <Subheading className="flex items-center gap-2">
         <FlaskConical size={18} />
         Category Simulator
-      </h2>
+      </Subheading>
 
       {/* Player Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -163,7 +164,7 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
                   </span>
                   <div className="flex gap-1 flex-wrap">
                     {(data.add_player.positions || "").split(",").filter(Boolean).map(function (pos) {
-                      return <Badge key={pos.trim()} variant="outline" className="text-xs">{pos.trim()}</Badge>;
+                      return <Badge key={pos.trim()} color="zinc" className="text-xs">{pos.trim()}</Badge>;
                     })}
                   </div>
                 </div>
@@ -192,7 +193,7 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
                     </span>
                     <div className="flex gap-1 flex-wrap">
                       {(data.drop_player.positions || "").split(",").filter(Boolean).map(function (pos) {
-                        return <Badge key={pos.trim()} variant="outline" className="text-xs">{pos.trim()}</Badge>;
+                        return <Badge key={pos.trim()} color="zinc" className="text-xs">{pos.trim()}</Badge>;
                       })}
                     </div>
                   </div>
@@ -203,7 +204,7 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
         ) : (
           <Card className="border-dashed">
             <CardContent className="flex items-center justify-center h-full p-3">
-              <Button variant="outline" size="sm" onClick={handleLoadRoster} disabled={loading}>
+              <Button outline onClick={handleLoadRoster} disabled={loading}>
                 Simulate Drop
               </Button>
             </CardContent>
@@ -217,12 +218,12 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
           {"Net: " + (netChange > 0 ? "+" : "") + netChange}
         </Badge>
         {improved > 0 && (
-          <Badge variant="outline" className="text-xs text-green-600 border-green-500/30">
+          <Badge color="zinc" className="text-xs text-green-600 border-green-500/30">
             {improved + " improved"}
           </Badge>
         )}
         {regressed > 0 && (
-          <Badge variant="outline" className="text-xs text-red-600 border-red-500/30">
+          <Badge color="zinc" className="text-xs text-red-600 border-red-500/30">
             {regressed + " regressed"}
           </Badge>
         )}
@@ -236,14 +237,14 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
           </div>
         )}
         <Table>
-          <TableHeader>
+          <TableHead>
             <TableRow>
-              <TableHead>Category</TableHead>
-              <TableHead className="text-center hidden sm:table-cell">Current</TableHead>
-              <TableHead className="text-center">Simulated</TableHead>
-              <TableHead className="text-center">Change</TableHead>
+              <TableHeader>Category</TableHeader>
+              <TableHeader className="text-center hidden sm:table-cell">Current</TableHeader>
+              <TableHeader className="text-center">Simulated</TableHeader>
+              <TableHeader className="text-center">Change</TableHeader>
             </TableRow>
-          </TableHeader>
+          </TableHead>
           <TableBody>
             {(data.current_ranks || []).map(function (cr, idx) {
               var sr = (data.simulated_ranks || [])[idx] || { name: cr.name, rank: cr.rank, total: cr.total, change: 0 };
@@ -295,7 +296,7 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
             className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring pl-8"
           />
         </div>
-        <Button onClick={handleSearch} disabled={loading || !searchInput.trim()} size="sm">
+        <Button onClick={handleSearch} disabled={loading || !searchInput.trim()}>
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Simulate"}
         </Button>
       </div>
@@ -335,7 +336,7 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
               </div>
             )}
             <div className="mt-2">
-              <Button variant="outline" size="sm" onClick={function () { setShowDropPicker(false); }}>Cancel</Button>
+              <Button outline onClick={function () { setShowDropPicker(false); }}>Cancel</Button>
             </div>
           </CardContent>
         </Card>

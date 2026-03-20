@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { useApp, useHostStyles } from "@modelcontextprotocol/ext-apps/react";
-import { Skeleton } from "../components/ui/skeleton";
-import { Button } from "../components/ui/button";
+import { Skeleton } from "../catalyst/skeleton";
+import { Button } from "../catalyst/button";
 import { Maximize2, Minimize2 } from "@/shared/icons";
 import { useHostLayout } from "./use-host-layout";
 
@@ -197,7 +197,7 @@ export function AppShell({ name, version = "1.0.0", children }: AppShellProps) {
           <h3 className="text-sm font-medium text-destructive">Connection Error</h3>
           <p className="text-xs text-muted-foreground mt-1">{String(error)}</p>
         </div>
-        <Button variant="outline" size="sm" onClick={function () { window.location.reload(); }}>
+        <Button outline onClick={function () { window.location.reload(); }}>
           Retry
         </Button>
       </div>
@@ -285,8 +285,7 @@ export function AppShell({ name, version = "1.0.0", children }: AppShellProps) {
       {layout.canFullscreen && app.requestDisplayMode && (
         <div className="mcp-app-shell-controls">
           <Button
-            variant="ghost"
-            size="sm"
+            plain
             className="h-8 w-8 p-0"
             onClick={function () {
               var newMode = displayMode === "fullscreen" ? "inline" : "fullscreen";

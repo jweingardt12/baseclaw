@@ -11,6 +11,7 @@ import {
 } from "../insights.js";
 import {
   str,
+  type PositionalRanksResponse,
   type StandingsResponse,
   type MatchupsResponse,
   type ScoreboardResponse,
@@ -436,6 +437,39 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
           structuredContent: { type: "season-pace", ai_recommendation, ...data },
+        };
+      } catch (e) { return toolError(e); }
+    },
+  );
+
+  // yahoo_positional_ranks
+  registerAppTool(
+    server,
+    "yahoo_positional_ranks",
+    {
+      description: "Get positional rankings for all teams in the league. Shows each team's rank (1-12) at every position with grade (strong/neutral/weak), starting and bench players, and recommended trade partners.",
+      annotations: { readOnlyHint: true },
+      _meta: { ui: { resourceUri: STANDINGS_URI } },
+    },
+    async () => {
+      try {
+        const data = await apiGet<PositionalRanksResponse>("/api/positional-ranks");
+        const lines = ["League Positional Rankings:"];
+        for (const team of data.teams || []) {
+          lines.push("\n" + str(team.name) + ":");
+          for (const pr of team.positional_ranks || []) {
+            const grade = pr.grade === "strong" ? "+" : pr.grade === "weak" ? "-" : " ";
+            const starters = (pr.starters || []).map((p) => p.name).join(", ");
+            lines.push("  " + grade + " " + str(pr.position).padEnd(5) + " #" + String(pr.rank).padStart(2) + "  " + starters);
+          }
+          if (team.recommended_trade_partners && team.recommended_trade_partners.length > 0) {
+            lines.push("  Trade partners: " + team.recommended_trade_partners.join(", "));
+          }
+        }
+        const ai_recommendation = "Review positional ranks to identify where your team is weak and find trade partners who are strong in those positions.";
+        return {
+          content: [{ type: "text" as const, text: lines.join("\n") }],
+          structuredContent: { type: "positional-ranks", ai_recommendation, ...data },
         };
       } catch (e) { return toolError(e); }
     },

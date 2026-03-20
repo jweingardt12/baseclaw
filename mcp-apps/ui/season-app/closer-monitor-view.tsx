@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { Badge } from "../catalyst/badge";
+import { Button } from "../catalyst/button";
+import { Subheading } from "../catalyst/heading";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
+import { Tabs, TabsList, TabsTrigger } from "../catalyst/tabs";
 import { useCallTool } from "../shared/use-call-tool";
 import { PlayerName } from "../shared/player-name";
 
@@ -55,10 +56,10 @@ export function CloserMonitorView({ data, app, navigate }: { data: CloserMonitor
         <KpiTile value={available.length} label="FA Closers" color={available.length > 0 ? "success" : "neutral"} />
       </div>
 
-      <h2 className="text-lg font-semibold flex items-center gap-2">
+      <Subheading className="flex items-center gap-2">
         <ShieldCheck size={18} />
         Closer Monitor
-      </h2>
+      </Subheading>
 
       <Tabs defaultValue="my" onValueChange={setTab}>
         <TabsList>
@@ -77,14 +78,14 @@ export function CloserMonitorView({ data, app, navigate }: { data: CloserMonitor
 
         {tab === "my" && (
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead>Player</TableHead>
-                <TableHead>Positions</TableHead>
-                <TableHead className="text-right">Own%</TableHead>
-                <TableHead className="hidden sm:table-cell">Status</TableHead>
+                <TableHeader>Player</TableHeader>
+                <TableHeader>Positions</TableHeader>
+                <TableHeader className="text-right">Own%</TableHeader>
+                <TableHeader className="hidden sm:table-cell">Status</TableHeader>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {myClosers.map((p) => (
                 <TableRow key={p.player_id}>
@@ -94,14 +95,14 @@ export function CloserMonitorView({ data, app, navigate }: { data: CloserMonitor
                   <TableCell>
                     <div className="flex gap-1 flex-wrap">
                       {(p.positions || []).map((pos) => (
-                        <Badge key={pos} variant="outline" className="text-xs">{pos}</Badge>
+                        <Badge key={pos} color="zinc" className="text-xs">{pos}</Badge>
                       ))}
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs">{p.percent_owned}%</TableCell>
                   <TableCell className="hidden sm:table-cell">
                     {p.status && p.status !== "Healthy" && (
-                      <Badge variant="destructive" className="text-xs">{p.status}</Badge>
+                      <Badge color="red" className="text-xs">{p.status}</Badge>
                     )}
                   </TableCell>
                 </TableRow>
@@ -119,14 +120,14 @@ export function CloserMonitorView({ data, app, navigate }: { data: CloserMonitor
 
         {tab === "available" && (
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead>Player</TableHead>
-                <TableHead className="text-right">Own%</TableHead>
-                <TableHead className="hidden sm:table-cell">Status</TableHead>
-                <TableHead className="w-12"></TableHead>
+                <TableHeader>Player</TableHeader>
+                <TableHeader className="text-right">Own%</TableHeader>
+                <TableHeader className="hidden sm:table-cell">Status</TableHeader>
+                <TableHeader className="w-12"></TableHeader>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {available.map((p) => (
                 <TableRow key={p.player_id}>
@@ -136,11 +137,11 @@ export function CloserMonitorView({ data, app, navigate }: { data: CloserMonitor
                   <TableCell className="text-right font-mono text-xs">{p.percent_owned}%</TableCell>
                   <TableCell className="hidden sm:table-cell">
                     {p.status && p.status !== "Healthy" && (
-                      <Badge variant="destructive" className="text-xs">{p.status}</Badge>
+                      <Badge color="red" className="text-xs">{p.status}</Badge>
                     )}
                   </TableCell>
                   <TableCell>
-                    <Button size="sm" onClick={() => handleAdd(p.player_id)} disabled={loading} title="Add player">
+                    <Button onClick={() => handleAdd(p.player_id)} disabled={loading} title="Add player">
                       <UserPlus size={14} />
                     </Button>
                   </TableCell>
@@ -159,13 +160,13 @@ export function CloserMonitorView({ data, app, navigate }: { data: CloserMonitor
 
         {tab === "leaders" && (
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead className="w-10">#</TableHead>
-                <TableHead>Player</TableHead>
-                <TableHead className="text-right">Saves</TableHead>
+                <TableHeader className="w-10">#</TableHeader>
+                <TableHeader>Player</TableHeader>
+                <TableHeader className="text-right">Saves</TableHeader>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {leaders.map((p, i) => (
                 <TableRow key={i}>

@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Button } from "../catalyst/button";
+import { Subheading } from "../catalyst/heading";
 import { ComparisonBar } from "../shared/comparison-bar";
 
-import { IntelBadge } from "../shared/intel-badge";
-import { PlayerName } from "../shared/player-name";
+import { PlayerCell } from "../shared/player-row";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 import { VerdictBadge } from "../shared/verdict-badge";
@@ -62,15 +62,14 @@ function gradeColor(grade: string): string {
   return "bg-sem-risk";
 }
 
-function PlayerRow({ player, app, navigate }: { player: Player; app?: any; navigate?: (data: any) => void }) {
+function TradePlayerRow({ player, app, navigate }: { player: Player; app?: any; navigate?: (data: any) => void }) {
   const positions = player.positions || player.eligible_positions || [];
   return (
     <div className="flex items-center gap-2 py-1.5 border-b last:border-0">
-      <span className="font-medium text-sm flex-1"><PlayerName name={player.name} playerId={player.player_id} mlbId={player.mlb_id} app={app} navigate={navigate} context="trade" /></span>
-      {player.intel && <IntelBadge intel={player.intel} size="sm" />}
+      <span className="font-medium text-sm flex-1"><PlayerCell player={player} app={app} navigate={navigate} context="trade" /></span>
       <div className="flex gap-1">
         {positions.map((pos) => (
-          <Badge key={pos} variant="outline" className="text-xs">{pos}</Badge>
+          <Badge key={pos} color="zinc" className="text-xs">{pos}</Badge>
         ))}
       </div>
       {player.value != null && (
@@ -110,7 +109,7 @@ export function TradeEvalView({ data, app, navigate }: { data: TradeEvalData; ap
         <KpiTile value={(netValue >= 0 ? "+" : "") + fmtOne(netValue)} label="Net Value" color={netValue >= 0 ? "success" : "risk"} />
       </div>
 
-      <h2 className="text-lg font-semibold">Trade Evaluation</h2>
+      <Subheading>Trade Evaluation</Subheading>
 
       {/* Grade + Net Value Hero */}
       <Card>
@@ -130,7 +129,7 @@ export function TradeEvalView({ data, app, navigate }: { data: TradeEvalData; ap
                   {grade}
                 </span>
               </div>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleCopy}>
+              <Button plain className="h-8 w-8 p-0" onClick={handleCopy}>
                 {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
               </Button>
             </div>
@@ -162,7 +161,7 @@ export function TradeEvalView({ data, app, navigate }: { data: TradeEvalData; ap
             </div>
           </CardHeader>
           <CardContent>
-            {givePlayers.map((p) => <PlayerRow key={p.name} player={p} app={app} navigate={navigate} />)}
+            {givePlayers.map((p) => <TradePlayerRow key={p.name} player={p} app={app} navigate={navigate} />)}
           </CardContent>
         </Card>
 
@@ -174,7 +173,7 @@ export function TradeEvalView({ data, app, navigate }: { data: TradeEvalData; ap
             </div>
           </CardHeader>
           <CardContent>
-            {getPlayers.map((p) => <PlayerRow key={p.name} player={p} app={app} navigate={navigate} />)}
+            {getPlayers.map((p) => <TradePlayerRow key={p.name} player={p} app={app} navigate={navigate} />)}
           </CardContent>
         </Card>
       </div>
@@ -189,7 +188,7 @@ export function TradeEvalView({ data, app, navigate }: { data: TradeEvalData; ap
                 <div>
                   <span className="text-xs text-muted-foreground">Losing: </span>
                   {(impact.losing || []).map((pos) => (
-                    <Badge key={pos} variant="outline" className="text-xs mr-1 border-red-500 text-sem-risk">{pos}</Badge>
+                    <Badge key={pos} color="zinc" className="text-xs mr-1 border-red-500 text-sem-risk">{pos}</Badge>
                   ))}
                 </div>
               )}
@@ -197,7 +196,7 @@ export function TradeEvalView({ data, app, navigate }: { data: TradeEvalData; ap
                 <div>
                   <span className="text-xs text-muted-foreground">Gaining: </span>
                   {(impact.gaining || []).map((pos) => (
-                    <Badge key={pos} variant="outline" className="text-xs mr-1 border-green-500 text-green-600">{pos}</Badge>
+                    <Badge key={pos} color="zinc" className="text-xs mr-1 border-green-500 text-green-600">{pos}</Badge>
                   ))}
                 </div>
               )}

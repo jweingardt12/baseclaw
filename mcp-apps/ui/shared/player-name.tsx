@@ -1,13 +1,14 @@
 import * as React from "react";
 import { MessageSquare, ExternalLink, Search, FileText } from "@/shared/icons";
 import { mlbHeadshotUrl } from "./mlb-images";
+import { Avatar } from "../catalyst/avatar";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "../components/ui/dropdown-menu";
+} from "../catalyst/dropdown-menu";
 
 interface PlayerNameProps {
   name: string;
@@ -40,7 +41,7 @@ function getAskPrompt(name: string, context?: string): string {
 
 export function PlayerName({ name, playerId, mlbId, app, navigate, context, showHeadshot }: PlayerNameProps) {
   var headshot = mlbId && showHeadshot !== false
-    ? <img src={mlbHeadshotUrl(mlbId)} alt="" className="w-7 h-7 rounded-full bg-muted object-cover flex-shrink-0" style={{ boxShadow: "0 0 0 1px color-mix(in oklab, var(--color-border) 60%, transparent)" }} />
+    ? <Avatar src={mlbHeadshotUrl(mlbId)} className="size-7" />
     : null;
 
   if (!app) {

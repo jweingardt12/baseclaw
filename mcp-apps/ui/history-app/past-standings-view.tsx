@@ -1,6 +1,7 @@
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Badge } from "../catalyst/badge";
+import { Button } from "../catalyst/button";
+import { Subheading } from "../catalyst/heading";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
 import { useCallTool } from "../shared/use-call-tool";
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from "recharts";
@@ -74,11 +75,11 @@ export function PastStandingsView({ data, app, navigate }: { data: PastStandings
   return (
     <div className="space-y-3 animate-fade-in">
       <div className="flex items-center justify-between gap-2">
-        <Button variant="outline" size="sm" disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
+        <Button outline disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <span className="flex-1 text-center text-sm font-bold">{"Standings - " + data.year}</span>
-        <Button variant="outline" size="sm" disabled={data.year >= 2026 || loading} onClick={() => changeYear(data.year + 1)}>
+        <Button outline disabled={data.year >= 2026 || loading} onClick={() => changeYear(data.year + 1)}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
@@ -90,21 +91,21 @@ export function PastStandingsView({ data, app, navigate }: { data: PastStandings
         )}
         <div className="surface-card overflow-hidden">
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead className="w-12 font-bold">#</TableHead>
-                <TableHead className="font-bold">Team</TableHead>
-                <TableHead className="hidden sm:table-cell font-bold">Manager</TableHead>
-                <TableHead className="text-center font-bold">Record</TableHead>
+                <TableHeader className="w-12 font-bold">#</TableHeader>
+                <TableHeader className="font-bold">Team</TableHeader>
+                <TableHeader className="hidden sm:table-cell font-bold">Manager</TableHeader>
+                <TableHeader className="text-center font-bold">Record</TableHeader>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {(data.standings || []).map(function (s) {
                 return (
                   <TableRow key={s.rank}>
                     <TableCell>
                       <span className="flex items-center gap-1">
-                        <Badge variant={s.rank <= 3 ? "default" : "secondary"} className="text-xs font-bold">{s.rank}</Badge>
+                        <Badge color={s.rank <= 3 ? undefined : "zinc"} className="text-xs font-bold">{s.rank}</Badge>
                         {s.rank <= 3 && <Trophy size={14} className="text-amber-500" />}
                       </span>
                     </TableCell>
@@ -122,7 +123,7 @@ export function PastStandingsView({ data, app, navigate }: { data: PastStandings
           <div className="surface-card p-4 mt-3">
             <div className="flex items-center gap-2 mb-3">
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-bold">Win-Loss Breakdown</span>
+              <Subheading>Win-Loss Breakdown</Subheading>
             </div>
             <div style={{ height: Math.max(standingsChartData.length * 26, 120) + "px" }}>
               <ResponsiveContainer width="100%" height="100%">

@@ -23,6 +23,10 @@ export interface Player {
   status?: string;
   team?: string;
   percent_owned?: number;
+  percent_started?: number;
+  preseason_pick?: number;
+  current_pick?: number;
+  stats?: Record<string, string | number>;
   mlb_id?: number;
   intel?: PlayerIntel;
   trend?: TrendInfo;
@@ -35,6 +39,41 @@ export interface RosterResponse {
 
 export interface FreeAgentsResponse {
   pos_type: string;
+  players: Player[];
+}
+
+export interface PositionalRankPlayer {
+  player_key: string;
+  name: string;
+}
+
+export interface PositionalRank {
+  position: string;
+  rank: number;
+  grade: string;
+  starters: PositionalRankPlayer[];
+  bench: PositionalRankPlayer[];
+}
+
+export interface TeamPositionalRanks {
+  team_key: string;
+  team_id: string;
+  name: string;
+  team_logo?: string;
+  manager?: string;
+  manager_image?: string;
+  positional_ranks: PositionalRank[];
+  recommended_trade_partners: string[];
+}
+
+export interface PositionalRanksResponse {
+  teams: TeamPositionalRanks[];
+}
+
+export interface PlayerListResponse {
+  pos_type: string;
+  count: number;
+  status: string;
   players: Player[];
 }
 

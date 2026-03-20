@@ -1,6 +1,8 @@
-import { Badge } from "../components/ui/badge";
-import { Card, CardContent } from "../components/ui/card";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Badge } from "../catalyst/badge";
+import { Card, CardContent } from "../catalyst/card";
+import { Subheading } from "../catalyst/heading";
+import { Text } from "../catalyst/text";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
 import { KpiTile } from "../shared/kpi-tile";
 import { formatFixed } from "../shared/number-format";
 
@@ -31,11 +33,11 @@ interface FaabRecommendData {
   improving_categories: string[];
 }
 
-function tierBadgeVariant(tier: string): "success" | "warning" | "risk" | "info" | "outline" {
-  if (tier === "Elite") return "warning";
-  if (tier === "Strong") return "success";
-  if (tier === "Solid") return "info";
-  return "risk";
+function tierBadgeColor(tier: string): "amber" | "green" | "blue" | "red" {
+  if (tier === "Elite") return "amber";
+  if (tier === "Strong") return "green";
+  if (tier === "Solid") return "blue";
+  return "red";
 }
 
 function directionArrow(direction: string): string {
@@ -69,14 +71,14 @@ export function FaabRecommendView({ data }: { data: FaabRecommendData; app?: any
         <CardContent className="p-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-lg font-semibold">{player.name}</p>
+              <Subheading>{player.name}</Subheading>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline" className="text-xs">{player.pos}</Badge>
+                <Badge color="zinc" className="text-xs">{player.pos}</Badge>
                 <span className="text-sm text-muted-foreground">{player.team}</span>
               </div>
             </div>
             <div className="text-right">
-              <Badge variant={tierBadgeVariant(player.tier)} className="text-xs mb-1">{player.tier}</Badge>
+              <Badge color={tierBadgeColor(player.tier)} className="text-xs mb-1">{player.tier}</Badge>
               <p className="font-mono text-sm text-muted-foreground">z={formatFixed(player.z_final, 2, "0.00")}</p>
             </div>
           </div>
@@ -86,7 +88,7 @@ export function FaabRecommendView({ data }: { data: FaabRecommendData; app?: any
       {/* Bid display */}
       <Card>
         <CardContent className="p-3 text-center">
-          <p className="text-sm text-muted-foreground">Recommended FAAB Bid</p>
+          <Text>Recommended FAAB Bid</Text>
           <p className="text-3xl font-bold font-mono text-primary">${data.recommended_bid}</p>
           {data.bid_range && (
             <p className="text-xs text-muted-foreground mt-1">
@@ -136,7 +138,7 @@ export function FaabRecommendView({ data }: { data: FaabRecommendData; app?: any
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-muted-foreground">Improves:</span>
           {improving.map(function (cat) {
-            return <Badge key={cat} variant="success" className="text-xs">{cat}</Badge>;
+            return <Badge key={cat} color="green" className="text-xs">{cat}</Badge>;
           })}
         </div>
       )}
@@ -144,15 +146,15 @@ export function FaabRecommendView({ data }: { data: FaabRecommendData; app?: any
       {/* Category impact table */}
       {Object.keys(impact).length > 0 && (
         <Table>
-          <TableHeader>
+          <TableHead>
             <TableRow>
-              <TableHead>Category</TableHead>
-              <TableHead className="text-right hidden sm:table-cell">Add Z</TableHead>
-              <TableHead className="text-right hidden sm:table-cell">Drop Z</TableHead>
-              <TableHead className="text-right">Delta</TableHead>
-              <TableHead className="text-center">Dir</TableHead>
+              <TableHeader>Category</TableHeader>
+              <TableHeader className="text-right hidden sm:table-cell">Add Z</TableHeader>
+              <TableHeader className="text-right hidden sm:table-cell">Drop Z</TableHeader>
+              <TableHeader className="text-right">Delta</TableHeader>
+              <TableHeader className="text-center">Dir</TableHeader>
             </TableRow>
-          </TableHeader>
+          </TableHead>
           <TableBody>
             {Object.keys(impact).map(function (cat) {
               var row = impact[cat];

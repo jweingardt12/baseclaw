@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Button } from "../catalyst/button";
+import { Subheading } from "../catalyst/heading";
 import { KpiTile } from "../shared/kpi-tile";
 import { Copy, Check, MessageSquare } from "@/shared/icons";
 
@@ -49,7 +50,7 @@ export function TrashTalkView({ data, app, navigate }: { data: TrashTalkResponse
       {/* Header */}
       <div className="flex items-center gap-2">
         <MessageSquare className="h-5 w-5 text-primary" />
-        <h2 className="text-lg font-semibold">Trash Talk</h2>
+        <Subheading>Trash Talk</Subheading>
       </div>
 
       {/* Opponent + Week */}
@@ -60,7 +61,7 @@ export function TrashTalkView({ data, app, navigate }: { data: TrashTalkResponse
         </div>
         <div className="flex items-center gap-2">
           <Badge className={intensityColor(data.intensity) + " text-xs"}>{data.intensity}</Badge>
-          {ctx.score && <Badge variant="outline" className="text-xs">{ctx.score}</Badge>}
+          {ctx.score && <Badge color="zinc" className="text-xs">{ctx.score}</Badge>}
         </div>
       </div>
 
@@ -69,7 +70,7 @@ export function TrashTalkView({ data, app, navigate }: { data: TrashTalkResponse
         <CardContent className="p-4">
           <p className="text-lg italic leading-relaxed text-center">"{data.featured_line}"</p>
           <div className="flex justify-center mt-3">
-            <Button variant="outline" size="sm" onClick={handleCopy}>
+            <Button outline onClick={handleCopy}>
               {copied ? (
                 <>
                   <Check className="h-3 w-3 text-sem-success" />
@@ -88,9 +89,9 @@ export function TrashTalkView({ data, app, navigate }: { data: TrashTalkResponse
 
       {/* Context Badges */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Badge variant="outline" className="text-xs">Your Rank: {ctx.your_rank}</Badge>
-        <Badge variant="outline" className="text-xs">Their Rank: {ctx.their_rank}</Badge>
-        {ctx.score && <Badge variant="outline" className="text-xs">Score: {ctx.score}</Badge>}
+        <Badge color="zinc" className="text-xs">Your Rank: {ctx.your_rank}</Badge>
+        <Badge color="zinc" className="text-xs">Their Rank: {ctx.their_rank}</Badge>
+        {ctx.score && <Badge color="zinc" className="text-xs">Score: {ctx.score}</Badge>}
       </div>
 
       {/* Additional Lines */}

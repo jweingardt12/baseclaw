@@ -1,4 +1,5 @@
 import { Sparkles } from "@/shared/icons";
+import { Text } from "../catalyst/text";
 
 interface AiInsightProps {
   recommendation: string | null | undefined;
@@ -13,7 +14,7 @@ export function AiInsight({ recommendation }: AiInsightProps) {
         <Sparkles size={14} className="text-blue-500" />
         <span className="text-xs font-semibold text-muted-foreground">AI Insight</span>
       </div>
-      <p className="text-sm">{recommendation}</p>
+      <Text>{recommendation}</Text>
     </div>
   );
 }

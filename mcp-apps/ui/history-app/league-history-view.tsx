@@ -1,4 +1,6 @@
-import { Badge } from "../components/ui/badge";
+import { Badge } from "../catalyst/badge";
+import { Subheading } from "../catalyst/heading";
+import { Text } from "../catalyst/text";
 import { Trophy, TrendingUp } from "@/shared/icons";
 import { KpiTile } from "../shared/kpi-tile";
 
@@ -38,15 +40,12 @@ function parseFinish(finish: string): number | null {
   return isNaN(num) ? null : num;
 }
 
-function getFinishBadgeVariant(finish: string | undefined): "default" | "secondary" | "outline" {
+function getFinishBadgeColor(finish: string | undefined): "zinc" | undefined {
   var rank = parseFinish(finish || "");
   if (rank === 1) {
-    return "default";
+    return undefined;
   }
-  if (rank !== null && rank <= 3) {
-    return "secondary";
-  }
-  return "outline";
+  return "zinc";
 }
 
 export function LeagueHistoryView({ data }: { data: { seasons: SeasonResult[] } }) {
@@ -139,7 +138,7 @@ export function LeagueHistoryView({ data }: { data: { seasons: SeasonResult[] } 
         <div className="surface-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <Trophy className="h-4 w-4 text-muted-foreground" />
-            <span className="text-base font-bold">Finish by Season</span>
+            <Subheading>Finish by Season</Subheading>
           </div>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
@@ -240,14 +239,14 @@ export function LeagueHistoryView({ data }: { data: { seasons: SeasonResult[] } 
                     <span className="font-semibold text-sm truncate">{s.champion}</span>
                   </div>
                   {s.your_record && s.your_record !== "-" && (
-                    <p className="text-xs text-muted-foreground mt-0.5 font-mono">{s.your_record}</p>
+                    <Text className="mt-0.5 font-mono">{s.your_record}</Text>
                   )}
                 </div>
 
                 {/* Your finish */}
                 <div className="flex items-center gap-1.5 shrink-0">
                   {s.your_finish && s.your_finish !== "-" ? (
-                    <Badge variant={getFinishBadgeVariant(s.your_finish)} className="text-xs font-bold">
+                    <Badge color={getFinishBadgeColor(s.your_finish)} className="text-xs font-bold">
                       {s.your_finish}
                     </Badge>
                   ) : (
@@ -265,7 +264,7 @@ export function LeagueHistoryView({ data }: { data: { seasons: SeasonResult[] } 
         <div className="surface-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            <span className="text-base font-bold">Win % by Season</span>
+            <Subheading>Win % by Season</Subheading>
           </div>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">

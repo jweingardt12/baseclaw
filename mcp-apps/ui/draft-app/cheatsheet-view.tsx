@@ -1,5 +1,6 @@
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
+import { Card, CardHeader, CardTitle, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Subheading } from "../catalyst/heading";
 import { PlayerName } from "../shared/player-name";
 import { AlertTriangle } from "@/shared/icons";
 import { parseRoundKey, sortRoundEntries } from "./round-key";
@@ -30,7 +31,7 @@ export function CheatsheetView({ data, app, navigate }: { data: CheatsheetData; 
 
   return (
     <div className="space-y-2">
-      <h2 className="text-lg font-semibold">Draft Cheat Sheet</h2>
+      <Subheading>Draft Cheat Sheet</Subheading>
 
       {/* Round-by-round strategy */}
       {roundEntries.length > 0 && (

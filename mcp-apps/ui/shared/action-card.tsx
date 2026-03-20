@@ -1,5 +1,5 @@
 import { cn } from "../lib/utils";
-import { Button } from "../components/ui/button";
+import { Button } from "../catalyst/button";
 import { Loader2 } from "@/shared/icons";
 
 var URGENCY_BORDER: Record<string, string> = {
@@ -31,7 +31,7 @@ export function ActionCard({ icon, title, description, buttonText, onClick, urge
           {children}
         </div>
         {buttonText && onClick && (
-          <Button size="sm" onClick={onClick} disabled={loading} className="shrink-0">
+          <Button onClick={onClick} disabled={loading} className="shrink-0">
             {loading && <Loader2 size={14} className="animate-spin mr-1" />}
             {buttonText}
           </Button>

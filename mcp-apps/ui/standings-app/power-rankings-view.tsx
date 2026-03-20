@@ -1,5 +1,6 @@
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { Badge } from "../components/ui/badge";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
+import { Badge } from "../catalyst/badge";
+import { Subheading } from "../catalyst/heading";
 import { formatFixed } from "../shared/number-format";
 import { AiInsight } from "../shared/ai-insight";
 
@@ -21,7 +22,7 @@ function RankBadge({ rank }: { rank: number }) {
   if (rank === 1) return <Badge className="text-xs bg-sem-warning">{rank}</Badge>;
   if (rank === 2) return <Badge className="text-xs bg-sem-neutral">{rank}</Badge>;
   if (rank === 3) return <Badge className="text-xs bg-sem-info">{rank}</Badge>;
-  return <Badge variant="secondary" className="text-xs">{rank}</Badge>;
+  return <Badge color="zinc" className="text-xs">{rank}</Badge>;
 }
 
 function OwnershipBar({ pct }: { pct: number }) {
@@ -40,20 +41,20 @@ export function PowerRankingsView({ data }: { data: { rankings: PowerRankingTeam
 
   return (
     <div className="space-y-3">
-      <h2 className="text-lg font-semibold">Power Rankings</h2>
+      <Subheading>Power Rankings</Subheading>
 
       <AiInsight recommendation={data.ai_recommendation} />
 
       <Table>
-        <TableHeader>
+        <TableHead>
           <TableRow>
-            <TableHead className="w-12">#</TableHead>
-            <TableHead>Team</TableHead>
-            <TableHead className="text-right hidden sm:table-cell">Hitters</TableHead>
-            <TableHead className="text-right hidden sm:table-cell">Pitchers</TableHead>
-            <TableHead>Avg Own%</TableHead>
+            <TableHeader className="w-12">#</TableHeader>
+            <TableHeader>Team</TableHeader>
+            <TableHeader className="text-right hidden sm:table-cell">Hitters</TableHeader>
+            <TableHeader className="text-right hidden sm:table-cell">Pitchers</TableHeader>
+            <TableHeader>Avg Own%</TableHeader>
           </TableRow>
-        </TableHeader>
+        </TableHead>
         <TableBody>
           {rankings.map((t) => (
             <TableRow

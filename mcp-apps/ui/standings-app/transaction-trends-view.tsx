@@ -1,6 +1,7 @@
-import { Badge } from "../components/ui/badge";
-import { Card, CardContent } from "../components/ui/card";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Badge } from "../catalyst/badge";
+import { Card, CardContent } from "../catalyst/card";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
+import { Subheading } from "../catalyst/heading";
 import { mlbHeadshotUrl, teamLogoFromAbbrev } from "../shared/mlb-images";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
@@ -57,15 +58,15 @@ function PercentBar({ value }: { value: number }) {
 function TrendTable({ players, direction }: { players: TrendPlayer[]; direction: "added" | "dropped" }) {
   return (
     <Table>
-      <TableHeader>
+      <TableHead>
         <TableRow>
-          <TableHead className="w-8">#</TableHead>
-          <TableHead>Player</TableHead>
-          <TableHead className="hidden sm:table-cell">Pos</TableHead>
-          <TableHead className="text-right">% Owned</TableHead>
-          <TableHead className="text-right">Change</TableHead>
+          <TableHeader className="w-8">#</TableHeader>
+          <TableHeader>Player</TableHeader>
+          <TableHeader className="hidden sm:table-cell">Pos</TableHeader>
+          <TableHeader className="text-right">% Owned</TableHeader>
+          <TableHeader className="text-right">Change</TableHeader>
         </TableRow>
-      </TableHeader>
+      </TableHead>
       <TableBody>
         {(players || []).map(function (p, i) {
           var logoUrl = p.team ? teamLogoFromAbbrev(p.team) : null;
@@ -94,7 +95,7 @@ function TrendTable({ players, direction }: { players: TrendPlayer[]; direction:
               <TableCell className="hidden sm:table-cell">
                 <div className="flex gap-1 flex-wrap">
                   {(p.position || "").split(",").filter(Boolean).map(function (pos) {
-                    return <Badge key={pos.trim()} variant="outline" className="text-xs">{pos.trim()}</Badge>;
+                    return <Badge key={pos.trim()} color="zinc" className="text-xs">{pos.trim()}</Badge>;
                   })}
                 </div>
               </TableCell>
@@ -119,7 +120,7 @@ export function TransactionTrendsView({ data }: { data: TransactionTrendsData })
 
   return (
     <div className="space-y-3">
-      <h2 className="text-lg font-semibold">Transaction Trends</h2>
+      <Subheading>Transaction Trends</Subheading>
 
       <AiInsight recommendation={data.ai_recommendation} />
 
@@ -130,8 +131,8 @@ export function TransactionTrendsView({ data }: { data: TransactionTrendsData })
       </div>
 
       <div className="flex gap-2 mb-1">
-        <Badge variant="default" className="text-xs">{added.length + " most added"}</Badge>
-        <Badge variant="destructive" className="text-xs">{dropped.length + " most dropped"}</Badge>
+        <Badge className="text-xs">{added.length + " most added"}</Badge>
+        <Badge color="red" className="text-xs">{dropped.length + " most dropped"}</Badge>
       </div>
 
       {/* Most Added */}
@@ -139,7 +140,7 @@ export function TransactionTrendsView({ data }: { data: TransactionTrendsData })
         <CardContent className="p-0">
           <div className="flex items-center gap-2 px-4 pt-3 pb-2">
             <TrendingUp className="h-4 w-4 text-green-600" />
-            <h3 className="text-sm font-semibold">Most Added</h3>
+            <Subheading level={3} className="text-sm">Most Added</Subheading>
           </div>
           <TrendTable players={added} direction="added" />
         </CardContent>
@@ -150,7 +151,7 @@ export function TransactionTrendsView({ data }: { data: TransactionTrendsData })
         <CardContent className="p-0">
           <div className="flex items-center gap-2 px-4 pt-3 pb-2">
             <TrendingDown className="h-4 w-4 text-sem-risk" />
-            <h3 className="text-sm font-semibold">Most Dropped</h3>
+            <Subheading level={3} className="text-sm">Most Dropped</Subheading>
           </div>
           <TrendTable players={dropped} direction="dropped" />
         </CardContent>

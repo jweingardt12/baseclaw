@@ -1,46 +1,30 @@
 import React, { useState } from "react";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { AlertDialog } from "../components/ui/alert-dialog";
+import { Button } from "../catalyst/button";
+import { Input } from "../catalyst/input";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
+import { Tabs, TabsList, TabsTrigger } from "../catalyst/tabs";
+import { AlertDialog } from "../catalyst/alert-dialog";
+import { Subheading } from "../catalyst/heading";
+import { Text } from "../catalyst/text";
 import { useCallTool } from "../shared/use-call-tool";
-import { teamLogoFromAbbrev } from "../shared/mlb-images";
-import { IntelBadge } from "../shared/intel-badge";
-import { IntelPanel } from "../shared/intel-panel";
-import { PlayerName } from "../shared/player-name";
-import { TrendIndicator } from "../shared/trend-indicator";
+import { PlayerRow, PlayerRowData } from "../shared/player-row";
 import { AiInsight } from "../shared/ai-insight";
 import { Search, UserPlus, Loader2 } from "@/shared/icons";
-
-interface Player {
-  name: string;
-  player_id: string;
-  positions?: string;
-  eligible_positions?: string[];
-  percent_owned?: number;
-  status?: string;
-  team?: string;
-  mlb_id?: number;
-  intel?: any;
-  trend?: any;
-}
 
 interface FreeAgentsData {
   type: string;
   pos_type?: string;
   count?: number;
   query?: string;
-  players?: Player[];
-  results?: Player[];
+  players?: PlayerRowData[];
+  results?: PlayerRowData[];
   ai_recommendation?: string | null;
 }
 
 export function FreeAgentsView({ data, app, navigate }: { data: FreeAgentsData; app: any; navigate: (data: any) => void }) {
   const { callTool, loading } = useCallTool(app);
   const [searchQuery, setSearchQuery] = useState("");
-  const [addTarget, setAddTarget] = useState<Player | null>(null);
+  const [addTarget, setAddTarget] = useState<PlayerRowData | null>(null);
   const players = data.players || data.results || [];
   const title = data.type === "search"
     ? "Search Results: " + (data.query || "")
@@ -73,7 +57,7 @@ export function FreeAgentsView({ data, app, navigate }: { data: FreeAgentsData; 
 
   return (
     <div className="space-y-3">
-      <h2 className="text-lg font-semibold">{title}</h2>
+      <Subheading>{title}</Subheading>
 
       <AiInsight recommendation={data.ai_recommendation} />
 
@@ -91,7 +75,7 @@ export function FreeAgentsView({ data, app, navigate }: { data: FreeAgentsData; 
           value={searchQuery}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
         />
-        <Button type="submit" size="sm" disabled={loading}>
+        <Button type="submit" disabled={loading}>
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
         </Button>
       </form>
@@ -102,72 +86,42 @@ export function FreeAgentsView({ data, app, navigate }: { data: FreeAgentsData; 
           </div>
         )}
         {players.length === 0 ? (
-          <p className="text-muted-foreground">No players found.</p>
+          <Text>No players found.</Text>
         ) : (
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead>Player</TableHead>
-                <TableHead className="hidden sm:table-cell">Positions</TableHead>
-                <TableHead className="text-right">% Owned</TableHead>
-                <TableHead className="w-24">Status</TableHead>
-                <TableHead className="w-20"></TableHead>
+                <TableHeader>Player</TableHeader>
+                <TableHeader className="hidden sm:table-cell">Positions</TableHeader>
+                <TableHeader className="hidden md:table-cell text-right">%Start</TableHeader>
+                <TableHeader className="text-right">%Own</TableHeader>
+                <TableHeader className="w-24">Status</TableHeader>
+                <TableHeader className="w-20"></TableHeader>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
-              {players.map((p, idx) => {
-                const posDisplay = p.positions || (p.eligible_positions || []).join(", ");
-                const logoUrl = p.team ? teamLogoFromAbbrev(p.team) : null;
-                return (
-                  <React.Fragment key={p.player_id}>
-                  <TableRow>
-                    <TableCell className="font-medium">
-                      <span className="flex items-center gap-1">
-                        {logoUrl && <img src={logoUrl} alt={p.team || ""} width={16} height={16} className="inline shrink-0" />}
-                        <PlayerName name={p.name} playerId={p.player_id} mlbId={p.mlb_id} app={app} navigate={navigate} context="free-agents" />
-                        {p.intel && <IntelBadge intel={p.intel} size="sm" />}
-                      </span>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <div className="flex gap-1 flex-wrap">
-                        {posDisplay.split(",").map((pos) => (
-                          <Badge key={pos.trim()} variant="outline" className="text-xs">{pos.trim()}</Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs">
-                      <span className="inline-flex items-center gap-1 justify-end">
-                        {p.percent_owned != null ? p.percent_owned + "%" : "-"}
-                        <TrendIndicator trend={p.trend} />
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {p.status && p.status !== "Healthy" && (
-                        <Badge variant="destructive" className="text-xs">{p.status}</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Button size="sm" onClick={() => setAddTarget(p)} className="font-bold px-3">
-                        <UserPlus size={14} className="mr-1" />
-                        ADD
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                  {p.intel && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="p-0">
-                        <IntelPanel intel={p.intel} />
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  </React.Fragment>
-                );
-              })}
+              {players.map((p) => (
+                <PlayerRow
+                  key={p.player_id}
+                  player={p}
+                  columns={["positions", "fantasy"]}
+                  app={app}
+                  navigate={navigate}
+                  context="free-agents"
+                  colSpan={6}
+                  actions={
+                    <Button onClick={() => setAddTarget(p)} className="font-bold px-3">
+                      <UserPlus size={14} className="mr-1" />
+                      ADD
+                    </Button>
+                  }
+                />
+              ))}
             </TableBody>
           </Table>
         )}
       </div>
-      <p className="text-xs text-muted-foreground mt-2">{players.length + " players"}</p>
+      <Text className="mt-2">{players.length + " players"}</Text>
       <AlertDialog
         open={addTarget !== null}
         onClose={() => setAddTarget(null)}

@@ -1,7 +1,8 @@
 import * as React from "react";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { Badge } from "../components/ui/badge";
-import { Card, CardContent } from "../components/ui/card";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
+import { Badge } from "../catalyst/badge";
+import { Card, CardContent } from "../catalyst/card";
+import { Subheading } from "../catalyst/heading";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, ReferenceLine } from "recharts";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
@@ -23,7 +24,7 @@ function RankBadge({ rank }: { rank: number }) {
   if (rank === 1) return <Badge className="text-xs bg-sem-warning">{rank}</Badge>;
   if (rank === 2) return <Badge className="text-xs bg-sem-neutral">{rank}</Badge>;
   if (rank === 3) return <Badge className="text-xs bg-sem-info">{rank}</Badge>;
-  return <Badge variant="secondary" className="text-xs">{rank}</Badge>;
+  return <Badge color="zinc" className="text-xs">{rank}</Badge>;
 }
 
 function WinLossBar({ wins, losses }: { wins: number; losses: number }) {
@@ -134,17 +135,17 @@ export function StandingsView({ data }: { data: { standings: StandingsEntry[]; p
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold mb-2">League Standings</h2>
+        <Subheading className="mb-2">League Standings</Subheading>
         <Table>
-          <TableHeader>
+          <TableHead>
             <TableRow>
-              <TableHead className="w-12">#</TableHead>
-              <TableHead>Team</TableHead>
-              <TableHead className="text-center">Record</TableHead>
-              <TableHead className="hidden sm:table-cell w-20"></TableHead>
-              {hasPoints && <TableHead className="text-right">Points</TableHead>}
+              <TableHeader className="w-12">#</TableHeader>
+              <TableHeader>Team</TableHeader>
+              <TableHeader className="text-center">Record</TableHeader>
+              <TableHeader className="hidden sm:table-cell w-20"></TableHeader>
+              {hasPoints && <TableHeader className="text-right">Points</TableHeader>}
             </TableRow>
-          </TableHeader>
+          </TableHead>
           <TableBody>
             {(data.standings || []).map((s, idx) => {
               var isMyTeam = s.name === MY_TEAM;
@@ -187,7 +188,7 @@ export function StandingsView({ data }: { data: { standings: StandingsEntry[]; p
               className="flex items-center justify-between w-full text-left"
             >
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold">Points Distribution</h3>
+                <Subheading level={3} className="text-sm">Points Distribution</Subheading>
                 <div className="flex items-center gap-1.5 ml-2">
                   <span className="inline-block w-2.5 h-2.5 rounded-sm bg-green-500 opacity-70" />
                   <span className="text-xs text-muted-foreground">Playoff</span>

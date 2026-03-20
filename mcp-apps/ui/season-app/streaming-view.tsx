@@ -1,10 +1,8 @@
-import { Button } from "../components/ui/button";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Button } from "../catalyst/button";
+import { Subheading } from "../catalyst/heading";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
 import { useCallTool } from "../shared/use-call-tool";
-import { teamLogoFromAbbrev } from "../shared/mlb-images";
-import { IntelBadge } from "../shared/intel-badge";
-import { PlayerName } from "../shared/player-name";
-import { TrendIndicator } from "../shared/trend-indicator";
+import { PlayerCell, OwnershipCell } from "../shared/player-row";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 import { UserPlus, Loader2, Zap } from "@/shared/icons";
@@ -52,7 +50,7 @@ export function StreamingView({ data, app, navigate }: { data: StreamingData; ap
         <KpiTile value={bestGrade} label="Best Score" color="primary" />
       </div>
 
-      <h2 className="text-lg font-semibold">Streaming Pitchers - Week {data.week}</h2>
+      <Subheading>Streaming Pitchers - Week {data.week}</Subheading>
 
       <div className="relative">
         {loading && (
@@ -61,45 +59,32 @@ export function StreamingView({ data, app, navigate }: { data: StreamingData; ap
           </div>
         )}
         <Table>
-          <TableHeader>
+          <TableHead>
             <TableRow>
-              <TableHead>Pitcher</TableHead>
-              <TableHead className="hidden sm:table-cell">Team</TableHead>
-              <TableHead className="text-center">Games</TableHead>
-              <TableHead className="hidden sm:table-cell text-right">Own%</TableHead>
-              <TableHead className="text-right">Rec</TableHead>
-              <TableHead className="w-16">2-Start</TableHead>
-              <TableHead className="w-16"></TableHead>
+              <TableHeader>Pitcher</TableHeader>
+              <TableHeader className="text-center">Games</TableHeader>
+              <TableHeader className="hidden sm:table-cell text-right">Own%</TableHeader>
+              <TableHeader className="text-right">Rec</TableHeader>
+              <TableHeader className="w-16">2-Start</TableHeader>
+              <TableHeader className="w-16"></TableHeader>
             </TableRow>
-          </TableHeader>
+          </TableHead>
           <TableBody>
             {(data.pitchers || []).map((p, i) => (
               <TableRow key={p.player_id} className={i === 0 ? "bg-primary/5" : ""}>
                 <TableCell className="font-medium">
-                  <span className="flex items-center gap-1">
-                    <PlayerName name={p.name} playerId={p.player_id} mlbId={p.mlb_id} app={app} navigate={navigate} context="free-agents" />
-                    {p.intel && <IntelBadge intel={p.intel} size="sm" />}
-                  </span>
-                </TableCell>
-                <TableCell className="hidden sm:table-cell text-sm">
-                  <span className="flex items-center gap-1">
-                    <img src={teamLogoFromAbbrev(p.team)} alt={p.team} width={16} height={16} className="inline shrink-0" />
-                    {p.team}
-                  </span>
+                  <PlayerCell player={p} app={app} navigate={navigate} context="free-agents" />
                 </TableCell>
                 <TableCell className="text-center font-mono">{p.games}</TableCell>
                 <TableCell className="hidden sm:table-cell text-right font-mono text-xs">
-                  <span className="inline-flex items-center gap-1 justify-end">
-                    {p.percent_owned}%
-                    <TrendIndicator trend={p.trend} />
-                  </span>
+                  <OwnershipCell player={p} />
                 </TableCell>
                 <TableCell className="text-right font-mono font-medium">{formatFixed(p.score, 1, "0.0")}</TableCell>
                 <TableCell>
                   {p.two_start && <Zap size={14} className="text-amber-500" />}
                 </TableCell>
                 <TableCell>
-                  <Button size="sm" onClick={() => handleAdd(p.player_id)}>
+                  <Button onClick={() => handleAdd(p.player_id)}>
                     <UserPlus size={14} />
                   </Button>
                 </TableCell>

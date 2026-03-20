@@ -1,5 +1,7 @@
 import { LineupOptimizeView } from "./lineup-optimize-view";
 import { InjuryReportView } from "./injury-report-view";
+import { Subheading } from "../catalyst/heading";
+import { Text } from "../catalyst/text";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 
@@ -18,7 +20,7 @@ export function DailyUpdateView({ data, app, navigate }: { data: DailyUpdateData
   var gamesCount = data.lineup ? (data.lineup.bench_playing || []).length : 0;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 animate-stagger">
       <AiInsight recommendation={data.ai_recommendation} />
 
       <div className="kpi-grid">
@@ -27,10 +29,10 @@ export function DailyUpdateView({ data, app, navigate }: { data: DailyUpdateData
         <KpiTile value={gamesCount} label="Bench Games" color={gamesCount > 0 ? "info" : "neutral"} />
       </div>
 
-      <h2 className="text-lg font-semibold">Daily Update</h2>
+      <Subheading>Daily Update</Subheading>
       {data.lineup && <LineupOptimizeView data={data.lineup} app={app || null} navigate={navigate || noop} />}
       {data.injuries && <InjuryReportView data={data.injuries} />}
-      <p className="text-xs text-muted-foreground">{data.message}</p>
+      <Text>{data.message}</Text>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Badge } from "../components/ui/badge";
+import { Badge } from "../catalyst/badge";
+import { Subheading } from "../catalyst/heading";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 import { TeamLogo } from "../shared/team-logo";
@@ -147,9 +148,9 @@ export function WeekPlannerView({ data }: { data: WeekPlannerData }) {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold">
+        <Subheading>
           Week {data.week} Planner
-        </h2>
+        </Subheading>
         <p className="text-xs text-muted-foreground">{data.start_date} to {data.end_date}</p>
       </div>
 
@@ -179,7 +180,7 @@ export function WeekPlannerView({ data }: { data: WeekPlannerData }) {
                       {p.name}
                     </td>
                     <td className="py-1.5 pr-2">
-                      <Badge variant="outline" className="text-xs">{p.position}</Badge>
+                      <Badge color="zinc" className="text-xs">{p.position}</Badge>
                     </td>
                     <td className="py-1.5 pr-2 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">

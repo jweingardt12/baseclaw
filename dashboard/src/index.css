@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: Inter, system-ui, sans-serif;
+  --font-sans--font-feature-settings: 'cv11';
+  --radius-lg: 0.625rem;
+}
+
+/* Dark mode: respect system preference or class on html */
+@custom-variant dark (&:is(.dark *));
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+  body {
+    @apply bg-white text-zinc-950 dark:bg-zinc-900 dark:text-white;
+    font-family: var(--font-sans);
+    font-feature-settings: var(--font-sans--font-feature-settings);
+  }
+  /* Tabular nums for stat displays */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Hide scrollbar utility */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

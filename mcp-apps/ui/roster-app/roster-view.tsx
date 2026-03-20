@@ -1,29 +1,16 @@
 import React, { useState } from "react";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { AlertDialog } from "../components/ui/alert-dialog";
+import { Button } from "../catalyst/button";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
+import { AlertDialog } from "../catalyst/alert-dialog";
+import { Subheading } from "../catalyst/heading";
+import { Text } from "../catalyst/text";
 import { useCallTool } from "../shared/use-call-tool";
-import { teamLogoFromAbbrev } from "../shared/mlb-images";
-import { IntelBadge } from "../shared/intel-badge";
-import { IntelPanel } from "../shared/intel-panel";
-import { PlayerName } from "../shared/player-name";
+import { PlayerRow, PlayerRowData, OpponentCell, OwnershipCell, StatCells } from "../shared/player-row";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 import { Users, UserMinus, Loader2 } from "@/shared/icons";
 
-interface Player {
-  name: string;
-  player_id: string;
-  position?: string;
-  eligible_positions?: string[];
-  status?: string;
-  team?: string;
-  mlb_id?: number;
-  intel?: any;
-}
-
-export function RosterView({ data, app, navigate }: { data: { players: Player[]; ai_recommendation?: string | null }; app: any; navigate: (data: any) => void }) {
+export function RosterView({ data, app, navigate }: { data: { players: PlayerRowData[]; ai_recommendation?: string | null }; app: any; navigate: (data: any) => void }) {
   const { callTool, loading } = useCallTool(app);
   const [dropTarget, setDropTarget] = useState<Player | null>(null);
 
@@ -42,10 +29,10 @@ export function RosterView({ data, app, navigate }: { data: { players: Player[];
 
   return (
     <div className="space-y-3">
-      <h2 className="text-lg font-semibold flex items-center gap-2">
+      <Subheading className="flex items-center gap-2">
         <Users className="h-5 w-5" />
         Current Roster
-      </h2>
+      </Subheading>
 
       <AiInsight recommendation={data.ai_recommendation} />
 
@@ -62,65 +49,42 @@ export function RosterView({ data, app, navigate }: { data: { players: Player[];
           </div>
         )}
         <Table>
-          <TableHeader>
+          <TableHead>
             <TableRow>
-              <TableHead className="w-16">Pos</TableHead>
-              <TableHead>Player</TableHead>
-              <TableHead className="hidden sm:table-cell">Eligibility</TableHead>
-              <TableHead className="w-24">Status</TableHead>
-              <TableHead className="w-16"></TableHead>
+              <TableHeader className="w-14">Pos</TableHeader>
+              <TableHeader>Player</TableHeader>
+              <TableHeader className="hidden sm:table-cell">Opp</TableHeader>
+              <TableHeader className="hidden sm:table-cell text-right">Pre ADP</TableHeader>
+              <TableHeader className="hidden md:table-cell text-right">Cur ADP</TableHeader>
+              <TableHeader className="hidden md:table-cell text-right">%Start</TableHeader>
+              <TableHeader className="text-right">%Own</TableHeader>
+              <TableHeader className="w-24">Status</TableHeader>
+              <TableHeader className="w-16"></TableHeader>
             </TableRow>
-          </TableHeader>
+          </TableHead>
           <TableBody>
-            {players.map((p) => {
-              const logoUrl = p.team ? teamLogoFromAbbrev(p.team) : null;
-              return (
-                <React.Fragment key={p.player_id}>
-                <TableRow>
-                  <TableCell>
-                    <Badge variant="secondary" className="font-mono text-xs font-bold">{p.position || "?"}</Badge>
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    <span className="flex items-center gap-1">
-                      {logoUrl && <img src={logoUrl} alt={p.team || ""} width={16} height={16} className="inline shrink-0" />}
-                      <PlayerName name={p.name} playerId={p.player_id} mlbId={p.mlb_id} app={app} navigate={navigate} context="roster" />
-                      {p.intel && <IntelBadge intel={p.intel} size="sm" />}
-                    </span>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    <div className="flex gap-1 flex-wrap">
-                      {(p.eligible_positions || []).map((pos) => (
-                        <Badge key={pos} variant="outline" className="text-xs font-bold">{pos}</Badge>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {p.status && p.status !== "Healthy" && (
-                      <Badge variant="destructive" className="text-xs">{p.status}</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {p.player_id && (
-                      <Button variant="destructive" size="sm" onClick={() => setDropTarget(p)}>
-                        <UserMinus size={14} />
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-                {p.intel && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="p-0">
-                      <IntelPanel intel={p.intel} />
-                    </TableCell>
-                  </TableRow>
-                )}
-                </React.Fragment>
-              );
-            })}
+            {players.map((p) => (
+              <PlayerRow
+                key={p.player_id}
+                player={p}
+                columns={["opponent", "fantasy", "rankings"]}
+                app={app}
+                navigate={navigate}
+                context="roster"
+                colSpan={9}
+                actions={
+                  p.player_id ? (
+                    <Button color="red" onClick={() => setDropTarget(p)}>
+                      <UserMinus size={14} />
+                    </Button>
+                  ) : undefined
+                }
+              />
+            ))}
           </TableBody>
         </Table>
       </div>
-      <p className="text-xs text-muted-foreground mt-2">{players.length + " players"}</p>
+      <Text className="mt-2">{players.length + " players"}</Text>
       <AlertDialog
         open={dropTarget !== null}
         onClose={() => setDropTarget(null)}

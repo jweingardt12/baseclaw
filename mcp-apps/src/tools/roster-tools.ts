@@ -4,7 +4,7 @@ import { z } from "zod";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { apiGet, apiPost, toolError } from "../api/python-client.js";
-import { str, type RosterResponse, type FreeAgentsResponse, type SearchResponse, type ActionResponse, type WaiverClaimResponse, type WaiverClaimSwapResponse, type WhoOwnsResponse, type PercentOwnedResponse, type ChangeTeamNameResponse, type ChangeTeamLogoResponse, type PlayerStatsResponse, type WaiversResponse, type TakenPlayersResponse } from "../api/types.js";
+import { str, type RosterResponse, type FreeAgentsResponse, type PlayerListResponse, type SearchResponse, type ActionResponse, type WaiverClaimResponse, type WaiverClaimSwapResponse, type WhoOwnsResponse, type PercentOwnedResponse, type ChangeTeamNameResponse, type ChangeTeamLogoResponse, type PlayerStatsResponse, type WaiversResponse, type TakenPlayersResponse } from "../api/types.js";
 
 const ROSTER_URI = "ui://baseclaw/roster.html";
 
@@ -107,6 +107,48 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
         return {
           content: [{ type: "text" as const, text }],
           structuredContent: { type: "free-agents", ai_recommendation, ...data },
+        };
+      } catch (e) { return toolError(e); }
+    },
+  );
+
+  // yahoo_player_list
+  registerAppTool(
+    server,
+    "yahoo_player_list",
+    {
+      description: "Browse the full player list with position filters, stats, and enrichment. The explore-players hub.",
+      inputSchema: {
+        pos_type: z.string().describe("Position filter: B (all batters), P (all pitchers), C, 1B, 2B, SS, 3B, OF, SP, RP, Util").default("B"),
+        count: z.number().describe("Number of players to return").default(50),
+        status: z.string().describe("FA for free agents only, ALL for all players").default("FA"),
+      },
+      annotations: { readOnlyHint: true },
+      _meta: { ui: { resourceUri: ROSTER_URI } },
+    },
+    async ({ pos_type, count, status }) => {
+      try {
+        const data = await apiGet<PlayerListResponse>("/api/player-list", { pos_type, count: String(count), status });
+        const label = pos_type === "B" ? "Batters" : pos_type === "P" ? "Pitchers" : pos_type;
+        const text = "Player List - " + label + " (" + data.count + " players):\n" + (data.players || []).slice(0, 25).map((p) => {
+          let line = "  " + str(p.name).padEnd(25) + " " + (p.eligible_positions || []).join(",").padEnd(12) + " " + String(p.percent_owned || 0).padStart(3) + "% owned";
+          if (p.stats) {
+            var statParts: string[] = [];
+            for (var [k, v] of Object.entries(p.stats)) {
+              statParts.push(k + ":" + v);
+            }
+            if (statParts.length > 0) line += "  [" + statParts.slice(0, 5).join(" ") + "]";
+          }
+          return line;
+        }).join("\n");
+        var top = (data.players || []).slice(0, 3);
+        var ai_recommendation: string | null = null;
+        if (top.length > 0) {
+          ai_recommendation = "Top available: " + top.map(function (p) { return p.name; }).join(", ") + ". Review stats and ownership trends to find the best pickup.";
+        }
+        return {
+          content: [{ type: "text" as const, text }],
+          structuredContent: { type: "player-list", ai_recommendation, ...data },
         };
       } catch (e) { return toolError(e); }
     },

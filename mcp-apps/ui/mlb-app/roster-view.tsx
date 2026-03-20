@@ -1,5 +1,5 @@
-import { Badge } from "../components/ui/badge";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Badge } from "../catalyst/badge";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
 
 import { PlayerName } from "../shared/player-name";
 
@@ -19,13 +19,13 @@ export function RosterView({ data, app, navigate }: { data: MlbRosterData; app?:
     <div className="space-y-3">
       <div className="surface-card overflow-hidden">
         <Table>
-          <TableHeader>
+          <TableHead>
             <TableRow>
-              <TableHead className="w-14 font-bold">#</TableHead>
-              <TableHead className="font-bold">Player</TableHead>
-              <TableHead className="font-bold">Position</TableHead>
+              <TableHeader className="w-14 font-bold">#</TableHeader>
+              <TableHeader className="font-bold">Player</TableHeader>
+              <TableHeader className="font-bold">Position</TableHeader>
             </TableRow>
-          </TableHeader>
+          </TableHead>
           <TableBody>
             {(data.players || []).map(function (p) {
               return (
@@ -33,7 +33,7 @@ export function RosterView({ data, app, navigate }: { data: MlbRosterData; app?:
                   <TableCell className="font-mono font-semibold">{p.jersey_number}</TableCell>
                   <TableCell className="font-semibold"><PlayerName name={p.name} app={app} navigate={navigate} context="default" /></TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="text-xs font-bold">{p.position}</Badge>
+                    <Badge color="zinc" className="text-xs font-bold">{p.position}</Badge>
                   </TableCell>
                 </TableRow>
               );

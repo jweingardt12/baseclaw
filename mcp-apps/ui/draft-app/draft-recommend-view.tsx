@@ -1,5 +1,6 @@
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
+import { Card, CardHeader, CardTitle, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Text } from "../catalyst/text";
 
 import { AiInsight } from "../shared/ai-insight";
 import { IntelBadge } from "../shared/intel-badge";
@@ -56,7 +57,7 @@ function PlayerList({ players, showTopHighlight, app, navigate }: { players: Dra
             <div className={"flex items-center gap-2 py-1 px-1.5 rounded " + (isTop ? "bg-primary/10 border border-primary/30" : "")}>
               <span className={"text-sm flex-1 truncate " + (isTop ? "font-semibold" : "font-medium")}><PlayerName name={p.name} mlbId={p.mlb_id} app={app} navigate={navigate} context="draft" /></span>
               {p.intel && <IntelBadge intel={p.intel} size="sm" />}
-              <Badge variant="outline" className="text-xs shrink-0">{posDisplay}</Badge>
+              <Badge color="zinc" className="text-xs shrink-0">{posDisplay}</Badge>
               <ZScoreBar z={p.z_score} />
             </div>
           </div>
@@ -83,7 +84,7 @@ export function DraftRecommendView({ data, app, navigate }: { data: DraftRecomme
             <p className="app-kicker mb-1">Top Pick - Round {data.round}</p>
             <p className="text-2xl-app font-bold">{data.top_pick.name}</p>
             <div className="flex items-center justify-center gap-2 mt-2">
-              <Badge variant="outline" className="text-xs">{data.top_pick.type}</Badge>
+              <Badge color="zinc" className="text-xs">{data.top_pick.type}</Badge>
               {data.top_pick.z_score != null && (
                 <VerdictBadge grade={formatFixed(data.top_pick.z_score, 1, "0.0")} variant={data.top_pick.z_score >= 2 ? "success" : data.top_pick.z_score >= 1 ? "info" : "warning"} size="lg" />
               )}
@@ -101,9 +102,9 @@ export function DraftRecommendView({ data, app, navigate }: { data: DraftRecomme
         <CardContent>
           <p className="text-sm">{strategy}</p>
           {data.hitters_count != null && (
-            <p className="text-xs text-muted-foreground mt-1">
+            <Text className="mt-1">
               Roster: {data.hitters_count} hitters, {data.pitchers_count} pitchers
-            </p>
+            </Text>
           )}
         </CardContent>
       </Card>
@@ -112,14 +113,14 @@ export function DraftRecommendView({ data, app, navigate }: { data: DraftRecomme
         <div>
           <h3 className="text-sm font-semibold mb-2 flex items-center gap-1">
             Top Hitters
-            {hittersFirst && <Badge variant="default" className="text-xs">Recommended</Badge>}
+            {hittersFirst && <Badge className="text-xs">Recommended</Badge>}
           </h3>
           <PlayerList players={hitters.slice(0, 8)} showTopHighlight={hittersFirst} app={app} navigate={navigate} />
         </div>
         <div>
           <h3 className="text-sm font-semibold mb-2 flex items-center gap-1">
             Top Pitchers
-            {!hittersFirst && <Badge variant="default" className="text-xs">Recommended</Badge>}
+            {!hittersFirst && <Badge className="text-xs">Recommended</Badge>}
           </h3>
           <PlayerList players={pitchers.slice(0, 8)} showTopHighlight={!hittersFirst} app={app} navigate={navigate} />
         </div>

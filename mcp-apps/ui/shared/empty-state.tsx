@@ -1,5 +1,7 @@
 import { cn } from "../lib/utils";
-import { Button } from "../components/ui/button";
+import { Button } from "../catalyst/button";
+import { Subheading } from "../catalyst/heading";
+import { Text } from "../catalyst/text";
 import type { AppIcon } from "@/shared/icons";
 
 interface EmptyStateProps {
@@ -14,10 +16,10 @@ export function EmptyState({ icon: Icon, title, description, action, className }
   return (
     <div className={cn("flex flex-col items-center justify-center py-6 text-center", className)}>
       {Icon && <div className="rounded-md border bg-muted p-2.5 mb-2.5"><Icon className="h-8 w-8 text-muted-foreground/55" /></div>}
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      {description && <p className="text-sm text-muted-foreground mt-1 max-w-xs">{description}</p>}
+      <Subheading level={3}>{title}</Subheading>
+      {description && <Text className="mt-1 max-w-xs">{description}</Text>}
       {action && (
-        <Button variant="outline" size="sm" onClick={action.onClick} className="mt-2.5">
+        <Button outline onClick={action.onClick} className="mt-2.5">
           {action.label}
         </Button>
       )}

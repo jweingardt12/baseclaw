@@ -1,5 +1,5 @@
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
+import { Card, CardHeader, CardTitle, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
 import { AiInsight } from "../shared/ai-insight";
 import { EmptyState } from "../shared/empty-state";
 import { FileText } from "@/shared/icons";
@@ -68,7 +68,7 @@ export function WorkflowSummaryView({ data }: { data: WorkflowSummaryData }) {
               <p className="text-xs text-muted-foreground font-semibold">Action Items</p>
               {actionItems.map((item, idx) => (
                 <div key={idx} className="flex items-start gap-2">
-                  <Badge variant="outline" className="text-xs">P{item.priority || 3}</Badge>
+                  <Badge color="zinc" className="text-xs">P{item.priority || 3}</Badge>
                   <span className="text-sm">{item.message || item.type || "Action"}</span>
                 </div>
               ))}

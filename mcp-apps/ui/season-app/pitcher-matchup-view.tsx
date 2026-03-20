@@ -1,5 +1,6 @@
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { Badge } from "../components/ui/badge";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
+import { Badge } from "../catalyst/badge";
+import { Subheading } from "../catalyst/heading";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 import { TeamLogo } from "../shared/team-logo";
@@ -62,25 +63,25 @@ export function PitcherMatchupView({ data }: { data: PitcherMatchupData }) {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold">Pitcher Matchups</h2>
+        <Subheading>Pitcher Matchups</Subheading>
         <p className="text-xs text-muted-foreground">
           Week {data.week} ({data.start_date} to {data.end_date})
         </p>
       </div>
 
       <Table>
-        <TableHeader>
+        <TableHead>
           <TableRow>
-            <TableHead>Pitcher</TableHead>
-            <TableHead className="hidden sm:table-cell">Team</TableHead>
-            <TableHead>Next Start</TableHead>
-            <TableHead>Opponent</TableHead>
-            <TableHead className="hidden sm:table-cell text-right">AVG</TableHead>
-            <TableHead className="hidden sm:table-cell text-right">OBP</TableHead>
-            <TableHead className="hidden sm:table-cell text-right">K%</TableHead>
-            <TableHead className="text-center">Grade</TableHead>
+            <TableHeader>Pitcher</TableHeader>
+            <TableHeader className="hidden sm:table-cell">Team</TableHeader>
+            <TableHeader>Next Start</TableHeader>
+            <TableHeader>Opponent</TableHeader>
+            <TableHeader className="hidden sm:table-cell text-right">AVG</TableHeader>
+            <TableHeader className="hidden sm:table-cell text-right">OBP</TableHeader>
+            <TableHeader className="hidden sm:table-cell text-right">K%</TableHeader>
+            <TableHeader className="text-center">Grade</TableHeader>
           </TableRow>
-        </TableHeader>
+        </TableHead>
         <TableBody>
           {pitchers.map((p) => (
             <TableRow key={p.player_id + "-" + p.next_start_date}>

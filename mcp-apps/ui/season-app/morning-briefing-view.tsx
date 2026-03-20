@@ -1,7 +1,9 @@
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Card, CardHeader, CardTitle, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Button } from "../catalyst/button";
+import { Subheading } from "../catalyst/heading";
+import { Text } from "../catalyst/text";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
 import { useCallTool } from "../shared/use-call-tool";
 
 import { PlayerName } from "../shared/player-name";
@@ -155,7 +157,7 @@ function classificationIcon(cls: string) {
     case "protect":
       return <Badge className="bg-sem-warning text-xs"><Shield className="h-2.5 w-2.5 mr-0.5 inline" />Protect</Badge>;
     case "concede":
-      return <Badge variant="outline" className="text-xs text-muted-foreground"><XCircle className="h-2.5 w-2.5 mr-0.5 inline" />Concede</Badge>;
+      return <Badge color="zinc" className="text-xs text-muted-foreground"><XCircle className="h-2.5 w-2.5 mr-0.5 inline" />Concede</Badge>;
     case "lock":
       return <Badge className="bg-sem-success text-xs"><Lock className="h-2.5 w-2.5 mr-0.5 inline" />Lock</Badge>;
     default:
@@ -205,7 +207,7 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 animate-stagger">
       {/* AI Insight */}
       <AiInsight recommendation={data.ai_recommendation || strategy.summary} />
 
@@ -225,11 +227,11 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold">Morning Briefing</h2>
-          {matchup.week && <Badge variant="outline" className="text-xs">Week {matchup.week}</Badge>}
+          <Subheading>Morning Briefing</Subheading>
+          {matchup.week && <Badge color="zinc" className="text-xs">Week {matchup.week}</Badge>}
         </div>
         {app && (
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading} className="h-8 text-xs gap-1">
+          <Button outline onClick={handleRefresh} disabled={loading} className="h-8 text-xs gap-1">
             {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
             Refresh
           </Button>
@@ -243,7 +245,7 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
             <div className="flex items-center gap-2">
               <CheckSquare className="h-4 w-4 text-primary" />
               <CardTitle className="text-base">Action Items</CardTitle>
-              <Badge variant="secondary" className="text-xs">{actions.length}</Badge>
+              <Badge color="zinc" className="text-xs">{actions.length}</Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -352,19 +354,19 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-destructive" />
               <CardTitle className="text-base text-destructive">Injury Alerts</CardTitle>
-              <Badge variant="destructive">{(injury.injured_active || []).length}</Badge>
+              <Badge color="red">{(injury.injured_active || []).length}</Badge>
             </div>
           </CardHeader>
           <CardContent>
             {(injury.injured_active || []).map(function (p: InjuredPlayer) {
               return (
                 <div key={p.name} className="flex items-center gap-2 py-1.5 border-b last:border-0">
-                  <Badge variant="outline" className="text-xs w-8 justify-center">{p.position}</Badge>
+                  <Badge color="zinc" className="text-xs w-8 justify-center">{p.position}</Badge>
                   <span className="font-medium text-sm flex-1">
                     <PlayerName name={p.name} mlbId={p.mlb_id} app={app} navigate={navigate} context="roster" />
                   </span>
                   {p.intel && <IntelBadge intel={p.intel} size="sm" />}
-                  <Badge variant="destructive" className="text-xs">{p.status}</Badge>
+                  <Badge color="red" className="text-xs">{p.status}</Badge>
                   {p.injury_description && <span className="text-xs text-muted-foreground hidden sm:inline">{p.injury_description}</span>}
                 </div>
               );
@@ -380,14 +382,14 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-sem-warning" />
               <CardTitle className="text-base text-sem-warning">Ready to Activate</CardTitle>
-              <Badge variant="secondary">{(injury.healthy_il || []).length}</Badge>
+              <Badge color="zinc">{(injury.healthy_il || []).length}</Badge>
             </div>
           </CardHeader>
           <CardContent>
             {(injury.healthy_il || []).map(function (p: InjuredPlayer) {
               return (
                 <div key={p.name} className="flex items-center gap-2 py-1.5 border-b last:border-0">
-                  <Badge variant="outline" className="text-xs w-8 justify-center">{p.position}</Badge>
+                  <Badge color="zinc" className="text-xs w-8 justify-center">{p.position}</Badge>
                   <span className="font-medium text-sm flex-1">
                     <PlayerName name={p.name} mlbId={p.mlb_id} app={app} navigate={navigate} context="roster" />
                   </span>
@@ -412,12 +414,12 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
             {(lineup.suggested_swaps || []).map(function (s: LineupSwap, i: number) {
               return (
                 <div key={i} className="flex items-center gap-2 py-1">
-                  <Badge variant="destructive" className="text-xs">Bench</Badge>
+                  <Badge color="red" className="text-xs">Bench</Badge>
                   <span className="text-sm"><PlayerName name={s.bench_player} context="roster" /></span>
                   <ArrowRightLeft size={14} className="text-muted-foreground" />
-                  <Badge variant="default" className="text-xs">Start</Badge>
+                  <Badge className="text-xs">Start</Badge>
                   <span className="text-sm"><PlayerName name={s.start_player} context="roster" /></span>
-                  <Badge variant="outline" className="text-xs">{s.position}</Badge>
+                  <Badge color="zinc" className="text-xs">{s.position}</Badge>
                 </div>
               );
             })}
@@ -439,7 +441,7 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
               {(strategy.opp_transactions || []).map(function (tx: OppTransaction, idx: number) {
                 return (
                   <div key={idx} className="flex items-center gap-2 text-sm">
-                    <Badge variant={tx.type === "add" ? "default" : "outline"} className="text-xs w-12 justify-center">
+                    <Badge color={tx.type === "add" ? undefined : "zinc"} className="text-xs w-12 justify-center">
                       {tx.type === "add" ? "ADD" : "DROP"}
                     </Badge>
                     <span>{tx.player}</span>
@@ -463,16 +465,16 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
           </CardHeader>
           <CardContent className="p-0">
             <Table>
-              <TableHeader>
+              <TableHead>
                 <TableRow>
-                  <TableHead>Player</TableHead>
-                  <TableHead className="hidden sm:table-cell">Team</TableHead>
-                  <TableHead className="text-center">Games</TableHead>
-                  <TableHead className="text-right">Own%</TableHead>
-                  <TableHead className="hidden sm:table-cell">Targets</TableHead>
-                  {app && <TableHead className="w-10"></TableHead>}
+                  <TableHeader>Player</TableHeader>
+                  <TableHeader className="hidden sm:table-cell">Team</TableHeader>
+                  <TableHeader className="text-center">Games</TableHeader>
+                  <TableHeader className="text-right">Own%</TableHeader>
+                  <TableHeader className="hidden sm:table-cell">Targets</TableHeader>
+                  {app && <TableHeader className="w-10"></TableHeader>}
                 </TableRow>
-              </TableHeader>
+              </TableHead>
               <TableBody>
                 {(strategy.waiver_targets || []).slice(0, 5).map(function (wt: WaiverTarget, idx: number) {
                   return (
@@ -491,15 +493,14 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
                       <TableCell className="hidden sm:table-cell">
                         <div className="flex flex-wrap gap-0.5">
                           {(wt.categories || []).map(function (cat) {
-                            return <Badge key={cat} variant="outline" className="text-xs">{cat}</Badge>;
+                            return <Badge key={cat} color="zinc" className="text-xs">{cat}</Badge>;
                           })}
                         </div>
                       </TableCell>
                       {app && (
                         <TableCell>
                           <Button
-                            variant="ghost"
-                            size="sm"
+                            plain
                             className="h-8 w-8 p-0"
                             onClick={function () { handleAdd(wt.pid); }}
                             disabled={loading}
@@ -557,7 +558,7 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
               {(whatsNew.league_activity || []).slice(0, 8).map(function (a: WhatsNewActivity, idx: number) {
                 return (
                   <div key={idx} className="flex items-center gap-2 text-sm">
-                    <Badge variant={a.type === "add" ? "default" : "outline"} className="text-xs w-12 justify-center">
+                    <Badge color={a.type === "add" ? undefined : "zinc"} className="text-xs w-12 justify-center">
                       {a.type.toUpperCase()}
                     </Badge>
                     <span>{a.player}</span>
@@ -572,7 +573,7 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
 
       {/* Footer */}
       {data.edit_date && (
-        <p className="text-xs text-muted-foreground">Lineup edit deadline: {data.edit_date}</p>
+        <Text>Lineup edit deadline: {data.edit_date}</Text>
       )}
     </div>
   );

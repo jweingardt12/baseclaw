@@ -8,6 +8,7 @@ type ViewApiEntry = {
 const VIEW_API_MAP: Record<string, ViewApiEntry> = {
   "roster":              { path: "/api/roster", type: "roster" },
   "free-agents":         { path: "/api/free-agents?pos_type=B&count=20", type: "free-agents" },
+  "player-list":         { path: "/api/player-list?pos_type=B&count=50", type: "player-list" },
   "standings":           { path: "/api/standings", type: "standings" },
   "matchups":            { path: "/api/matchups", type: "matchups" },
   "matchup-detail":      { path: "/api/matchup-detail", type: "matchup-detail" },
@@ -67,6 +68,19 @@ const VIEW_API_MAP: Record<string, ViewApiEntry> = {
   "power-rankings":      { path: "/api/power-rankings", type: "power-rankings" },
   "season-pace":         { path: "/api/season-pace", type: "season-pace" },
   "who-owns":            { path: "/api/who-owns?player_name=Pete+Alonso", type: "who-owns" },
+  "morning-briefing":    { path: "/api/workflow/morning-briefing", type: "morning-briefing" },
+  "category-trends":     { path: "/api/category-trends", type: "category-trends" },
+  "punt-advisor":        { path: "/api/punt-advisor", type: "punt-advisor" },
+  "playoff-planner":     { path: "/api/playoff-planner", type: "playoff-planner" },
+  "optimal-moves":       { path: "/api/optimal-moves", type: "optimal-moves" },
+  "il-stash-advisor":    { path: "/api/il-stash-advisor", type: "il-stash-advisor" },
+  "trash-talk":          { path: "/api/trash-talk", type: "trash-talk" },
+  "rival-history":       { path: "/api/rival-history", type: "rival-history" },
+  "achievements":        { path: "/api/achievements", type: "achievements" },
+  "weekly-narrative":    { path: "/api/weekly-narrative", type: "weekly-narrative" },
+  "faab-recommend":      { path: "/api/faab-recommend?name=Shohei+Ohtani", type: "faab-recommend" },
+  "ownership-trends":    { path: "/api/ownership-trends?name=Shohei+Ohtani", type: "ownership-trends" },
+  "roster-stats":        { path: "/api/roster-stats", type: "roster-stats" },
 };
 
 export async function fetchViewData(viewId: string): Promise<any> {
@@ -93,6 +107,10 @@ const PARAM_RENAMES: Record<string, Record<string, string>> = {
   fantasy_player_report: { player_name: "name" },
 };
 
+const WORKFLOW_TOOL_MAP: Record<string, { path: string; type: string }> = {
+  yahoo_morning_briefing: { path: "/api/workflow/morning-briefing", type: "morning-briefing" },
+};
+
 const INTEL_TOOL_MAP: Record<string, { path: string; type: string }> = {
   fantasy_player_report:       { path: "/api/intel/player", type: "intel-player" },
   fantasy_breakout_candidates: { path: "/api/intel/breakouts", type: "intel-breakouts" },
@@ -108,8 +126,12 @@ export function createLiveApp() {
     callServerTool: async ({ name, arguments: args }: { name: string; arguments: Record<string, any> }) => {
       let apiPath: string;
       let type: string;
+      const workflowEntry = WORKFLOW_TOOL_MAP[name];
       const intelEntry = INTEL_TOOL_MAP[name];
-      if (intelEntry) {
+      if (workflowEntry) {
+        apiPath = workflowEntry.path;
+        type = workflowEntry.type;
+      } else if (intelEntry) {
         apiPath = intelEntry.path;
         type = intelEntry.type;
       } else if (name.startsWith("mlb_")) {

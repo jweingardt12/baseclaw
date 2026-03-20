@@ -1,16 +1,16 @@
 import { Fragment } from "react";
-import { Badge } from "../components/ui/badge";
-import { Card, CardContent } from "../components/ui/card";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { Badge } from "../catalyst/badge";
+import { Card, CardContent } from "../catalyst/card";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
+import { Tabs, TabsList, TabsTrigger } from "../catalyst/tabs";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 import { TeamLogo } from "../shared/team-logo";
+import { Subheading } from "../catalyst/heading";
 import { BarChart3, Loader2 } from "@/shared/icons";
 import { useCallTool } from "../shared/use-call-tool";
 import { ZScoreBar, ZScoreExplainer, getTier, tierGrade } from "../shared/z-score";
-import { IntelBadge } from "../shared/intel-badge";
-import { PlayerName } from "../shared/player-name";
+import { PlayerCell } from "../shared/player-row";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 import { VerdictBadge } from "../shared/verdict-badge";
@@ -60,8 +60,8 @@ export function RankingsView({ data, app, navigate }: { data: RankingsData; app:
     <div className="animate-fade-in">
       <div className="flex items-center gap-2 mb-2">
         <BarChart3 size={18} />
-        <h2 className="text-lg font-semibold">{label} Rankings</h2>
-        <Badge variant="secondary">{data.source}</Badge>
+        <Subheading>{label} Rankings</Subheading>
+        <Badge color="zinc">{data.source}</Badge>
         <span className="text-xs text-muted-foreground">Top {data.count}</span>
       </div>
 
@@ -89,11 +89,10 @@ export function RankingsView({ data, app, navigate }: { data: RankingsData; app:
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xl-app font-bold truncate">
-                <PlayerName name={topPlayer.name} mlbId={topPlayer.mlb_id} app={app} navigate={navigate} context="default" />
+                <PlayerCell player={topPlayer} app={app} navigate={navigate} context="default" />
               </p>
               <div className="flex items-center gap-2 mt-1">
-                {topPlayer.position && <Badge variant="outline" className="text-xs">{topPlayer.position}</Badge>}
-                {topPlayer.intel && <IntelBadge intel={topPlayer.intel} size="sm" />}
+                {topPlayer.position && <Badge color="zinc" className="text-xs">{topPlayer.position}</Badge>}
               </div>
             </div>
             <VerdictBadge grade={formatFixed(topPlayer.z_score, 1, "0.0")} variant={topPlayer.z_score >= 2 ? "success" : topPlayer.z_score >= 1 ? "info" : "warning"} size="lg" />
@@ -131,15 +130,14 @@ export function RankingsView({ data, app, navigate }: { data: RankingsData; app:
         )}
 
         <Table>
-          <TableHeader>
+          <TableHead>
             <TableRow>
-              <TableHead className="w-12">#</TableHead>
-              <TableHead>Player</TableHead>
-              <TableHead className="hidden sm:table-cell">Team</TableHead>
-              <TableHead>Pos</TableHead>
-              <TableHead className="text-right">Z-Score</TableHead>
+              <TableHeader className="w-12">#</TableHeader>
+              <TableHeader>Player</TableHeader>
+              <TableHeader>Pos</TableHeader>
+              <TableHeader className="text-right">Z-Score</TableHeader>
             </TableRow>
-          </TableHeader>
+          </TableHead>
           <TableBody>
             {players.map(function (p) {
               var tier = getTier(p.z_score);
@@ -149,7 +147,7 @@ export function RankingsView({ data, app, navigate }: { data: RankingsData; app:
                 <Fragment key={p.rank}>
                   {showDivider && (
                     <TableRow>
-                      <TableCell colSpan={5} className="py-0.5 px-0">
+                      <TableCell colSpan={4} className="py-0.5 px-0">
                         <div className="flex items-center gap-2">
                           <div className="flex-1 h-0.5 bg-primary/30" />
                           <VerdictBadge grade={tierGrade(p.z_score)} size="sm" />
@@ -161,19 +159,10 @@ export function RankingsView({ data, app, navigate }: { data: RankingsData; app:
                   <TableRow>
                     <TableCell className="font-mono text-xs">{p.rank}</TableCell>
                     <TableCell className="font-medium">
-                      <span className="flex items-center gap-1">
-                        <PlayerName name={p.name} mlbId={p.mlb_id} app={app} navigate={navigate} context="default" />
-                        {p.intel && <IntelBadge intel={p.intel} size="sm" />}
-                      </span>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <TeamLogo abbrev={p.team} />
-                        {p.team || "-"}
-                      </span>
+                      <PlayerCell player={p} app={app} navigate={navigate} context="default" />
                     </TableCell>
                     <TableCell>
-                      {p.position && <Badge variant="outline" className="text-xs">{p.position}</Badge>}
+                      {p.position && <Badge color="zinc" className="text-xs">{p.position}</Badge>}
                     </TableCell>
                     <TableCell className="text-right">
                       <ZScoreBar z={p.z_score} />

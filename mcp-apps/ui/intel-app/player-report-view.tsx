@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { Card, CardContent } from "../components/ui/card";
+import { Card, CardContent } from "../catalyst/card";
 import { IntelPanel } from "../shared/intel-panel";
 import { IntelBadge, type PlayerIntel } from "../shared/intel-badge";
 import { PlayerName } from "../shared/player-name";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 import { VerdictBadge } from "../shared/verdict-badge";
-import { Button } from "../components/ui/button";
+import { Button } from "../catalyst/button";
 import { Copy, Check } from "@/shared/icons";
+import { Subheading } from "../catalyst/heading";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts";
 
 // Data comes from /api/intel/player — it IS the PlayerIntel object with a name
@@ -56,7 +57,7 @@ export function PlayerReportView({ data, app, navigate }: { data: PlayerReportDa
               </p>
               <div className="flex items-center gap-2 mt-1">
                 <IntelBadge intel={data} size="md" />
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleCopy}>
+                <Button plain className="h-8 w-8 p-0" onClick={handleCopy}>
                   {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
                 </Button>
               </div>
@@ -117,7 +118,7 @@ export function PlayerReportView({ data, app, navigate }: { data: PlayerReportDa
         return (
           <Card>
             <CardContent className="p-4">
-              <p className="text-sm font-semibold mb-2">Statcast Profile</p>
+              <Subheading className="mb-2">Statcast Profile</Subheading>
               <div className="h-48 sm:h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart data={radarData}>

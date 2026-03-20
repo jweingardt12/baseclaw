@@ -15,6 +15,213 @@ from shared import (
 )
 
 
+def _get_stat_lookup(lg):
+    """Build stat_id -> display_name lookup from raw league settings."""
+    stat_lookup = {}
+    try:
+        handler = lg.yhandler
+        league_key = lg.league_id
+        raw = handler.get("/league/" + league_key + "/settings")
+        fc = raw.get("fantasy_content", raw)
+        league_data = fc.get("league", {})
+        settings_items = []
+        if isinstance(league_data, list):
+            for item in league_data:
+                if isinstance(item, dict) and "settings" in item:
+                    settings_items = item.get("settings", [])
+                    break
+        elif isinstance(league_data, dict) and "settings" in league_data:
+            settings_items = league_data.get("settings", [])
+        if isinstance(settings_items, list):
+            for s in settings_items:
+                if isinstance(s, dict) and "stat_categories" in s:
+                    cats = s.get("stat_categories", {})
+                    stats_list = cats.get("stats", []) if isinstance(cats, dict) else cats
+                    if isinstance(stats_list, list):
+                        for entry in stats_list:
+                            stat = entry.get("stat", entry) if isinstance(entry, dict) else entry
+                            if isinstance(stat, dict):
+                                sid = str(stat.get("stat_id", ""))
+                                name = stat.get("display_name", stat.get("abbr", ""))
+                                if sid and name:
+                                    stat_lookup[sid] = name
+    except Exception as e:
+        print("Warning: could not build stat lookup: " + str(e))
+    return stat_lookup
+
+
+def _get_today_opponents():
+    """Build a team->opponent map for today's MLB games."""
+    try:
+        from shared import mlb_fetch
+        from datetime import date
+        data = mlb_fetch("/schedule?sportId=1&date=" + date.today().isoformat())
+        opponents = {}
+        dates = data.get("dates", [])
+        if dates:
+            for game in dates[0].get("games", []):
+                away = game.get("teams", {}).get("away", {}).get("team", {})
+                home = game.get("teams", {}).get("home", {}).get("team", {})
+                away_abbrev = away.get("abbreviation", "")
+                home_abbrev = home.get("abbreviation", "")
+                if away_abbrev and home_abbrev:
+                    opponents[away_abbrev] = "@" + home_abbrev
+                    opponents[home_abbrev] = "vs " + away_abbrev
+        return opponents
+    except Exception as e:
+        print("Warning: could not fetch today's opponents: " + str(e))
+        return {}
+
+
+def _parse_enriched_data(raw, stat_lookup):
+    """Parse enriched roster data from Yahoo raw API response.
+
+    Returns dict keyed by player_id with enriched fields.
+    """
+    result = {}
+    if not raw:
+        return result
+
+    # Navigate to players list - Yahoo's JSON structure varies
+    players_raw = None
+    try:
+        fc = raw.get("fantasy_content", raw)
+        team_data = fc.get("team", {})
+        if isinstance(team_data, list):
+            for item in team_data:
+                if isinstance(item, dict) and "roster" in item:
+                    roster_data = item.get("roster", {})
+                    if isinstance(roster_data, dict):
+                        players_raw = roster_data.get("players", {})
+                    break
+        elif isinstance(team_data, dict):
+            roster_data = team_data.get("roster", {})
+            if isinstance(roster_data, dict):
+                players_raw = roster_data.get("players", {})
+    except Exception:
+        return result
+
+    if not players_raw:
+        return result
+
+    # Players can be dict with numeric keys or a list
+    player_list = []
+    if isinstance(players_raw, dict):
+        for key, val in players_raw.items():
+            if key == "count":
+                continue
+            if isinstance(val, dict) and "player" in val:
+                player_list.append(val.get("player"))
+    elif isinstance(players_raw, list):
+        for item in players_raw:
+            if isinstance(item, dict) and "player" in item:
+                player_list.append(item.get("player"))
+
+    for player_data in player_list:
+        try:
+            parsed = _parse_single_player(player_data, stat_lookup)
+            if parsed and parsed.get("player_id"):
+                result[str(parsed.get("player_id"))] = parsed
+        except Exception:
+            continue
+
+    return result
+
+
+def _parse_single_player(player_data, stat_lookup):
+    """Parse a single player's enriched data from Yahoo raw format."""
+    info = {}
+
+    if not isinstance(player_data, list):
+        return info
+
+    # Flatten: OAuth wraps metadata as a nested list in [0]
+    flat_items = []
+    for item in player_data:
+        if isinstance(item, list):
+            for sub in item:
+                if isinstance(sub, dict):
+                    flat_items.append(sub)
+        elif isinstance(item, dict):
+            flat_items.append(item)
+
+    for item in flat_items:
+        for key, val in item.items():
+            if key == "player_id":
+                info["player_id"] = str(val)
+            elif key == "editorial_team_abbr":
+                info["team"] = val
+            elif key == "headshot":
+                if isinstance(val, dict):
+                    info["headshot"] = val.get("url", "")
+            elif key == "percent_started":
+                if isinstance(val, list):
+                    for sub in val:
+                        if isinstance(sub, dict) and "value" in sub:
+                            try:
+                                info["percent_started"] = round(float(sub.get("value", 0)))
+                            except (ValueError, TypeError):
+                                pass
+                elif isinstance(val, dict):
+                    try:
+                        info["percent_started"] = round(float(val.get("value", 0)))
+                    except (ValueError, TypeError):
+                        pass
+            elif key == "percent_owned":
+                if isinstance(val, list):
+                    for sub in val:
+                        if isinstance(sub, dict) and "value" in sub:
+                            try:
+                                info["percent_owned"] = round(float(sub.get("value", 0)))
+                            except (ValueError, TypeError):
+                                pass
+                elif isinstance(val, dict):
+                    try:
+                        info["percent_owned"] = round(float(val.get("value", 0)))
+                    except (ValueError, TypeError):
+                        pass
+            elif key == "draft_analysis":
+                if isinstance(val, list):
+                    for sub in val:
+                        if isinstance(sub, dict):
+                            if "average_pick" in sub:
+                                try:
+                                    info["current_pick"] = round(float(sub.get("average_pick", 0)), 1)
+                                except (ValueError, TypeError):
+                                    pass
+                            if "preseason_average_pick" in sub:
+                                try:
+                                    info["preseason_pick"] = round(float(sub.get("preseason_average_pick", 0)), 1)
+                                except (ValueError, TypeError):
+                                    pass
+                elif isinstance(val, dict):
+                    try:
+                        info["current_pick"] = round(float(val.get("average_pick", 0)), 1)
+                    except (ValueError, TypeError):
+                        pass
+                    try:
+                        info["preseason_pick"] = round(float(val.get("preseason_average_pick", 0)), 1)
+                    except (ValueError, TypeError):
+                        pass
+            elif key == "player_stats":
+                stats = {}
+                stats_data = val
+                if isinstance(stats_data, dict):
+                    stats_data = stats_data.get("stats", [])
+                if isinstance(stats_data, list):
+                    for stat_entry in stats_data:
+                        if isinstance(stat_entry, dict):
+                            stat_obj = stat_entry.get("stat", stat_entry)
+                            sid = str(stat_obj.get("stat_id", ""))
+                            sval = stat_obj.get("value", "")
+                            stat_name = stat_lookup.get(sid, "")
+                            if stat_name and sval != "":
+                                stats[stat_name] = sval
+                info["stats"] = stats
+
+    return info
+
+
 def cmd_roster(args, as_json=False):
     """Show current roster"""
     sc, gm, lg, team = get_league_context()
@@ -27,24 +234,76 @@ def cmd_roster(args, as_json=False):
         return
 
     if as_json:
+        # Get stat ID map for translating stat IDs to names
+        try:
+            stat_id_map = lg.stat_categories()
+            stat_lookup = {}
+            if isinstance(stat_id_map, list):
+                for cat in stat_id_map:
+                    if isinstance(cat, dict):
+                        sid = str(cat.get("stat_id", ""))
+                        name = cat.get("display_name", cat.get("name", ""))
+                        if sid and name:
+                            stat_lookup[sid] = name
+        except Exception:
+            stat_lookup = {}
+
+        # Try to fetch enriched data via raw API call
+        enriched_data = {}
+        try:
+            handler = lg.yhandler
+            uri = ("/team/" + team.team_key
+                   + "/roster/players;out=percent_started,percent_owned,draft_analysis"
+                   + "/stats;type=season;season=" + str(datetime.date.today().year))
+            raw = handler.get(uri)
+            enriched_data = _parse_enriched_data(raw, stat_lookup)
+        except Exception as e:
+            print("Warning: enriched roster fetch failed: " + str(e))
+
+        # Get today's opponents
+        opponents = _get_today_opponents()
+
         players = []
         for p in roster:
-            players.append(
-                {
-                    "name": p.get("name", "Unknown"),
-                    "player_id": p.get("player_id", ""),
-                    "position": p.get("selected_position", {}).get("position", "?"),
-                    "eligible_positions": p.get("eligible_positions", []),
-                    "status": p.get("status", ""),
-                    "mlb_id": get_mlb_id(p.get("name", "")),
-                }
-            )
+            name = p.get("name", "Unknown")
+            team_abbrev = p.get("editorial_team_abbr", "")
+            player_data = {
+                "name": name,
+                "player_id": p.get("player_id", ""),
+                "position": p.get("selected_position", "?") if isinstance(p.get("selected_position"), str) else p.get("selected_position", {}).get("position", "?"),
+                "eligible_positions": p.get("eligible_positions", []),
+                "status": p.get("status", ""),
+                "team": team_abbrev,
+                "headshot": p.get("headshot", {}).get("url", "") if isinstance(p.get("headshot"), dict) else "",
+                "mlb_id": get_mlb_id(name),
+            }
+
+            # Merge enriched data if available
+            pid = str(p.get("player_id", ""))
+            if pid in enriched_data:
+                ed = enriched_data.get(pid, {})
+                if not player_data.get("team") and ed.get("team"):
+                    player_data["team"] = ed.get("team")
+                if not player_data.get("headshot") and ed.get("headshot"):
+                    player_data["headshot"] = ed.get("headshot")
+                player_data["percent_started"] = ed.get("percent_started")
+                player_data["percent_owned"] = ed.get("percent_owned")
+                player_data["preseason_pick"] = ed.get("preseason_pick")
+                player_data["current_pick"] = ed.get("current_pick")
+                player_data["stats"] = ed.get("stats", {})
+
+            # Add opponent
+            if player_data.get("team") and player_data.get("team") in opponents:
+                player_data["opponent"] = opponents.get(player_data.get("team"))
+
+            players.append(player_data)
+
         enrich_with_intel(players)
         return {"players": players}
 
     print("Current Roster:")
     for p in roster:
-        pos = p.get("selected_position", {}).get("position", "?")
+        pos = p.get("selected_position", "?") if isinstance(p.get("selected_position"), str) else p.get("selected_position", {}).get("position", "?")
         name = p.get("name", "Unknown")
         status = p.get("status", "")
         elig = ",".join(p.get("eligible_positions", []))
@@ -72,6 +331,8 @@ def cmd_free_agents(args, as_json=False):
                     "positions": p.get("eligible_positions", ["?"]),
                     "percent_owned": p.get("percent_owned", 0),
                     "status": p.get("status", ""),
+                    "team": p.get("editorial_team_abbr", ""),
+                    "headshot": p.get("headshot", {}).get("url", "") if isinstance(p.get("headshot"), dict) else "",
                     "mlb_id": get_mlb_id(p.get("name", "")),
                 }
             )
@@ -1783,7 +2044,7 @@ def cmd_roster_history(args, as_json=False):
                 players.append({
                     "name": p.get("name", "Unknown"),
                     "player_id": str(p.get("player_id", "")),
-                    "position": p.get("selected_position", {}).get("position", "?"),
+                    "position": p.get("selected_position", "?") if isinstance(p.get("selected_position"), str) else p.get("selected_position", {}).get("position", "?"),
                     "eligible_positions": p.get("eligible_positions", []),
                     "status": p.get("status", ""),
                     "mlb_id": get_mlb_id(p.get("name", "")),
@@ -1792,7 +2053,7 @@ def cmd_roster_history(args, as_json=False):
 
         print("Roster for " + label + ":")
         for p in roster:
-            pos = p.get("selected_position", {}).get("position", "?")
+            pos = p.get("selected_position", "?") if isinstance(p.get("selected_position"), str) else p.get("selected_position", {}).get("position", "?")
             pname = p.get("name", "Unknown")
             status = p.get("status", "")
             elig = ",".join(p.get("eligible_positions", []))
@@ -1844,6 +2105,432 @@ def cmd_percent_owned(args, as_json=False):
         print("Error fetching percent owned: " + str(e))
 
 
+def _parse_league_players_enriched(raw, stat_lookup):
+    """Parse enriched player data from a league-level players query.
+
+    OAuth API returns: league: [{league_meta}, {players: {0: {player: [...]}, ...}}]
+    Returns dict keyed by player_id with enriched fields.
+    """
+    result = {}
+    if not raw:
+        return result
+
+    try:
+        fc = raw.get("fantasy_content", raw)
+        league_data = fc.get("league", {})
+        players_raw = None
+
+        if isinstance(league_data, list):
+            # OAuth format: list of [meta_dict, {players: ...}]
+            for item in league_data:
+                if isinstance(item, dict) and "players" in item:
+                    players_raw = item.get("players", {})
+                    break
+        elif isinstance(league_data, dict):
+            players_raw = league_data.get("players", {})
+
+        # Also check team-level response (reuse from _parse_enriched_data)
+        if not players_raw and isinstance(league_data, list):
+            for item in league_data:
+                if isinstance(item, dict) and "team" in item:
+                    team_data = item.get("team", {})
+                    if isinstance(team_data, dict):
+                        roster_data = team_data.get("roster", {})
+                        if isinstance(roster_data, dict):
+                            players_raw = roster_data.get("players", {})
+                    break
+    except Exception:
+        return result
+
+    if not players_raw:
+        return result
+
+    player_list = []
+    if isinstance(players_raw, dict):
+        for key, val in players_raw.items():
+            if key == "count":
+                continue
+            if isinstance(val, dict) and "player" in val:
+                player_list.append(val.get("player"))
+    elif isinstance(players_raw, list):
+        for item in players_raw:
+            if isinstance(item, dict) and "player" in item:
+                player_list.append(item.get("player"))
+
+    for player_data in player_list:
+        try:
+            parsed = _parse_single_player(player_data, stat_lookup)
+            if parsed and parsed.get("player_id"):
+                result[str(parsed.get("player_id"))] = parsed
+        except Exception:
+            continue
+
+    return result
+
+
+def cmd_player_list(args, as_json=False):
+    """Browse players with position filtering, stats, and enrichment.
+
+    Args: [pos_type, count, status]
+    pos_type: B, P, C, 1B, 2B, SS, 3B, OF, SP, RP (default: B)
+    count: number of players (default: 50)
+    status: FA (free agents only, default), ALL (include rostered)
+    """
+    pos_type = args[0] if args else "B"
+    count = int(args[1]) if len(args) > 1 else 50
+    status = args[2].upper() if len(args) > 2 else "FA"
+
+    sc, gm, lg = get_league()
+
+    # Fetch free agents
+    fa = lg.free_agents(pos_type)[:count]
+
+    players = []
+    for p in fa:
+        players.append({
+            "name": p.get("name", "Unknown"),
+            "player_id": str(p.get("player_id", "?")),
+            "eligible_positions": p.get("eligible_positions", []),
+            "percent_owned": p.get("percent_owned", 0),
+            "status": p.get("status", ""),
+            "team": p.get("editorial_team_abbr", ""),
+            "headshot": p.get("headshot", {}).get("url", "") if isinstance(p.get("headshot"), dict) else "",
+            "mlb_id": get_mlb_id(p.get("name", "")),
+            "roster_status": "FA",
+        })
+
+    # If ALL, also add rostered players filtered by position
+    if status == "ALL":
+        try:
+            taken = lg.taken_players()
+            if taken:
+                taken_ids = set(str(p.get("player_id", "")) for p in players)
+                for p in taken:
+                    pid = str(p.get("player_id", ""))
+                    if pid in taken_ids:
+                        continue
+                    elig = p.get("eligible_positions", [])
+                    # Filter by position
+                    if pos_type in ("B", "P"):
+                        # B/P are broad categories - taken_players returns all
+                        pass
+                    else:
+                        if pos_type.upper() not in [pos.upper() for pos in elig]:
+                            continue
+                    players.append({
+                        "name": p.get("name", "Unknown"),
+                        "player_id": pid,
+                        "eligible_positions": elig,
+                        "percent_owned": p.get("percent_owned", 0),
+                        "status": p.get("status", ""),
+                        "team": p.get("editorial_team_abbr", ""),
+                        "headshot": p.get("headshot", {}).get("url", "") if isinstance(p.get("headshot"), dict) else "",
+                        "mlb_id": get_mlb_id(p.get("name", "")),
+                        "roster_status": p.get("owner", "Rostered"),
+                        "owner": p.get("owner", ""),
+                    })
+        except Exception as e:
+            print("Warning: could not fetch taken players: " + str(e))
+
+    # Batch enrich with stats, ownership, draft analysis
+    stat_lookup = _get_stat_lookup(lg)
+
+    # Batch API call for enrichment (25 at a time)
+    enriched_data = {}
+    try:
+        handler = lg.yhandler
+        league_key = lg.league_id
+        player_keys = [str(gm.game_id()) + ".p." + str(p.get("player_id", "")) for p in players if p.get("player_id")]
+        batch_size = 25
+        for i in range(0, len(player_keys), batch_size):
+            batch = player_keys[i:i + batch_size]
+            keys_str = ",".join(batch)
+            uri = ("/league/" + league_key
+                   + "/players;player_keys=" + keys_str
+                   + ";out=percent_started,percent_owned,draft_analysis"
+                   + "/stats;type=season;season=" + str(datetime.date.today().year))
+            raw = handler.get(uri)
+            batch_enriched = _parse_league_players_enriched(raw, stat_lookup)
+            enriched_data.update(batch_enriched)
+    except Exception as e:
+        print("Warning: enrichment failed: " + str(e))
+
+    # Get today's opponents
+    opponents = _get_today_opponents()
+
+    # Merge enriched data
+    for p in players:
+        pid = str(p.get("player_id", ""))
+        if pid in enriched_data:
+            ed = enriched_data.get(pid, {})
+            if not p.get("team") and ed.get("team"):
+                p["team"] = ed.get("team")
+            if not p.get("headshot") and ed.get("headshot"):
+                p["headshot"] = ed.get("headshot")
+            p["percent_started"] = ed.get("percent_started")
+            if ed.get("percent_owned") is not None:
+                p["percent_owned"] = ed.get("percent_owned")
+            p["preseason_pick"] = ed.get("preseason_pick")
+            p["current_pick"] = ed.get("current_pick")
+            p["stats"] = ed.get("stats", {})
+
+        # Add opponent
+        if p.get("team") and p.get("team") in opponents:
+            p["opponent"] = opponents.get(p.get("team"))
+
+    enrich_with_intel(players)
+    enrich_with_trends(players)
+
+    if as_json:
+        return {
+            "pos_type": pos_type,
+            "count": len(players),
+            "status": status,
+            "players": players,
+        }
+
+    label = pos_type if pos_type not in ("B", "P") else ("Batters" if pos_type == "B" else "Pitchers")
+    print("Player List - " + label + " (" + str(len(players)) + " players):")
+    for p in players:
+        name = p.get("name", "Unknown")
+        positions = ",".join(p.get("eligible_positions", ["?"]))
+        pct = p.get("percent_owned", 0)
+        pid = p.get("player_id", "?")
+        rs = p.get("roster_status", "FA")
+        line = (
+            "  "
+            + name.ljust(25)
+            + " "
+            + positions.ljust(12)
+            + " "
+            + str(pct).rjust(3)
+            + "% owned  ["
+            + rs
+            + "]  (id:"
+            + str(pid)
+            + ")"
+        )
+        print(line)
+
+
+def cmd_positional_ranks(args, as_json=False):
+    """Get positional rankings and recommended trade partners for all teams.
+
+    Uses Yahoo's teams;out=positional_ranks,recommended_trade_partners endpoint.
+    Returns each team's rank (1-12) at every position with grade and player details.
+    """
+    sc, gm, lg = get_league()
+
+    try:
+        handler = lg.yhandler
+        league_key = lg.league_id
+        uri = ("/league/" + league_key
+               + "/teams;out=positional_ranks,recommended_trade_partners"
+               + ";recommended_trade_partners.count=3")
+        raw = handler.get(uri)
+    except Exception as e:
+        if as_json:
+            return {"error": "Failed to fetch positional ranks: " + str(e)}
+        print("Error: " + str(e))
+        return
+
+    # Parse the response
+    teams = []
+    try:
+        fc = raw.get("fantasy_content", raw)
+        league_data = fc.get("league", {})
+
+        # League data can be a list or dict
+        teams_raw = {}
+        if isinstance(league_data, list):
+            for item in league_data:
+                if isinstance(item, dict) and "teams" in item:
+                    teams_raw = item.get("teams", {})
+                    break
+        elif isinstance(league_data, dict):
+            teams_raw = league_data.get("teams", {})
+
+        # Teams can be dict with numeric keys or a list
+        team_list = []
+        if isinstance(teams_raw, dict):
+            for key, val in teams_raw.items():
+                if key == "count" or not isinstance(val, dict):
+                    continue
+                if "team" in val:
+                    team_list.append(val.get("team"))
+        elif isinstance(teams_raw, list):
+            for item in teams_raw:
+                if isinstance(item, dict) and "team" in item:
+                    team_list.append(item.get("team"))
+
+        for team_data in team_list:
+            team_info = _parse_team_positional_ranks(team_data)
+            if team_info:
+                teams.append(team_info)
+    except Exception as e:
+        if as_json:
+            return {"error": "Failed to parse positional ranks: " + str(e)}
+        print("Error parsing: " + str(e))
+        return
+
+    if as_json:
+        return {"teams": teams}
+
+    # CLI output
+    for t in teams:
+        print(t.get("name", "Unknown") + " (Team " + str(t.get("team_id", "?")) + "):")
+        for pr in t.get("positional_ranks", []):
+            pos = pr.get("position", "?")
+            rank = pr.get("rank", "?")
+            grade = pr.get("grade", "?")
+            print("  " + pos.ljust(5) + " Rank: " + str(rank).rjust(2) + "  [" + grade + "]")
+        partners = t.get("recommended_trade_partners", [])
+        if partners:
+            print("  Trade partners: " + ", ".join(partners))
+        print()
+
+
+def _parse_team_positional_ranks(team_data):
+    """Parse a single team's positional ranks from Yahoo raw format.
+
+    OAuth API returns team as a list: [
+        [meta_item1, meta_item2, ...],  # list of team metadata dicts
+        {positional_ranks: [...]},
+        {recommended_trade_partners: [...]}
+    ]
+    Browser json_f API returns team as a flat dict.
+    """
+    if not team_data:
+        return None
+
+    info = {}
+
+    if isinstance(team_data, list):
+        # OAuth format: list of [metadata_list, {positional_ranks}, {trade_partners}]
+        for item in team_data:
+            if isinstance(item, list):
+                # This is the metadata list (team_key, name, logos, etc.)
+                for meta in item:
+                    if isinstance(meta, dict):
+                        for key, val in meta.items():
+                            if key == "team_key":
+                                info["team_key"] = val
+                            elif key == "team_id":
+                                info["team_id"] = str(val)
+                            elif key == "name":
+                                info["name"] = val
+                            elif key == "team_logos":
+                                if isinstance(val, list) and val:
+                                    logo = val[0]
+                                    if isinstance(logo, dict) and "team_logo" in logo:
+                                        info["team_logo"] = logo.get("team_logo", {}).get("url", "")
+                            elif key == "managers":
+                                if isinstance(val, list) and val:
+                                    mgr = val[0]
+                                    if isinstance(mgr, dict) and "manager" in mgr:
+                                        mgr_data = mgr.get("manager", {})
+                                        info["manager"] = mgr_data.get("nickname", "")
+                                        info["manager_image"] = mgr_data.get("image_url", "")
+            elif isinstance(item, dict):
+                if "positional_ranks" in item:
+                    info["positional_ranks"] = _parse_positional_ranks_list(
+                        item.get("positional_ranks", []))
+                if "recommended_trade_partners" in item:
+                    info["recommended_trade_partners"] = _parse_trade_partners(
+                        item.get("recommended_trade_partners", []))
+                # Also handle flat dict items with team metadata
+                for key, val in item.items():
+                    if key == "team_key":
+                        info["team_key"] = val
+                    elif key == "team_id":
+                        info["team_id"] = str(val)
+                    elif key == "name":
+                        info["name"] = val
+    elif isinstance(team_data, dict):
+        # json_f format: flat dict
+        info["team_key"] = team_data.get("team_key", "")
+        info["team_id"] = str(team_data.get("team_id", ""))
+        info["name"] = team_data.get("name", "")
+        logos = team_data.get("team_logos", [])
+        if logos and isinstance(logos, list):
+            logo = logos[0]
+            if isinstance(logo, dict) and "team_logo" in logo:
+                info["team_logo"] = logo.get("team_logo", {}).get("url", "")
+        managers = team_data.get("managers", [])
+        if managers and isinstance(managers, list):
+            mgr = managers[0]
+            if isinstance(mgr, dict) and "manager" in mgr:
+                mgr_data = mgr.get("manager", {})
+                info["manager"] = mgr_data.get("nickname", "")
+                info["manager_image"] = mgr_data.get("image_url", "")
+        info["positional_ranks"] = _parse_positional_ranks_list(
+            team_data.get("positional_ranks", []))
+        info["recommended_trade_partners"] = _parse_trade_partners(
+            team_data.get("recommended_trade_partners", []))
+
+    return info if info.get("team_key") else None
+
+
+def _parse_positional_ranks_list(ranks_data):
+    """Parse positional ranks array from Yahoo response.
+
+    OAuth API wraps the list: [[{positional_rank: ...}, ...]]
+    json_f API returns flat: [{positional_rank: ...}, ...]
+    """
+    result = []
+    if not isinstance(ranks_data, list):
+        return result
+
+    # Unwrap nested list if needed (OAuth format)
+    if len(ranks_data) == 1 and isinstance(ranks_data[0], list):
+        ranks_data = ranks_data[0]
+
+    for item in ranks_data:
+        pr = item.get("positional_rank", item) if isinstance(item, dict) else item
+        if not isinstance(pr, dict):
+            continue
+
+        starters = []
+        for sp in pr.get("starting_players", []):
+            p = sp.get("player", sp) if isinstance(sp, dict) else sp
+            if isinstance(p, dict):
+                starters.append({
+                    "player_key": p.get("player_key", ""),
+                    "name": (p.get("first_name", "") + " " + p.get("last_name", "")).strip(),
+                })
+
+        bench = []
+        for bp in pr.get("bench_players", []):
+            p = bp.get("player", bp) if isinstance(bp, dict) else bp
+            if isinstance(p, dict):
+                bench.append({
+                    "player_key": p.get("player_key", ""),
+                    "name": (p.get("first_name", "") + " " + p.get("last_name", "")).strip(),
+                })
+
+        result.append({
+            "position": pr.get("position", ""),
+            "rank": pr.get("rank"),
+            "grade": pr.get("grade", ""),
+            "starters": starters,
+            "bench": bench,
+        })
+
+    return result
+
+
+def _parse_trade_partners(partners_data):
+    """Parse recommended trade partners array."""
+    result = []
+    if not isinstance(partners_data, list):
+        return result
+    for item in partners_data:
+        rtp = item.get("recommended_trade_partner", item) if isinstance(item, dict) else item
+        if isinstance(rtp, dict):
+            result.append(rtp.get("team_key", ""))
+    return result
+
+
 COMMANDS = {
     "discover": cmd_discover,
     "roster": cmd_roster,
@@ -1869,6 +2556,8 @@ COMMANDS = {
     "taken-players": cmd_taken_players,
     "roster-history": cmd_roster_history,
     "percent-owned": cmd_percent_owned,
+    "player-list": cmd_player_list,
+    "positional-ranks": cmd_positional_ranks,
 }
 
 if __name__ == "__main__":

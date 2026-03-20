@@ -1,7 +1,8 @@
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { Badge } from "../components/ui/badge";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
+import { Badge } from "../catalyst/badge";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { Card, CardContent } from "../components/ui/card";
+import { Card, CardContent } from "../catalyst/card";
+import { Subheading } from "../catalyst/heading";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 import * as React from "react";
@@ -56,7 +57,7 @@ export function LeaguePulseView({ data }: { data: { teams: LeaguePulseTeam[]; ai
 
   return (
     <div className="space-y-3">
-      <h2 className="text-lg font-semibold">League Pulse</h2>
+      <Subheading>League Pulse</Subheading>
 
       <AiInsight recommendation={data.ai_recommendation} />
 
@@ -68,19 +69,19 @@ export function LeaguePulseView({ data }: { data: { teams: LeaguePulseTeam[]; ai
 
       <div className="flex gap-2 flex-wrap">
         {mostActive && <Badge className="text-xs bg-sem-success">Most Active: {mostActive.name} ({mostActive.total})</Badge>}
-        {leastActive && <Badge variant="secondary" className="text-xs">Least Active: {leastActive.name} ({leastActive.total})</Badge>}
+        {leastActive && <Badge color="zinc" className="text-xs">Least Active: {leastActive.name} ({leastActive.total})</Badge>}
       </div>
 
       <Table>
-        <TableHeader>
+        <TableHead>
           <TableRow>
-            <TableHead>Team</TableHead>
-            <TableHead className="text-right">Moves</TableHead>
-            <TableHead className="text-right">Trades</TableHead>
-            <TableHead className="text-right">Total</TableHead>
-            <TableHead className="hidden sm:table-cell w-24"></TableHead>
+            <TableHeader>Team</TableHeader>
+            <TableHeader className="text-right">Moves</TableHeader>
+            <TableHeader className="text-right">Trades</TableHeader>
+            <TableHeader className="text-right">Total</TableHeader>
+            <TableHeader className="hidden sm:table-cell w-24"></TableHeader>
           </TableRow>
-        </TableHeader>
+        </TableHead>
         <TableBody>
           {teams.map((t) => {
             var isMyTeam = t.name === MY_TEAM;
@@ -108,7 +109,7 @@ export function LeaguePulseView({ data }: { data: { teams: LeaguePulseTeam[]; ai
         <CardContent className="p-3">
           <button onClick={() => setShowChart(!showChart)} className="flex items-center justify-between w-full text-left">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold">Activity Chart</h3>
+              <Subheading level={3} className="text-sm">Activity Chart</Subheading>
               <div className="flex items-center gap-1.5 ml-2">
                 <span className="inline-block w-2.5 h-2.5 rounded-sm bg-blue-500" />
                 <span className="text-xs text-muted-foreground">Moves</span>

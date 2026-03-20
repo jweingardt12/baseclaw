@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Badge } from "../components/ui/badge";
-import { Card, CardContent } from "../components/ui/card";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
+import { Badge } from "../catalyst/badge";
+import { Card, CardContent } from "../catalyst/card";
+import { Subheading } from "../catalyst/heading";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../catalyst/tabs";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, ReferenceLine } from "recharts";
@@ -87,7 +88,7 @@ export function CategoryCheckView({ data }: { data: CategoryCheckData }) {
         <KpiTile value={(data.categories || []).length} label="Categories" color="neutral" />
       </div>
 
-      <h2 className="text-lg font-semibold">Category Check - Week {data.week}</h2>
+      <Subheading>Category Check - Week {data.week}</Subheading>
 
       {/* Strongest / Weakest summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -109,7 +110,7 @@ export function CategoryCheckView({ data }: { data: CategoryCheckData }) {
               <p className="text-xs text-muted-foreground mb-1.5">Weakest</p>
               <div className="flex flex-wrap gap-1">
                 {(data.weakest || []).map((s) => (
-                  <Badge key={s} variant="destructive" className="text-xs">{s}</Badge>
+                  <Badge key={s} color="red" className="text-xs">{s}</Badge>
                 ))}
               </div>
             </CardContent>
@@ -167,15 +168,15 @@ export function CategoryCheckView({ data }: { data: CategoryCheckData }) {
 
       {/* Category Table */}
       <Table>
-        <TableHeader>
+        <TableHead>
           <TableRow>
-            <TableHead>Category</TableHead>
-            <TableHead className="text-right">Value</TableHead>
-            <TableHead className="text-center">Rank</TableHead>
-            <TableHead className="w-24">Rank Bar</TableHead>
-            <TableHead className="hidden sm:table-cell w-20">Strength</TableHead>
+            <TableHeader>Category</TableHeader>
+            <TableHeader className="text-right">Value</TableHeader>
+            <TableHeader className="text-center">Rank</TableHeader>
+            <TableHeader className="w-24">Rank Bar</TableHeader>
+            <TableHeader className="hidden sm:table-cell w-20">Strength</TableHeader>
           </TableRow>
-        </TableHeader>
+        </TableHead>
         <TableBody>
           {filtered.map((c, i) => (
             <TableRow key={i + "-" + getCatName(c)} className={rankBg(c.rank, c.total)}>
@@ -194,8 +195,8 @@ export function CategoryCheckView({ data }: { data: CategoryCheckData }) {
                 </div>
               </TableCell>
               <TableCell className="hidden sm:table-cell">
-                {c.strength === "strong" && <Badge variant="default" className="text-xs bg-green-600">Strong</Badge>}
-                {c.strength === "weak" && <Badge variant="destructive" className="text-xs">Weak</Badge>}
+                {c.strength === "strong" && <Badge className="text-xs bg-green-600">Strong</Badge>}
+                {c.strength === "weak" && <Badge color="red" className="text-xs">Weak</Badge>}
               </TableCell>
             </TableRow>
           ))}

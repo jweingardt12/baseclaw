@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { AlertDialog } from "../components/ui/alert-dialog";
+import { Card, CardHeader, CardTitle, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Button } from "../catalyst/button";
+import { AlertDialog } from "../catalyst/alert-dialog";
+import { Subheading } from "../catalyst/heading";
 import { useCallTool } from "../shared/use-call-tool";
 import { PlayerName } from "../shared/player-name";
 import { EmptyState } from "../shared/empty-state";
@@ -53,7 +54,7 @@ export function PendingTradesView({ data, app, navigate }: { data: PendingTrades
       <div className="space-y-2">
         <AiInsight recommendation={data.ai_recommendation} />
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Pending Trades</h2>
+          <Subheading>Pending Trades</Subheading>
           <RefreshButton app={app} toolName="yahoo_pending_trades" navigate={navigate} />
         </div>
         <EmptyState icon={Inbox} title="No pending trade proposals" description="When you or your leaguemates propose trades, they'll appear here." />
@@ -66,11 +67,11 @@ export function PendingTradesView({ data, app, navigate }: { data: PendingTrades
       <AiInsight recommendation={data.ai_recommendation} />
 
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
+        <Subheading className="flex items-center gap-2">
           <ArrowRightLeft size={18} />
           Pending Trades
-          <Badge variant="secondary" className="text-xs">{trades.length}</Badge>
-        </h2>
+          <Badge color="zinc" className="text-xs">{trades.length}</Badge>
+        </Subheading>
         <RefreshButton app={app} toolName="yahoo_pending_trades" navigate={navigate} />
       </div>
 
@@ -89,7 +90,7 @@ export function PendingTradesView({ data, app, navigate }: { data: PendingTrades
                 <span className="text-muted-foreground mx-2">vs</span>
                 {trade.tradee_team_name || trade.tradee_team_key}
               </CardTitle>
-              <Badge variant="outline" className="text-xs">{trade.status}</Badge>
+              <Badge color="zinc" className="text-xs">{trade.status}</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -119,11 +120,11 @@ export function PendingTradesView({ data, app, navigate }: { data: PendingTrades
             <div className="flex items-center justify-between pt-1">
               <span className="text-xs text-muted-foreground font-mono">{trade.transaction_key}</span>
               <div className="flex gap-2">
-                <Button size="sm" variant="default" onClick={() => setConfirmAction({ type: "accept", trade })} disabled={loading}>
+                <Button onClick={() => setConfirmAction({ type: "accept", trade })} disabled={loading}>
                   <Check size={14} className="mr-1" />
                   Accept
                 </Button>
-                <Button size="sm" variant="destructive" onClick={() => setConfirmAction({ type: "reject", trade })} disabled={loading}>
+                <Button color="red" onClick={() => setConfirmAction({ type: "reject", trade })} disabled={loading}>
                   <X size={14} className="mr-1" />
                   Reject
                 </Button>

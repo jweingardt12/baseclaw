@@ -1,4 +1,5 @@
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
+import { Subheading } from "../catalyst/heading";
 
 import { TeamLogo } from "../shared/team-logo";
 
@@ -22,17 +23,17 @@ export function StandingsView({ data }: { data: { divisions: MlbDivision[] } }) 
         return (
           <div key={div.division} className="surface-card overflow-hidden">
             <div className="p-3 pb-1">
-              <span className="text-base font-bold">{div.division}</span>
+              <Subheading>{div.division}</Subheading>
             </div>
             <Table>
-              <TableHeader>
+              <TableHead>
                 <TableRow>
-                  <TableHead className="font-bold">Team</TableHead>
-                  <TableHead className="text-center w-12 font-bold">W</TableHead>
-                  <TableHead className="text-center w-12 font-bold">L</TableHead>
-                  <TableHead className="text-center w-14 font-bold">GB</TableHead>
+                  <TableHeader className="font-bold">Team</TableHeader>
+                  <TableHeader className="text-center w-12 font-bold">W</TableHeader>
+                  <TableHeader className="text-center w-12 font-bold">L</TableHeader>
+                  <TableHeader className="text-center w-14 font-bold">GB</TableHeader>
                 </TableRow>
-              </TableHeader>
+              </TableHead>
               <TableBody>
                 {(div.teams || []).map(function (t) {
                   return (

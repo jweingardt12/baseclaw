@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { AlertDialog } from "../components/ui/alert-dialog";
+import { Badge } from "../catalyst/badge";
+import { Button } from "../catalyst/button";
+import { Card, CardHeader, CardTitle, CardContent } from "../catalyst/card";
+import { AlertDialog } from "../catalyst/alert-dialog";
+import { Subheading } from "../catalyst/heading";
 import { useCallTool } from "../shared/use-call-tool";
 import { RefreshButton } from "../shared/refresh-button";
-import { PlayerName } from "../shared/player-name";
+import { PlayerCell } from "../shared/player-row";
 import { EmptyState } from "../shared/empty-state";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
@@ -80,10 +81,10 @@ export function TradeFinderView({ data, app, navigate }: { data: TradeFinderData
       </div>
 
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
+        <Subheading className="flex items-center gap-2">
           <Search size={18} />
           Trade Finder
-        </h2>
+        </Subheading>
         <RefreshButton app={app} toolName="yahoo_trade_finder" navigate={navigate} />
       </div>
 
@@ -99,7 +100,7 @@ export function TradeFinderView({ data, app, navigate }: { data: TradeFinderData
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs text-muted-foreground">Weak:</span>
             {data.weak_categories.map((c) => (
-              <Badge key={c} variant="destructive" className="text-xs">{c}</Badge>
+              <Badge key={c} color="red" className="text-xs">{c}</Badge>
             ))}
           </div>
         )}
@@ -127,14 +128,14 @@ export function TradeFinderView({ data, app, navigate }: { data: TradeFinderData
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               {partner.team_name}
-              <Badge variant="outline" className="text-xs">
+              <Badge color="zinc" className="text-xs">
                 Score: {formatFixed(partner.score, 1, "0.0")}
               </Badge>
             </CardTitle>
             <div className="flex items-center gap-1 flex-wrap mt-1">
               <span className="text-xs text-muted-foreground">Complementary:</span>
               {(partner.complementary_categories || []).map((c) => (
-                <Badge key={c} variant="secondary" className="text-xs">{c}</Badge>
+                <Badge key={c} color="zinc" className="text-xs">{c}</Badge>
               ))}
             </div>
           </CardHeader>
@@ -146,7 +147,7 @@ export function TradeFinderView({ data, app, navigate }: { data: TradeFinderData
                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Give</p>
                     {(pkg.give || []).map((p, j) => (
                       <div key={j} className="text-sm py-0.5">
-                        <PlayerName name={p.name} playerId={p.player_id} app={app} navigate={navigate} context="trade" />
+                        <PlayerCell player={p} app={app} navigate={navigate} context="trade" />
                       </div>
                     ))}
                   </div>
@@ -154,7 +155,7 @@ export function TradeFinderView({ data, app, navigate }: { data: TradeFinderData
                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Get</p>
                     {(pkg.get || []).map((p, j) => (
                       <div key={j} className="text-sm py-0.5">
-                        <PlayerName name={p.name} playerId={p.player_id} app={app} navigate={navigate} context="trade" />
+                        <PlayerCell player={p} app={app} navigate={navigate} context="trade" />
                       </div>
                     ))}
                   </div>
@@ -163,11 +164,11 @@ export function TradeFinderView({ data, app, navigate }: { data: TradeFinderData
                   <p className="text-xs text-muted-foreground italic">{pkg.rationale}</p>
                 )}
                 <div className="flex gap-2 pt-1">
-                  <Button size="sm" variant="outline" onClick={() => handleEvaluate(pkg)} disabled={loading}>
+                  <Button outline onClick={() => handleEvaluate(pkg)} disabled={loading}>
                     <BarChart3 size={14} className="mr-1" />
                     Evaluate
                   </Button>
-                  <Button size="sm" onClick={() => setProposePkg({ partner, pkg })} disabled={loading}>
+                  <Button onClick={() => setProposePkg({ partner, pkg })} disabled={loading}>
                     <Send size={14} className="mr-1" />
                     Propose
                   </Button>

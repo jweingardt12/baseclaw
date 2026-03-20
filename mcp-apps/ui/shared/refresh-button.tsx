@@ -1,4 +1,4 @@
-import { Button } from "../components/ui/button";
+import { Button } from "../catalyst/button";
 import { useCallTool } from "./use-call-tool";
 import { RefreshCw } from "@/shared/icons";
 
@@ -20,7 +20,7 @@ export function RefreshButton({ app, toolName, toolArgs, navigate }: RefreshButt
   };
 
   return (
-    <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={loading} className="h-8 w-8 p-0">
+    <Button plain onClick={handleRefresh} disabled={loading} className="h-8 w-8 p-0">
       <RefreshCw className={"h-3.5 w-3.5" + (loading ? " animate-spin" : "")} />
     </Button>
   );

@@ -45,10 +45,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "ui"),
-      react: "preact/compat",
-      "react-dom": "preact/compat",
-      "react/jsx-runtime": "preact/jsx-runtime",
-      "react-dom/test-utils": "preact/test-utils",
+      react: path.resolve(__dirname, "node_modules/preact/compat"),
+      "react-dom": path.resolve(__dirname, "node_modules/preact/compat"),
+      "react/jsx-runtime": path.resolve(__dirname, "node_modules/preact/jsx-runtime"),
+      "react-dom/test-utils": path.resolve(__dirname, "node_modules/preact/test-utils"),
     },
   },
   build: {

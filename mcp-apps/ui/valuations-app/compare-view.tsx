@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Button } from "../catalyst/button";
+import { Subheading } from "../catalyst/heading";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Legend } from "recharts";
 import { ArrowRightLeft, TrendingUp, TrendingDown, Users, Loader2, Check } from "@/shared/icons";
 import { useCallTool } from "../shared/use-call-tool";
@@ -105,13 +106,13 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <h2 className="text-lg font-semibold">Player Comparison</h2>
+        <Subheading>Player Comparison</Subheading>
         <ArrowRightLeft size={18} className="text-muted-foreground" />
       </div>
 
       {/* Compare from Roster button */}
       {app && (
-        <Button variant="outline" onClick={handleLoadRoster} disabled={loading || rosterLoading}>
+        <Button outline onClick={handleLoadRoster} disabled={loading || rosterLoading}>
           {rosterLoading ? <Loader2 size={14} className="animate-spin" /> : <Users size={14} />}
           <span className="ml-1.5">Compare from Roster</span>
         </Button>
@@ -141,7 +142,7 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
                       >
                         {isSelected && <Check size={12} />}
                         <span className="font-medium">{p.name}</span>
-                        {p.position && <Badge variant="outline" className="text-xs ml-auto">{p.position}</Badge>}
+                        {p.position && <Badge color="zinc" className="text-xs ml-auto">{p.position}</Badge>}
                       </button>
                     );
                   })}
@@ -163,7 +164,7 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
                       >
                         {isSelected && <Check size={12} />}
                         <span className="font-medium">{p.name}</span>
-                        {p.position && <Badge variant="outline" className="text-xs ml-auto">{p.position}</Badge>}
+                        {p.position && <Badge color="zinc" className="text-xs ml-auto">{p.position}</Badge>}
                       </button>
                     );
                   })}
@@ -171,7 +172,7 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
               </div>
             </div>
             <div className="mt-3">
-              <Button variant="default" onClick={handleCompare} disabled={!selectedPlayer1 || !selectedPlayer2 || loading}>
+              <Button onClick={handleCompare} disabled={!selectedPlayer1 || !selectedPlayer2 || loading}>
                 {loading ? <Loader2 size={14} className="animate-spin" /> : <ArrowRightLeft size={14} />}
                 <span className="ml-1.5">Compare</span>
               </Button>

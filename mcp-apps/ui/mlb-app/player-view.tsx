@@ -1,4 +1,4 @@
-import { Badge } from "../components/ui/badge";
+import { Badge } from "../catalyst/badge";
 import { mlbHeadshotUrl } from "../shared/mlb-images";
 import { TeamLogo } from "../shared/team-logo";
 import { IntelBadge } from "../shared/intel-badge";
@@ -29,7 +29,7 @@ export function PlayerView({ data, app, navigate }: { data: MlbPlayerData; app?:
               {data.intel && <IntelBadge intel={data.intel} size="sm" />}
             </div>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <Badge variant="default" className="font-bold">{data.position}</Badge>
+              <Badge className="font-bold">{data.position}</Badge>
               <span className="text-sm text-muted-foreground flex items-center gap-1 font-semibold">
                 <TeamLogo abbrev={data.team} />
                 {data.team}

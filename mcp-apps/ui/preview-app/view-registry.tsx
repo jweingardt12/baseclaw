@@ -53,6 +53,7 @@ const BestAvailableView = lazy(() => import("../draft-app/best-available-view").
 // Roster
 const RosterView = lazy(() => import("../roster-app/roster-view").then(m => ({ default: m.RosterView })));
 const FreeAgentsView = lazy(() => import("../roster-app/free-agents-view").then(m => ({ default: m.FreeAgentsView })));
+const PlayerListView = lazy(() => import("../roster-app/player-list-view").then(m => ({ default: m.PlayerListView })));
 const ActionView = lazy(() => import("../roster-app/action-view").then(m => ({ default: m.ActionView })));
 const WhoOwnsView = lazy(() => import("../roster-app/who-owns-view").then(m => ({ default: m.WhoOwnsView })));
 // Valuations
@@ -151,6 +152,7 @@ const VIEW_META: Record<string, { description: string; featured?: boolean }> = {
 
   "roster": { description: "Your full active roster with positions and eligibility." },
   "free-agents": { description: "Available free agents with quick add and compare workflows." },
+  "player-list": { description: "Full player explorer with position filters, stats, and sorting.", featured: true },
   "action-add": { description: "Result view for add/drop/swap actions and confirmations." },
   "who-owns": { description: "Check which team currently owns a specific player." },
 
@@ -251,6 +253,7 @@ const RAW_VIEW_GROUPS: ViewGroup[] = [
     views: [
       { id: "roster", label: "My Roster", component: RosterView, props: { app: null, navigate: noop } },
       { id: "free-agents", label: "Free Agents", component: FreeAgentsView, props: { app: null, navigate: noop } },
+      { id: "player-list", label: "Player List", component: PlayerListView, props: { app: null, navigate: noop } },
       { id: "action-add", label: "Action Result", component: ActionView, props: { app: null, navigate: noop } },
       { id: "who-owns", label: "Who Owns", component: WhoOwnsView, props: { app: null, navigate: noop } },
     ],

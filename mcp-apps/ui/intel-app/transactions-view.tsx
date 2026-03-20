@@ -1,7 +1,9 @@
-import { Badge } from "../components/ui/badge";
+import { Badge } from "../catalyst/badge";
+import { Subheading } from "../catalyst/heading";
+import { Text } from "../catalyst/text";
 import { useCallTool } from "../shared/use-call-tool";
 import { TeamLogo } from "../shared/team-logo";
-import { Button } from "../components/ui/button";
+import { Button } from "../catalyst/button";
 import { Loader2 } from "@/shared/icons";
 
 interface Transaction {
@@ -53,13 +55,13 @@ export function TransactionsView({ data, app, navigate }: { data: TransactionsDa
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">MLB Transactions</h2>
-          <p className="text-xs text-muted-foreground">{"Last " + (data.days || 7) + " days"}</p>
+          <Subheading>MLB Transactions</Subheading>
+          <Text>{"Last " + (data.days || 7) + " days"}</Text>
         </div>
         <div className="flex gap-1">
-          <Button size="sm" variant="outline" onClick={function() { handleRefresh(3); }} disabled={loading}>3d</Button>
-          <Button size="sm" variant="outline" onClick={function() { handleRefresh(7); }} disabled={loading}>7d</Button>
-          <Button size="sm" variant="outline" onClick={function() { handleRefresh(14); }} disabled={loading}>14d</Button>
+          <Button outline onClick={function() { handleRefresh(3); }} disabled={loading}>3d</Button>
+          <Button outline onClick={function() { handleRefresh(7); }} disabled={loading}>7d</Button>
+          <Button outline onClick={function() { handleRefresh(14); }} disabled={loading}>14d</Button>
         </div>
       </div>
 
@@ -70,7 +72,7 @@ export function TransactionsView({ data, app, navigate }: { data: TransactionsDa
           </div>
         )}
         {transactions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No transactions found.</p>
+          <Text>No transactions found.</Text>
         ) : (
           <div className="space-y-1.5">
             {transactions.map(function(t, i) {
@@ -81,7 +83,7 @@ export function TransactionsView({ data, app, navigate }: { data: TransactionsDa
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <Badge variant="secondary" className={"text-xs " + typeColor(t.type)}>{t.type}</Badge>
+                      <Badge color="zinc" className={"text-xs " + typeColor(t.type)}>{t.type}</Badge>
                       <span className="text-xs text-muted-foreground">{t.team || ""}</span>
                     </div>
                     <p className="text-sm font-semibold truncate">{t.player}</p>

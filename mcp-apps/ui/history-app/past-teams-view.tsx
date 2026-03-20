@@ -1,5 +1,5 @@
-import { Button } from "../components/ui/button";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Button } from "../catalyst/button";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
 import { useCallTool } from "../shared/use-call-tool";
 
 import { ChevronLeft, ChevronRight, Loader2 } from "@/shared/icons";
@@ -29,11 +29,11 @@ export function PastTeamsView({ data, app, navigate }: { data: PastTeamsData; ap
   return (
     <div className="space-y-3 animate-fade-in">
       <div className="flex items-center justify-between gap-2">
-        <Button variant="outline" size="sm" disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
+        <Button outline disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <span className="flex-1 text-center text-sm font-bold">{"Teams - " + data.year}</span>
-        <Button variant="outline" size="sm" disabled={data.year >= 2026 || loading} onClick={() => changeYear(data.year + 1)}>
+        <Button outline disabled={data.year >= 2026 || loading} onClick={() => changeYear(data.year + 1)}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
@@ -45,14 +45,14 @@ export function PastTeamsView({ data, app, navigate }: { data: PastTeamsData; ap
         )}
         <div className="surface-card overflow-hidden">
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead className="font-bold">Team</TableHead>
-                <TableHead className="hidden sm:table-cell font-bold">Manager</TableHead>
-                <TableHead className="text-right font-bold">Moves</TableHead>
-                <TableHead className="text-right font-bold">Trades</TableHead>
+                <TableHeader className="font-bold">Team</TableHeader>
+                <TableHeader className="hidden sm:table-cell font-bold">Manager</TableHeader>
+                <TableHeader className="text-right font-bold">Moves</TableHeader>
+                <TableHeader className="text-right font-bold">Trades</TableHeader>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {(data.teams || []).map(function (t) {
                 return (

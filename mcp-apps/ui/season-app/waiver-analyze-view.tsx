@@ -1,16 +1,15 @@
 import React, { useState } from "react";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { AlertDialog } from "../components/ui/alert-dialog";
+import { Badge } from "../catalyst/badge";
+import { Button } from "../catalyst/button";
+import { Subheading } from "../catalyst/heading";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
+import { Tabs, TabsList, TabsTrigger } from "../catalyst/tabs";
+import { AlertDialog } from "../catalyst/alert-dialog";
 import { useCallTool } from "../shared/use-call-tool";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
-import { IntelBadge } from "../shared/intel-badge";
 import { IntelPanel } from "../shared/intel-panel";
-import { PlayerName } from "../shared/player-name";
-import { TrendIndicator } from "../shared/trend-indicator";
+import { PlayerCell, OwnershipCell } from "../shared/player-row";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 import { UserPlus, ArrowRightLeft, Loader2, TrendingUp } from "@/shared/icons";
@@ -147,7 +146,7 @@ export function WaiverAnalyzeView({ data, app, navigate }: { data: WaiverData; a
     : 0;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 animate-stagger">
       <AiInsight recommendation={data.ai_recommendation} />
 
       <div className="kpi-grid">
@@ -156,10 +155,10 @@ export function WaiverAnalyzeView({ data, app, navigate }: { data: WaiverData; a
         <KpiTile value={avgOwn + "%"} label="Avg Own%" color="neutral" />
       </div>
 
-      <h2 className="text-lg font-semibold flex items-center gap-2">
+      <Subheading className="flex items-center gap-2">
         <TrendingUp size={18} />
         Waiver Wire Analysis - {label}
-      </h2>
+      </Subheading>
 
       <Tabs defaultValue={data.pos_type || "B"} onValueChange={handleTabChange}>
         <TabsList>
@@ -174,7 +173,7 @@ export function WaiverAnalyzeView({ data, app, navigate }: { data: WaiverData; a
           {(data.weak_categories || []).map((c, i) => {
             const name = typeof c === "string" ? c : c.name;
             const detail = typeof c === "string" ? "" : " (" + c.rank + "/" + c.total + ")";
-            return <Badge key={i} variant="destructive" className="text-xs">{name}{detail}</Badge>;
+            return <Badge key={i} color="red" className="text-xs">{name}{detail}</Badge>;
           })}
         </div>
       )}
@@ -204,16 +203,16 @@ export function WaiverAnalyzeView({ data, app, navigate }: { data: WaiverData; a
           </div>
         )}
         <Table>
-          <TableHeader>
+          <TableHead>
             <TableRow>
-              <TableHead>Player</TableHead>
-              <TableHead className="hidden sm:table-cell">Positions</TableHead>
-              <TableHead className="text-right">Own%</TableHead>
-              <TableHead className="text-right hidden sm:table-cell">Rec</TableHead>
-              <TableHead className="hidden sm:table-cell w-20">Status</TableHead>
-              <TableHead className="w-16"></TableHead>
+              <TableHeader>Player</TableHeader>
+              <TableHeader className="hidden sm:table-cell">Positions</TableHeader>
+              <TableHeader className="text-right">Own%</TableHeader>
+              <TableHeader className="text-right hidden sm:table-cell">Rec</TableHeader>
+              <TableHeader className="hidden sm:table-cell w-20">Status</TableHeader>
+              <TableHeader className="w-16"></TableHeader>
             </TableRow>
-          </TableHeader>
+          </TableHead>
           <TableBody>
             {players.map((p, i) => {
               const playerId = p.pid || p.player_id || "";
@@ -224,37 +223,33 @@ export function WaiverAnalyzeView({ data, app, navigate }: { data: WaiverData; a
                   <TableCell className="font-medium">
                     <span className="flex items-center gap-1">
                       {i === 0 && <span className="text-green-600 mr-0.5">&#9733;</span>}
-                      <PlayerName name={p.name} playerId={p.pid || p.player_id} mlbId={p.mlb_id} app={app} navigate={navigate} context="waivers" />
-                      {p.intel && <IntelBadge intel={p.intel} size="sm" />}
+                      <PlayerCell player={p} app={app} navigate={navigate} context="waivers" />
                     </span>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <div className="flex gap-1 flex-wrap">
                       {p.positions.split(",").map((pos) => (
-                        <Badge key={pos.trim()} variant="outline" className="text-xs">{pos.trim()}</Badge>
+                        <Badge key={pos.trim()} color="zinc" className="text-xs">{pos.trim()}</Badge>
                       ))}
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs">
-                    <span className="inline-flex items-center gap-1 justify-end">
-                      {ownPct != null ? ownPct + "%" : "-"}
-                      <TrendIndicator trend={p.trend} />
-                    </span>
+                    <OwnershipCell player={p} />
                   </TableCell>
                   <TableCell className="text-right hidden sm:table-cell">
                     <ScoreBar score={p.score} maxScore={maxScore} />
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     {p.status && p.status !== "Healthy" && (
-                      <Badge variant="destructive" className="text-xs">{p.status}</Badge>
+                      <Badge color="red" className="text-xs">{p.status}</Badge>
                     )}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button size="sm" onClick={() => handleAdd(playerId)} disabled={loading} title="Add player">
+                      <Button onClick={() => handleAdd(playerId)} disabled={loading} title="Add player">
                         <UserPlus size={14} />
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => setSwapTarget(p)} disabled={loading} title="Swap for roster player">
+                      <Button outline onClick={() => setSwapTarget(p)} disabled={loading} title="Swap for roster player">
                         <ArrowRightLeft size={14} />
                       </Button>
                     </div>

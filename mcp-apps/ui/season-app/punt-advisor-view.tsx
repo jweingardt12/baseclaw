@@ -1,6 +1,7 @@
-import { Badge } from "../components/ui/badge";
-import { Card, CardContent } from "../components/ui/card";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Badge } from "../catalyst/badge";
+import { Card, CardContent } from "../catalyst/card";
+import { Subheading } from "../catalyst/heading";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 import { AlertTriangle } from "@/shared/icons";
@@ -27,11 +28,11 @@ interface PuntAdvisorResponse {
   strategy_summary: string;
 }
 
-function recommendationVariant(rec: string): "destructive" | "success" | "secondary" {
+function recommendationColor(rec: string): "red" | "green" | "zinc" {
   var lower = rec.toLowerCase();
-  if (lower === "punt") return "destructive";
-  if (lower === "target") return "success";
-  return "secondary";
+  if (lower === "punt") return "red";
+  if (lower === "target") return "green";
+  return "zinc";
 }
 
 function rankBg(rank: number, total: number): string {
@@ -58,7 +59,7 @@ export function PuntAdvisorView({ data }: { data: PuntAdvisorResponse; app?: any
         <KpiTile value={targetCategories.length} label="Target Cats" color="success" />
       </div>
 
-      <h2 className="text-lg font-semibold">Punt Advisor - {data.team_name}</h2>
+      <Subheading>Punt Advisor - {data.team_name}</Subheading>
 
       {/* Punt / Target badges */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -68,7 +69,7 @@ export function PuntAdvisorView({ data }: { data: PuntAdvisorResponse; app?: any
               <p className="text-xs text-muted-foreground mb-1.5">Punt Candidates</p>
               <div className="flex flex-wrap gap-1">
                 {puntCandidates.map(function (cat) {
-                  return <Badge key={cat} variant="destructive" className="text-xs">{cat}</Badge>;
+                  return <Badge key={cat} color="red" className="text-xs">{cat}</Badge>;
                 })}
               </div>
             </CardContent>
@@ -90,16 +91,16 @@ export function PuntAdvisorView({ data }: { data: PuntAdvisorResponse; app?: any
 
       {/* Category table */}
       <Table>
-        <TableHeader>
+        <TableHead>
           <TableRow>
-            <TableHead>Category</TableHead>
-            <TableHead className="text-right">Value</TableHead>
-            <TableHead className="text-center">Rank</TableHead>
-            <TableHead className="text-center">Rec</TableHead>
-            <TableHead className="hidden sm:table-cell">Cost</TableHead>
-            <TableHead className="hidden sm:table-cell">Reasoning</TableHead>
+            <TableHeader>Category</TableHeader>
+            <TableHeader className="text-right">Value</TableHeader>
+            <TableHeader className="text-center">Rank</TableHeader>
+            <TableHeader className="text-center">Rec</TableHeader>
+            <TableHeader className="hidden sm:table-cell">Cost</TableHeader>
+            <TableHeader className="hidden sm:table-cell">Reasoning</TableHeader>
           </TableRow>
-        </TableHeader>
+        </TableHead>
         <TableBody>
           {categories.map(function (c, i) {
             return (
@@ -111,7 +112,7 @@ export function PuntAdvisorView({ data }: { data: PuntAdvisorResponse; app?: any
                   <span className="text-muted-foreground text-xs">/{c.total}</span>
                 </TableCell>
                 <TableCell className="text-center">
-                  <Badge variant={recommendationVariant(c.recommendation)} className="text-xs">
+                  <Badge color={recommendationColor(c.recommendation)} className="text-xs">
                     {c.recommendation}
                   </Badge>
                 </TableCell>

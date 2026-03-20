@@ -2,6 +2,7 @@ import { mountApp } from "../shared/boot";
 import { AppShell } from "../shared/app-shell";
 import { RosterView } from "./roster-view";
 import { FreeAgentsView } from "./free-agents-view";
+import { PlayerListView } from "./player-list-view";
 import { ActionView } from "./action-view";
 import { WhoOwnsView } from "./who-owns-view";
 import "../globals.css";
@@ -14,6 +15,7 @@ function RosterApp() {
           case "roster": return <RosterView data={data} app={app} navigate={navigate} />;
           case "free-agents":
           case "search": return <FreeAgentsView data={data} app={app} navigate={navigate} />;
+          case "player-list": return <PlayerListView data={data} app={app} navigate={navigate} />;
           case "add":
           case "drop":
           case "swap":

@@ -1,5 +1,5 @@
-import { Button } from "../components/ui/button";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Button } from "../catalyst/button";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
 import { useCallTool } from "../shared/use-call-tool";
 
 import { ChevronLeft, ChevronRight, Loader2 } from "@/shared/icons";
@@ -37,20 +37,20 @@ export function PastMatchupView({ data, app, navigate }: { data: PastMatchupData
   return (
     <div className="space-y-3 animate-fade-in">
       <div className="flex items-center justify-between gap-2">
-        <Button variant="outline" size="sm" disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
+        <Button outline disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <span className="flex-1 text-center text-sm font-bold">{String(data.year)}</span>
-        <Button variant="outline" size="sm" disabled={data.year >= 2026 || loading} onClick={() => changeYear(data.year + 1)}>
+        <Button outline disabled={data.year >= 2026 || loading} onClick={() => changeYear(data.year + 1)}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
       <div className="flex items-center justify-between">
-        <Button variant="outline" size="sm" disabled={data.week <= 1 || loading} onClick={() => changeWeek(data.week - 1)}>
+        <Button outline disabled={data.week <= 1 || loading} onClick={() => changeWeek(data.week - 1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <span className="text-sm font-bold">{"Week " + data.week}</span>
-        <Button variant="outline" size="sm" disabled={data.week >= 22 || loading} onClick={() => changeWeek(data.week + 1)}>
+        <Button outline disabled={data.week >= 22 || loading} onClick={() => changeWeek(data.week + 1)}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
@@ -62,13 +62,13 @@ export function PastMatchupView({ data, app, navigate }: { data: PastMatchupData
         )}
         <div className="surface-card overflow-hidden">
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead className="font-bold">Team 1</TableHead>
-                <TableHead className="text-center font-bold">Score</TableHead>
-                <TableHead className="font-bold">Team 2</TableHead>
+                <TableHeader className="font-bold">Team 1</TableHeader>
+                <TableHeader className="text-center font-bold">Score</TableHeader>
+                <TableHeader className="font-bold">Team 2</TableHeader>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {(data.matchups || []).map(function (m, i) {
                 return (

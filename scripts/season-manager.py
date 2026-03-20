@@ -120,7 +120,10 @@ def get_player_team(player):
 
 def get_player_position(player):
     """Get the selected position for a roster player"""
-    return player.get("selected_position", {}).get("position", "?")
+    sp = player.get("selected_position", "?")
+    if isinstance(sp, str):
+        return sp
+    return sp.get("position", "?")
 
 
 def is_bench(player):
@@ -194,6 +197,7 @@ def _player_info(p):
         "team": get_player_team(p),
         "eligible_positions": p.get("eligible_positions", []),
         "status": p.get("status", ""),
+        "headshot": p.get("headshot", {}).get("url", "") if isinstance(p.get("headshot"), dict) else "",
         "mlb_id": get_mlb_id(p.get("name", "")),
     }
 
@@ -1265,6 +1269,7 @@ def cmd_streaming(args, as_json=False):
         for p in scored[:15]:
             recs.append({
                 "name": p["name"],
+                "player_id": p["pid"],
                 "pid": p["pid"],
                 "pct": p["pct"],
                 "team": p["team"],
@@ -3094,6 +3099,59 @@ def _find_player_owner(lg, target_name):
     return None, None, None
 
 
+def _team_cat_strengths_from_zscores(lg, team_key):
+    """Derive per-category strengths from projected z-scores (preseason fallback).
+    Returns (cat_ranks_dict, weak_cats_list, strong_cats_list).
+    """
+    from valuations import DEFAULT_BATTING_CATS, DEFAULT_PITCHING_CATS
+
+    # Aggregate per-category z-scores across the team roster
+    try:
+        target_team = lg.to_team(team_key)
+        roster = target_team.roster()
+    except Exception:
+        return {}, [], []
+
+    all_cats = list(DEFAULT_BATTING_CATS) + list(DEFAULT_PITCHING_CATS)
+    cat_totals = {c: 0.0 for c in all_cats}
+    cat_counts = {c: 0 for c in all_cats}
+
+    for p in roster:
+        name = p.get("name", "Unknown")
+        positions = p.get("eligible_positions", [])
+        is_pitcher = is_pitcher_position(positions)
+        _, _, per_cat = _player_z_summary(name)
+        if not per_cat:
+            continue
+        relevant_cats = (list(DEFAULT_PITCHING_CATS)
+                         if is_pitcher else list(DEFAULT_BATTING_CATS))
+        for cat in relevant_cats:
+            z = per_cat.get(cat, 0)
+            if z != 0:
+                cat_totals[cat] = cat_totals.get(cat, 0) + z
+                cat_counts[cat] = cat_counts.get(cat, 0) + 1
+
+    # Build cat_ranks with average z per category
+    cat_ranks = {}
+    for cat in all_cats:
+        count = cat_counts.get(cat, 0)
+        if count > 0:
+            avg_z = cat_totals.get(cat, 0) / count
+            cat_ranks[cat] = {"value": round(avg_z, 2), "rank": 0, "total": 0,
+                              "z_avg": round(avg_z, 2)}
+
+    if not cat_ranks:
+        return {}, [], []
+
+    # Sort by z_avg to find strong (highest) and weak (lowest)
+    sorted_cats = sorted(cat_ranks.items(),
+                         key=lambda x: x[1].get("z_avg", 0), reverse=True)
+    strong = [c for c, _ in sorted_cats[:3]]
+    weak = [c for c, _ in sorted_cats[-3:]]
+
+    return cat_ranks, weak, strong
+
+
 def _get_team_category_ranks(lg, target_team_key):
     """Get per-team category values from the current scoreboard.
     Returns dict of {cat_name: {value, rank, total}} for the target team,
@@ -3102,10 +3160,10 @@ def _get_team_category_ranks(lg, target_team_key):
     try:
         scoreboard = lg.matchups()
     except Exception:
-        return {}, [], []
+        return _team_cat_strengths_from_zscores(lg, target_team_key)
 
     if not scoreboard:
-        return {}, [], []
+        return _team_cat_strengths_from_zscores(lg, target_team_key)
 
     all_teams_cats = {}
     target_cats = {}
@@ -3135,7 +3193,7 @@ def _get_team_category_ranks(lg, target_team_key):
         pass
 
     if not target_cats:
-        return {}, [], []
+        return _team_cat_strengths_from_zscores(lg, target_team_key)
 
     # Calculate ranks per category
     cat_ranks = {}
@@ -3168,12 +3226,16 @@ def _get_team_category_ranks(lg, target_team_key):
         cat_ranks[cat] = {"value": my_val, "rank": rank, "total": total}
 
     if not cat_ranks:
-        return cat_ranks, [], []
+        return _team_cat_strengths_from_zscores(lg, target_team_key)
 
     sorted_cats = sorted(cat_ranks.items(), key=lambda x: x[1].get("rank", 0))
     strong = [c for c, i in sorted_cats if i.get("rank", 99) <= 3]
     weak = [c for c, i in sorted_cats
             if i.get("rank", 0) >= (i.get("total", 0) - 2) and i.get("total", 0) > 3]
+    # If scoreboard exists but yields no weak/strong (e.g. all zeroes at week 0),
+    # fall back to z-score projections
+    if not weak and not strong:
+        return _team_cat_strengths_from_zscores(lg, target_team_key)
     return cat_ranks, weak, strong
 
 
@@ -3457,6 +3519,12 @@ def _trade_finder_league_scan(lg, team, as_json=False):
 
     weak_cats = cat_data.get("weakest", [])
     strong_cats = cat_data.get("strongest", [])
+
+    # Preseason fallback: if no scoreboard data, derive from z-score projections
+    if not weak_cats and not strong_cats:
+        my_team_key = team.team_key
+        _, weak_cats, strong_cats = _team_cat_strengths_from_zscores(
+            lg, my_team_key)
 
     batting_cats = list(DEFAULT_BATTING_CATS)
     pitching_cats = list(DEFAULT_PITCHING_CATS)
@@ -3783,7 +3851,7 @@ def cmd_week_planner(args, as_json=False):
         for p in roster:
             name = p.get("name", "Unknown")
             positions = p.get("eligible_positions", [])
-            pos = p.get("selected_position", {}).get("position", "?")
+            pos = get_player_position(p)
             player_team = get_player_team(p)
             player_team_norm = normalize_team_name(player_team)
             # Also resolve alias to full name for matching
@@ -4326,7 +4394,7 @@ def cmd_roster_stats(args, as_json=False):
             for ps in (stats if isinstance(stats, list) else [stats]):
                 pid = str(ps.get("player_id", ""))
                 roster_entry = player_map.get(pid, {})
-                pos = roster_entry.get("selected_position", {}).get("position", "?")
+                pos = get_player_position(roster_entry)
                 pname = roster_entry.get("name", ps.get("name", "Unknown"))
                 results.append({
                     "name": pname,

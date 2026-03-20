@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Card, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
+import { Card, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Subheading } from "../catalyst/heading";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../catalyst/tabs";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -71,8 +72,8 @@ function getColor(name: string): string {
 
 function trendBadge(trend: string) {
   if (trend === "improving") return <Badge className="text-xs bg-green-600">Improving</Badge>;
-  if (trend === "declining") return <Badge variant="destructive" className="text-xs">Declining</Badge>;
-  return <Badge variant="outline" className="text-xs">Stable</Badge>;
+  if (trend === "declining") return <Badge color="red" className="text-xs">Declining</Badge>;
+  return <Badge color="zinc" className="text-xs">Stable</Badge>;
 }
 
 export function CategoryTrendView({ data }: { data: CategoryTrendData }) {
@@ -168,7 +169,7 @@ export function CategoryTrendView({ data }: { data: CategoryTrendData }) {
         <KpiTile value={stable.length} label="Stable" color="neutral" />
       </div>
 
-      <h2 className="text-lg font-semibold">Category Rank Trends</h2>
+      <Subheading>Category Rank Trends</Subheading>
 
       {/* Improving / Declining summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -190,7 +191,7 @@ export function CategoryTrendView({ data }: { data: CategoryTrendData }) {
               <p className="text-xs text-muted-foreground mb-1.5">Declining</p>
               <div className="flex flex-wrap gap-1">
                 {declining.map(function (c) {
-                  return <Badge key={c.name} variant="destructive" className="text-xs">{c.name}</Badge>;
+                  return <Badge key={c.name} color="red" className="text-xs">{c.name}</Badge>;
                 })}
               </div>
             </CardContent>
@@ -268,7 +269,7 @@ export function CategoryTrendView({ data }: { data: CategoryTrendData }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {filtered.map(function (cat) {
           return (
-            <Card key={cat.name} size="sm">
+            <Card key={cat.name}>
               <CardContent className="p-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

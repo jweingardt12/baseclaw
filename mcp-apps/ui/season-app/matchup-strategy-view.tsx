@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Card, CardHeader, CardTitle, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Button } from "../catalyst/button";
+import { Subheading } from "../catalyst/heading";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
 import { useCallTool } from "../shared/use-call-tool";
 import { PlayerName } from "../shared/player-name";
 
@@ -88,11 +89,11 @@ function classificationBadge(cls: string) {
     case "protect":
       return <Badge className="bg-sem-warning text-xs"><Shield className="h-2.5 w-2.5 mr-0.5 inline" />Protect</Badge>;
     case "concede":
-      return <Badge variant="outline" className="text-xs text-muted-foreground"><XCircle className="h-2.5 w-2.5 mr-0.5 inline" />Concede</Badge>;
+      return <Badge color="zinc" className="text-xs text-muted-foreground"><XCircle className="h-2.5 w-2.5 mr-0.5 inline" />Concede</Badge>;
     case "lock":
       return <Badge className="bg-sem-success text-xs"><Lock className="h-2.5 w-2.5 mr-0.5 inline" />Lock</Badge>;
     default:
-      return <Badge variant="outline" className="text-xs">{cls}</Badge>;
+      return <Badge color="zinc" className="text-xs">{cls}</Badge>;
   }
 }
 
@@ -147,10 +148,10 @@ export function MatchupStrategyView({ data, app, navigate }: { data: MatchupStra
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Swords className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold">Matchup Strategy</h2>
+          <Subheading>Matchup Strategy</Subheading>
         </div>
         {app && (
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading} className="h-8 text-xs gap-1">
+          <Button outline onClick={handleRefresh} disabled={loading} className="h-8 text-xs gap-1">
             {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
             Refresh
           </Button>
@@ -243,15 +244,15 @@ export function MatchupStrategyView({ data, app, navigate }: { data: MatchupStra
         </CardHeader>
         <CardContent className="p-0">
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">You</TableHead>
-                <TableHead className="text-right">Opp</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-center">Plan</TableHead>
+                <TableHeader>Category</TableHeader>
+                <TableHeader className="text-right">You</TableHeader>
+                <TableHeader className="text-right">Opp</TableHeader>
+                <TableHeader className="text-center">Status</TableHeader>
+                <TableHeader className="text-center">Plan</TableHeader>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {(d.categories || []).map(function (c, i) {
                 return (
@@ -287,7 +288,7 @@ export function MatchupStrategyView({ data, app, navigate }: { data: MatchupStra
               {(d.opp_transactions || []).map(function (tx, idx) {
                 return (
                   <div key={idx} className="flex items-center gap-2 text-sm">
-                    <Badge variant={tx.type === "add" ? "default" : "outline"} className="text-xs w-12 justify-center">
+                    <Badge color={tx.type === "add" ? undefined : "zinc"} className="text-xs w-12 justify-center">
                       {tx.type === "add" ? "ADD" : "DROP"}
                     </Badge>
                     <span>{tx.player}</span>
@@ -311,16 +312,16 @@ export function MatchupStrategyView({ data, app, navigate }: { data: MatchupStra
           </CardHeader>
           <CardContent className="p-0">
             <Table>
-              <TableHeader>
+              <TableHead>
                 <TableRow>
-                  <TableHead>Player</TableHead>
-                  <TableHead className="hidden sm:table-cell">Team</TableHead>
-                  <TableHead className="text-center">Games</TableHead>
-                  <TableHead className="text-right">Own%</TableHead>
-                  <TableHead className="hidden sm:table-cell">Targets</TableHead>
-                  {app && <TableHead className="w-10"></TableHead>}
+                  <TableHeader>Player</TableHeader>
+                  <TableHeader className="hidden sm:table-cell">Team</TableHeader>
+                  <TableHeader className="text-center">Games</TableHeader>
+                  <TableHeader className="text-right">Own%</TableHeader>
+                  <TableHeader className="hidden sm:table-cell">Targets</TableHeader>
+                  {app && <TableHeader className="w-10"></TableHeader>}
                 </TableRow>
-              </TableHeader>
+              </TableHead>
               <TableBody>
                 {(d.waiver_targets || []).map(function (wt, idx) {
                   return (
@@ -341,15 +342,14 @@ export function MatchupStrategyView({ data, app, navigate }: { data: MatchupStra
                       <TableCell className="hidden sm:table-cell">
                         <div className="flex flex-wrap gap-0.5">
                           {(wt.categories || []).map(function (cat) {
-                            return <Badge key={cat} variant="outline" className="text-xs">{cat}</Badge>;
+                            return <Badge key={cat} color="zinc" className="text-xs">{cat}</Badge>;
                           })}
                         </div>
                       </TableCell>
                       {app && (
                         <TableCell>
                           <Button
-                            variant="ghost"
-                            size="sm"
+                            plain
                             className="h-8 w-8 p-0"
                             onClick={function () { handleAdd(wt.pid); }}
                             disabled={loading}

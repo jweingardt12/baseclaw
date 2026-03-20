@@ -1,6 +1,8 @@
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { Badge } from "../components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
+import { Badge } from "../catalyst/badge";
+import { Tabs, TabsList, TabsTrigger } from "../catalyst/tabs";
+import { Subheading } from "../catalyst/heading";
+import { Text } from "../catalyst/text";
 import { useCallTool } from "../shared/use-call-tool";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
@@ -43,11 +45,11 @@ export function BreakoutsView({ data, app, navigate }: { data: BreakoutsData; ap
   return (
     <div className="space-y-2">
       <div>
-        <h2 className="text-lg font-semibold flex items-center gap-2">
+        <Subheading className="flex items-center gap-2">
           <Icon size={18} />
           {title} - {data.pos_type === "P" ? "Pitchers" : "Hitters"}
-        </h2>
-        <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+        </Subheading>
+        <Text className="mt-1">{subtitle}</Text>
       </div>
 
       {/* KPI */}
@@ -82,15 +84,15 @@ export function BreakoutsView({ data, app, navigate }: { data: BreakoutsData; ap
           </div>
         )}
         <Table>
-          <TableHeader>
+          <TableHead>
             <TableRow>
-              <TableHead>Player</TableHead>
-              <TableHead className="text-right hidden sm:table-cell">wOBA</TableHead>
-              <TableHead className="text-right hidden sm:table-cell">xwOBA</TableHead>
-              <TableHead className="text-right">Diff</TableHead>
-              <TableHead className="text-right hidden sm:table-cell">PA</TableHead>
+              <TableHeader>Player</TableHeader>
+              <TableHeader className="text-right hidden sm:table-cell">wOBA</TableHeader>
+              <TableHeader className="text-right hidden sm:table-cell">xwOBA</TableHeader>
+              <TableHeader className="text-right">Diff</TableHeader>
+              <TableHeader className="text-right hidden sm:table-cell">PA</TableHeader>
             </TableRow>
-          </TableHeader>
+          </TableHead>
           <TableBody>
             {candidates.map(function(c, i) {
               var diffColor = isBreakouts ? "text-green-600 dark:text-green-400" : "text-red-500";
@@ -109,11 +111,11 @@ export function BreakoutsView({ data, app, navigate }: { data: BreakoutsData; ap
           </TableBody>
         </Table>
       </div>
-      <p className="text-xs text-muted-foreground">
+      <Text>
         {isBreakouts
           ? "Higher diff = more unlucky. These players are performing below their expected stats and should improve."
           : "Higher diff = more lucky. These players are performing above their expected stats and may regress."}
-      </p>
+      </Text>
     </div>
   );
 }

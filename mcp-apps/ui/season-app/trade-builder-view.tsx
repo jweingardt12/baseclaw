@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Card, CardHeader, CardTitle, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Button } from "../catalyst/button";
+import { Subheading } from "../catalyst/heading";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
 import { useCallTool } from "../shared/use-call-tool";
 
 import { IntelBadge } from "../shared/intel-badge";
@@ -84,7 +85,7 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <ArrowRightLeft className="h-5 w-5" />
-        <h2 className="text-lg font-semibold">Trade Builder</h2>
+        <Subheading>Trade Builder</Subheading>
         {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
       </div>
 
@@ -97,7 +98,7 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
             <div className="flex items-center justify-between">
               <CardTitle className="text-base text-destructive">You Give</CardTitle>
               {myRoster.length === 0 && app && (
-                <Button size="sm" variant="outline" onClick={handleLoadRoster} disabled={loading}>
+                <Button outline onClick={handleLoadRoster} disabled={loading}>
                   Load Roster
                 </Button>
               )}
@@ -121,7 +122,7 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
                       {selected ? <CheckSquare size={14} className="text-destructive flex-shrink-0" /> : <Square size={14} className="text-muted-foreground flex-shrink-0" />}
                       <span className={"truncate " + (selected ? "font-medium" : "")}><PlayerName name={p.name} playerId={p.player_id} mlbId={p.mlb_id} app={app} navigate={navigate} context="trade" /></span>
                       {p.intel && <IntelBadge intel={p.intel} size="sm" />}
-                      {p.position && <Badge variant="outline" className="text-xs ml-auto flex-shrink-0">{p.position}</Badge>}
+                      {p.position && <Badge color="zinc" className="text-xs ml-auto flex-shrink-0">{p.position}</Badge>}
                     </button>
                   );
                 })}
@@ -150,7 +151,7 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
                 onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
                 className="flex-1 h-8 rounded-md border border-input bg-background px-2 text-sm"
               />
-              <Button size="sm" variant="outline" onClick={handleSearch} disabled={loading}>
+              <Button outline onClick={handleSearch} disabled={loading}>
                 <Search size={14} />
               </Button>
             </div>
@@ -169,7 +170,7 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
                       {selected ? <CheckSquare size={14} className="text-primary flex-shrink-0" /> : <Square size={14} className="text-muted-foreground flex-shrink-0" />}
                       <span className={"truncate " + (selected ? "font-medium" : "")}><PlayerName name={p.name} playerId={p.player_id} mlbId={p.mlb_id} app={app} navigate={navigate} context="trade" /></span>
                       {p.intel && <IntelBadge intel={p.intel} size="sm" />}
-                      {p.position && <Badge variant="outline" className="text-xs ml-auto flex-shrink-0">{p.position}</Badge>}
+                      {p.position && <Badge color="zinc" className="text-xs ml-auto flex-shrink-0">{p.position}</Badge>}
                     </button>
                   );
                 })}
@@ -195,7 +196,7 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
                 <p className="text-xs text-muted-foreground mb-1">Give</p>
                 <div className="flex flex-wrap gap-1">
                   {givePlayers.map((p) => (
-                    <Badge key={p.player_id} variant="destructive" className="text-xs">{p.name}</Badge>
+                    <Badge key={p.player_id} color="red" className="text-xs">{p.name}</Badge>
                   ))}
                   {givePlayers.length === 0 && <span className="text-xs text-muted-foreground">None selected</span>}
                 </div>
@@ -205,7 +206,7 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
                 <p className="text-xs text-muted-foreground mb-1">Get</p>
                 <div className="flex flex-wrap gap-1">
                   {getPlayers.map((p) => (
-                    <Badge key={p.player_id} variant="default" className="text-xs">{p.name}</Badge>
+                    <Badge key={p.player_id} className="text-xs">{p.name}</Badge>
                   ))}
                   {getPlayers.length === 0 && <span className="text-xs text-muted-foreground">None selected</span>}
                 </div>
@@ -227,7 +228,7 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
               <CardTitle className="text-base">Trade Evaluation</CardTitle>
-              <Badge variant={evaluation.net_value >= 0 ? "default" : "destructive"} className="text-sm">
+              <Badge color={evaluation.net_value >= 0 ? undefined : "red"} className="text-sm">
                 {evaluation.grade || (evaluation.net_value >= 0 ? "Good" : "Bad")}
               </Badge>
             </div>
@@ -256,7 +257,7 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
                     <TrendingDown size={12} className="text-destructive" />
                     <span className="text-muted-foreground">Losing:</span>
                     {evaluation.position_impact.losing.map((p: string) => (
-                      <Badge key={p} variant="outline" className="text-xs">{p}</Badge>
+                      <Badge key={p} color="zinc" className="text-xs">{p}</Badge>
                     ))}
                   </div>
                 )}
@@ -265,7 +266,7 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
                     <TrendingUp size={12} className="text-primary" />
                     <span className="text-muted-foreground">Gaining:</span>
                     {evaluation.position_impact.gaining.map((p: string) => (
-                      <Badge key={p} variant="outline" className="text-xs">{p}</Badge>
+                      <Badge key={p} color="zinc" className="text-xs">{p}</Badge>
                     ))}
                   </div>
                 )}

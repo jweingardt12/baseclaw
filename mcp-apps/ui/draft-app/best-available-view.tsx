@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Badge } from "../components/ui/badge";
-import { Card, CardContent } from "../components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { Badge } from "../catalyst/badge";
+import { Card, CardContent } from "../catalyst/card";
+import { Subheading } from "../catalyst/heading";
+import { Tabs, TabsList, TabsTrigger } from "../catalyst/tabs";
 import { useCallTool } from "../shared/use-call-tool";
 
 import { getTier, tierGrade, ZScoreBar } from "../shared/z-score";
-import { IntelBadge } from "../shared/intel-badge";
-import { PlayerName } from "../shared/player-name";
+import { PlayerCell } from "../shared/player-row";
 import { VerdictBadge } from "../shared/verdict-badge";
 import { formatFixed } from "../shared/number-format";
 import { Loader2 } from "@/shared/icons";
@@ -59,7 +59,7 @@ export function BestAvailableView({ data, app, navigate }: { data: BestAvailable
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
-        <h2 className="text-lg font-semibold">Best Available {label}</h2>
+        <Subheading>Best Available {label}</Subheading>
         <span className="text-xs text-muted-foreground">Top {data.count || filteredPlayers.length}</span>
       </div>
 
@@ -77,7 +77,7 @@ export function BestAvailableView({ data, app, navigate }: { data: BestAvailable
           return (
             <Badge
               key={pos}
-              variant={posFilter === pos ? "default" : "outline"}
+              color={posFilter === pos ? undefined : "zinc"}
               className="text-xs cursor-pointer"
               onClick={function () { setPosFilter(pos); }}
             >
@@ -93,10 +93,9 @@ export function BestAvailableView({ data, app, navigate }: { data: BestAvailable
           <CardContent className="p-4 flex items-center gap-3">
             <span className="font-mono text-xs text-muted-foreground w-6 text-right">#1</span>
             <div className="flex-1 min-w-0">
-              <p className="text-xl-app font-bold truncate"><PlayerName name={topPlayer.name} mlbId={topPlayer.mlb_id} app={app} navigate={navigate} context="draft" /></p>
+              <p className="text-xl-app font-bold truncate"><PlayerCell player={topPlayer} app={app} navigate={navigate} context="draft" /></p>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline" className="text-xs">{topPlayer.positions ? topPlayer.positions.join(", ") : (topPlayer.position || "?")}</Badge>
-                {topPlayer.intel && <IntelBadge intel={topPlayer.intel} size="sm" />}
+                <Badge color="zinc" className="text-xs">{topPlayer.positions ? topPlayer.positions.join(", ") : (topPlayer.position || "?")}</Badge>
               </div>
             </div>
             {topPlayer.z_score != null && (
@@ -131,9 +130,8 @@ export function BestAvailableView({ data, app, navigate }: { data: BestAvailable
                 )}
                 <div className={"flex items-center gap-2 py-1.5 px-2 rounded " + (actualIndex % 2 === 0 ? "bg-muted/30" : "")}>
                   <span className="font-mono text-xs text-muted-foreground w-6 text-right">{p.rank}</span>
-                  <span className="text-sm flex-1 truncate font-medium"><PlayerName name={p.name} mlbId={p.mlb_id} app={app} navigate={navigate} context="draft" /></span>
-                  {p.intel && <IntelBadge intel={p.intel} size="sm" />}
-                  <Badge variant="outline" className="text-xs shrink-0">{posDisplay}</Badge>
+                  <span className="text-sm flex-1 truncate font-medium"><PlayerCell player={p} app={app} navigate={navigate} context="draft" /></span>
+                  <Badge color="zinc" className="text-xs shrink-0">{posDisplay}</Badge>
                   <ZScoreBar z={p.z_score} />
                 </div>
               </div>

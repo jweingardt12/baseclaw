@@ -1,5 +1,6 @@
-import { Card, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
+import { Card, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Subheading } from "../catalyst/heading";
 import { AiInsight } from "../shared/ai-insight";
 import { RefreshButton } from "../shared/refresh-button";
 
@@ -37,9 +38,9 @@ export function MatchupsView({ data, app, navigate, toolName }: { data: Matchups
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">
+        <Subheading>
           {isScoreboard ? "Scoreboard" : "Matchups"} - Week {data.week}
-        </h2>
+        </Subheading>
         {app && navigate && (
           <RefreshButton app={app} toolName={refreshToolName} navigate={navigate} />
         )}
@@ -63,7 +64,7 @@ export function MatchupsView({ data, app, navigate, toolName }: { data: Matchups
                     </p>
                   </div>
                   <div className="px-3 flex flex-col items-center flex-shrink-0">
-                    <Badge variant="outline" className="text-sm font-bold px-3 py-1">vs</Badge>
+                    <Badge color="zinc" className="text-sm font-bold px-3 py-1">vs</Badge>
                     {m.status && <span className="text-xs text-muted-foreground mt-0.5">{m.status}</span>}
                   </div>
                   <div className="flex-1 min-w-0 text-right">

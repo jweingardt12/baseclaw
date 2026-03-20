@@ -1,6 +1,7 @@
 import * as React from "react";
-import { Card, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
+import { Card, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Subheading } from "../catalyst/heading";
 import { AiInsight } from "../shared/ai-insight";
 import { RefreshButton } from "../shared/refresh-button";
 
@@ -81,9 +82,9 @@ export function MatchupDetailView({ data, app, navigate }: { data: MatchupDetail
   var statusColor = score.wins > score.losses ? "text-sem-success" : score.losses > score.wins ? "text-sem-risk" : "text-sem-warning";
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 animate-stagger">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Week {String(data.week)} Matchup</h2>
+        <Subheading>Week {String(data.week)} Matchup</Subheading>
         {app && navigate && (
           <RefreshButton app={app} toolName="yahoo_my_matchup" navigate={navigate} />
         )}
@@ -151,7 +152,7 @@ export function MatchupDetailView({ data, app, navigate }: { data: MatchupDetail
                 <td colSpan={4} className="px-3 pt-3 pb-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Batting</span>
-                    <Badge variant="outline" className="text-xs font-mono h-5">
+                    <Badge color="zinc" className="text-xs font-mono h-5">
                       {battingWins + "-" + battingLosses + (battingTies > 0 ? "-" + battingTies : "")}
                     </Badge>
                   </div>
@@ -165,7 +166,7 @@ export function MatchupDetailView({ data, app, navigate }: { data: MatchupDetail
                 <td colSpan={4} className="px-3 pt-4 pb-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pitching</span>
-                    <Badge variant="outline" className="text-xs font-mono h-5">
+                    <Badge color="zinc" className="text-xs font-mono h-5">
                       {pitchingWins + "-" + pitchingLosses + (pitchingTies > 0 ? "-" + pitchingTies : "")}
                     </Badge>
                   </div>
@@ -192,7 +193,7 @@ export function MatchupDetailView({ data, app, navigate }: { data: MatchupDetail
                 ? "border-sem-risk text-sem-risk"
                 : "border-sem-warning text-sem-warning";
             return (
-              <Badge key={name} variant="outline" className={"text-xs " + badgeColor}>
+              <Badge key={name} color="zinc" className={"text-xs " + badgeColor}>
                 {name} {cat.my_value + " v " + cat.opp_value}
               </Badge>
             );

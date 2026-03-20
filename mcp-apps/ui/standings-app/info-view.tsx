@@ -1,4 +1,6 @@
-import { Badge } from "../components/ui/badge";
+import { Badge } from "../catalyst/badge";
+import { Subheading } from "../catalyst/heading";
+import { DescriptionList, DescriptionTerm, DescriptionDetails } from "../catalyst/description-list";
 import { AiInsight } from "../shared/ai-insight";
 
 interface LeagueInfo {
@@ -34,23 +36,23 @@ export function InfoView({ data }: { data: LeagueInfo }) {
 
       <div className="surface-card p-4">
         <div className="flex items-center gap-2 mb-3">
-          <h3 className="font-semibold text-lg">{data.name}</h3>
-          <Badge variant="secondary">{data.season}</Badge>
+          <Subheading>{data.name}</Subheading>
+          <Badge color="zinc">{data.season}</Badge>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <DescriptionList>
           {rows.map(function (row) {
             return (
-              <div key={row[0]}>
-                <p className="text-xs text-muted-foreground">{row[0]}</p>
-                <p className="text-sm font-medium">{row[1]}</p>
+              <div key={row[0]} className="contents">
+                <DescriptionTerm>{row[0]}</DescriptionTerm>
+                <DescriptionDetails>{row[1]}</DescriptionDetails>
               </div>
             );
           })}
-        </div>
+        </DescriptionList>
       </div>
 
       <div className="surface-card p-4">
-        <h3 className="font-semibold text-base mb-2">Your Team</h3>
+        <Subheading level={3} className="mb-2">Your Team</Subheading>
         <p className="font-medium">{data.team_name}</p>
         <p className="text-xs text-muted-foreground">{data.team_id}</p>
       </div>

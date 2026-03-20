@@ -984,6 +984,27 @@ def api_taken_players():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/player-list")
+def api_player_list():
+    try:
+        pos_type = request.args.get("pos_type", "B")
+        count = request.args.get("count", "50")
+        status = request.args.get("status", "FA")
+        result = yahoo_fantasy.cmd_player_list([pos_type, count, status], as_json=True)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/positional-ranks")
+def api_positional_ranks():
+    try:
+        result = yahoo_fantasy.cmd_positional_ranks([], as_json=True)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # --- MLB Data (mlb-data.py) ---
 # TS tools call: /api/mlb/teams, /api/mlb/roster, etc. (these already match)
 

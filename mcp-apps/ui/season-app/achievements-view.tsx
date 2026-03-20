@@ -1,5 +1,7 @@
-import { Card, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
+import { Card, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Subheading } from "../catalyst/heading";
+import { Text } from "../catalyst/text";
 import { EmptyState } from "../shared/empty-state";
 import { KpiTile } from "../shared/kpi-tile";
 import { Trophy, Award } from "@/shared/icons";
@@ -39,13 +41,13 @@ export function AchievementsView({ data, app, navigate }: { data: AchievementsRe
       {/* Header */}
       <div className="flex items-center gap-2">
         <Trophy className="h-5 w-5 text-primary" />
-        <h2 className="text-lg font-semibold">Achievements</h2>
+        <Subheading>Achievements</Subheading>
       </div>
 
       {/* Team Info */}
       <div className="flex items-center justify-between">
         <p className="font-semibold">{data.team_name}</p>
-        {data.record && <Badge variant="outline" className="text-xs">{data.record}</Badge>}
+        {data.record && <Badge color="zinc" className="text-xs">{data.record}</Badge>}
       </div>
 
       {/* Earned Achievements */}
@@ -64,7 +66,7 @@ export function AchievementsView({ data, app, navigate }: { data: AchievementsRe
                           <p className="font-semibold text-sm">{a.name}</p>
                           {a.value && <Badge className="bg-sem-success text-xs">{a.value}</Badge>}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{a.description}</p>
+                        <Text className="mt-0.5">{a.description}</Text>
                       </div>
                     </div>
                   </CardContent>
@@ -88,7 +90,7 @@ export function AchievementsView({ data, app, navigate }: { data: AchievementsRe
                       <span className="text-2xl flex-shrink-0 grayscale">{a.icon}</span>
                       <div className="min-w-0">
                         <p className="font-semibold text-sm text-muted-foreground">{a.name}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{a.description}</p>
+                        <Text className="mt-0.5">{a.description}</Text>
                       </div>
                     </div>
                   </CardContent>

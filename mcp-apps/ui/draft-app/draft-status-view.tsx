@@ -1,6 +1,7 @@
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Progress } from "../components/ui/progress";
+import { Card, CardHeader, CardTitle, CardContent } from "../catalyst/card";
+import { Badge } from "../catalyst/badge";
+import { Progress } from "../catalyst/progress";
+import { Text } from "../catalyst/text";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { KpiTile } from "../shared/kpi-tile";
 
@@ -129,9 +130,9 @@ export function DraftStatusView({ data }: { data: DraftStatusData }) {
               </span>
             </div>
             <Progress value={data.total_picks} max={TOTAL_DRAFT_PICKS} />
-            <p className="text-xs text-muted-foreground">
+            <Text>
               {(TOTAL_DRAFT_PICKS - data.total_picks) + " picks remaining"}
-            </p>
+            </Text>
           </div>
         </CardContent>
       </Card>
@@ -191,7 +192,7 @@ export function DraftStatusView({ data }: { data: DraftStatusData }) {
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Roster Fill</CardTitle>
-            <Badge variant="secondary" className="text-xs font-mono">
+            <Badge color="zinc" className="text-xs font-mono">
               {filledCount + " / " + totalSlots}
             </Badge>
           </div>
@@ -273,16 +274,16 @@ export function DraftStatusView({ data }: { data: DraftStatusData }) {
             {/* Fill Progress */}
             <div className="pt-1">
               <Progress value={filledCount} max={totalSlots} indicatorClassName="bg-green-500" />
-              <p className="text-xs text-muted-foreground mt-1">
+              <Text className="mt-1">
                 {(totalSlots - filledCount) + " slots remaining"}
-              </p>
+              </Text>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {(data.drafted_ids || []).length > 0 && (
-        <p className="text-xs text-muted-foreground">{(data.drafted_ids || []).length} players drafted overall</p>
+        <Text>{(data.drafted_ids || []).length} players drafted overall</Text>
       )}
     </div>
   );

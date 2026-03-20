@@ -1,7 +1,9 @@
-import { Badge } from "../components/ui/badge";
+import { Badge } from "../catalyst/badge";
+import { Subheading } from "../catalyst/heading";
+import { Text } from "../catalyst/text";
 import { useCallTool } from "../shared/use-call-tool";
 import { Loader2, MessageSquare, ArrowUp } from "@/shared/icons";
-import { Button } from "../components/ui/button";
+import { Button } from "../catalyst/button";
 
 interface RedditPost {
   title: string;
@@ -56,12 +58,12 @@ export function RedditView({ data, app, navigate }: { data: RedditData; app: any
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">{title}</h2>
+        <Subheading>{title}</Subheading>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={handleRefreshBuzz} disabled={loading}>
+          <Button outline onClick={handleRefreshBuzz} disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Buzz"}
           </Button>
-          <Button size="sm" variant="outline" onClick={handleRefreshTrending} disabled={loading}>
+          <Button outline onClick={handleRefreshTrending} disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Trending"}
           </Button>
         </div>
@@ -69,7 +71,7 @@ export function RedditView({ data, app, navigate }: { data: RedditData; app: any
 
       <div className="space-y-2">
         {(data.posts || []).length === 0 && (
-          <p className="text-sm text-muted-foreground">No posts found.</p>
+          <Text>No posts found.</Text>
         )}
         {(data.posts || []).map(function(post, i) {
           return (
@@ -82,7 +84,7 @@ export function RedditView({ data, app, navigate }: { data: RedditData; app: any
                 </div>
                 <div className="flex-1 min-w-0">
                   {post.flair && (
-                    <Badge variant="secondary" className={"text-xs mb-1 " + flairColor(post.flair)}>{post.flair}</Badge>
+                    <Badge color="zinc" className={"text-xs mb-1 " + flairColor(post.flair)}>{post.flair}</Badge>
                   )}
                   <p className="text-sm font-semibold leading-tight">{post.title}</p>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1.5">

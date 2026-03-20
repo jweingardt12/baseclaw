@@ -1,5 +1,5 @@
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
+import { Badge } from "../catalyst/badge";
+import { Button } from "../catalyst/button";
 import { useCallTool } from "../shared/use-call-tool";
 
 import { ChevronLeft, ChevronRight, Loader2, ArrowRightLeft } from "@/shared/icons";
@@ -31,11 +31,11 @@ export function PastTradesView({ data, app, navigate }: { data: PastTradesData; 
   return (
     <div className="space-y-3 animate-fade-in">
       <div className="flex items-center justify-between gap-2">
-        <Button variant="outline" size="sm" disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
+        <Button outline disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <span className="flex-1 text-center text-sm font-bold">{"Trades - " + data.year}</span>
-        <Button variant="outline" size="sm" disabled={data.year >= 2026 || loading} onClick={() => changeYear(data.year + 1)}>
+        <Button outline disabled={data.year >= 2026 || loading} onClick={() => changeYear(data.year + 1)}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
@@ -49,7 +49,7 @@ export function PastTradesView({ data, app, navigate }: { data: PastTradesData; 
 
         {trades.length === 0 ? (
           <div className="surface-card p-4 text-center">
-            <p className="text-muted-foreground font-semibold">No trades for this season.</p>
+            <p className="text-sm text-muted-foreground font-semibold">No trades for this season.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -61,7 +61,7 @@ export function PastTradesView({ data, app, navigate }: { data: PastTradesData; 
                       <p className="text-sm font-bold mb-2">{t.team1 + " sends:"}</p>
                       <div className="flex flex-wrap gap-1">
                         {(t.players1 || []).map(function (p) {
-                          return <Badge key={p} variant="outline" className="text-xs font-semibold">{p}</Badge>;
+                          return <Badge key={p} color="zinc" className="text-xs font-semibold">{p}</Badge>;
                         })}
                       </div>
                     </div>
@@ -72,7 +72,7 @@ export function PastTradesView({ data, app, navigate }: { data: PastTradesData; 
                       <p className="text-sm font-bold mb-2">{t.team2 + " sends:"}</p>
                       <div className="flex flex-wrap gap-1">
                         {(t.players2 || []).map(function (p) {
-                          return <Badge key={p} variant="outline" className="text-xs font-semibold">{p}</Badge>;
+                          return <Badge key={p} color="zinc" className="text-xs font-semibold">{p}</Badge>;
                         })}
                       </div>
                     </div>

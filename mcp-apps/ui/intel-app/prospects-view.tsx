@@ -1,4 +1,6 @@
-import { Badge } from "../components/ui/badge";
+import { Badge } from "../catalyst/badge";
+import { Subheading } from "../catalyst/heading";
+import { Text } from "../catalyst/text";
 import { TeamLogo } from "../shared/team-logo";
 import { KpiTile } from "../shared/kpi-tile";
 
@@ -33,8 +35,8 @@ export function ProspectsView({ data, app, navigate }: { data: ProspectsData; ap
 
   return (
     <div className="space-y-2">
-      <h2 className="text-lg font-semibold">Prospect Watch</h2>
-      <p className="text-xs text-muted-foreground">Recent call-ups and roster moves that could impact fantasy</p>
+      <Subheading>Prospect Watch</Subheading>
+      <Text>Recent call-ups and roster moves that could impact fantasy</Text>
 
       {/* KPI */}
       <div className="kpi-grid">
@@ -43,7 +45,7 @@ export function ProspectsView({ data, app, navigate }: { data: ProspectsData; ap
       </div>
 
       {transactions.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No recent prospect moves found.</p>
+        <Text>No recent prospect moves found.</Text>
       ) : (
         <div className="space-y-1.5">
           {transactions.map(function(t, i) {
@@ -54,7 +56,7 @@ export function ProspectsView({ data, app, navigate }: { data: ProspectsData; ap
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <Badge variant="secondary" className={"text-xs " + typeColor(t.type)}>{t.type}</Badge>
+                    <Badge color="zinc" className={"text-xs " + typeColor(t.type)}>{t.type}</Badge>
                     <span className="text-xs text-muted-foreground">{t.team || ""}</span>
                   </div>
                   <p className="text-sm font-semibold truncate">{t.player}</p>

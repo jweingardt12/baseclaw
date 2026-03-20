@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Badge } from "../components/ui/badge";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
+import { Badge } from "../catalyst/badge";
+import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from "../catalyst/table";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../catalyst/tabs";
+import { Subheading } from "../catalyst/heading";
+import { Text } from "../catalyst/text";
 import { Trophy, TrendingUp, Target, Award } from "@/shared/icons";
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
@@ -92,7 +94,7 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
             <div className="surface-card p-4 mb-3">
               <div className="flex items-center gap-2 mb-3">
                 <Trophy className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-bold">Champion Win % by Year</span>
+                <Subheading>Champion Win % by Year</Subheading>
               </div>
               <div className="h-40">
                 <ResponsiveContainer width="100%" height="100%">
@@ -141,7 +143,7 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
                         <Trophy size={14} className="text-amber-500 shrink-0" />
                         <span className="font-bold text-sm truncate">{c.team_name}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">{c.manager}</p>
+                      <Text className="mt-0.5">{c.manager}</Text>
                     </div>
                     <div className="shrink-0 text-right">
                       <span className="font-mono font-bold text-sm">{c.record}</span>
@@ -158,7 +160,7 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
             <div className="surface-card p-4 mb-3">
               <div className="flex items-center gap-2 mb-3">
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-bold">Career Win %</span>
+                <Subheading>Career Win %</Subheading>
               </div>
               <div style={{ height: Math.max(careerChartData.length * 28, 120) + "px" }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -210,18 +212,18 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
           )}
           <div className="surface-card overflow-hidden">
             <Table>
-              <TableHeader>
+              <TableHead>
                 <TableRow>
-                  <TableHead className="font-bold">Manager</TableHead>
-                  <TableHead className="text-center font-bold">Seasons</TableHead>
-                  <TableHead className="text-center font-bold">W</TableHead>
-                  <TableHead className="text-center font-bold">L</TableHead>
-                  <TableHead className="hidden sm:table-cell text-center font-bold">T</TableHead>
-                  <TableHead className="text-right font-bold">Win%</TableHead>
-                  <TableHead className="hidden sm:table-cell text-center font-bold">Playoffs</TableHead>
-                  <TableHead className="hidden sm:table-cell text-center font-bold">Best</TableHead>
+                  <TableHeader className="font-bold">Manager</TableHeader>
+                  <TableHeader className="text-center font-bold">Seasons</TableHeader>
+                  <TableHeader className="text-center font-bold">W</TableHeader>
+                  <TableHeader className="text-center font-bold">L</TableHeader>
+                  <TableHeader className="hidden sm:table-cell text-center font-bold">T</TableHeader>
+                  <TableHeader className="text-right font-bold">Win%</TableHeader>
+                  <TableHeader className="hidden sm:table-cell text-center font-bold">Playoffs</TableHeader>
+                  <TableHeader className="hidden sm:table-cell text-center font-bold">Best</TableHeader>
                 </TableRow>
-              </TableHeader>
+              </TableHead>
               <TableBody>
                 {(data.careers || []).map(function (c) {
                   return (
@@ -234,7 +236,7 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
                       <TableCell className="text-right font-mono font-semibold">{formatFixed(c.win_pct, 1, "0.0")}%</TableCell>
                       <TableCell className="hidden sm:table-cell text-center font-mono">{c.playoffs}</TableCell>
                       <TableCell className="hidden sm:table-cell text-center">
-                        <Badge variant="secondary" className="text-xs font-bold">{"#" + c.best_finish + " (" + c.best_year + ")"}</Badge>
+                        <Badge color="zinc" className="text-xs font-bold">{"#" + c.best_finish + " (" + c.best_year + ")"}</Badge>
                       </TableCell>
                     </TableRow>
                   );
@@ -262,7 +264,7 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
             <div className="surface-card p-4 mb-3">
               <div className="flex items-center gap-2 mb-3">
                 <Award className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-bold">Playoff Appearances</span>
+                <Subheading>Playoff Appearances</Subheading>
               </div>
               <div style={{ height: Math.max(playoffChartData.length * 28, 120) + "px" }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -301,12 +303,12 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
           )}
           <div className="surface-card overflow-hidden">
             <Table>
-              <TableHeader>
+              <TableHead>
                 <TableRow>
-                  <TableHead className="font-bold">Manager</TableHead>
-                  <TableHead className="text-right font-bold">Appearances</TableHead>
+                  <TableHeader className="font-bold">Manager</TableHeader>
+                  <TableHeader className="text-right font-bold">Appearances</TableHeader>
                 </TableRow>
-              </TableHeader>
+              </TableHead>
               <TableBody>
                 {(data.playoff_appearances || []).map(function (pa) {
                   return (
