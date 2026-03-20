@@ -4,6 +4,7 @@ import { z } from "zod";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { apiGet, toolError } from "../api/python-client.js";
+import { tkey } from "../api/format-text.js";
 import {
   generateStandingsInsight,
   generateSeasonPaceInsight,
@@ -72,7 +73,7 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
       try {
         const data = await apiGet<StandingsResponse>("/api/standings");
         const text = "League Standings:\n" + data.standings.map((s) =>
-          "  " + String(s.rank).padStart(2) + ". " + str(s.name).padEnd(30) + " " + s.wins + "-" + s.losses
+          "  " + String(s.rank).padStart(2) + ". " + str(s.name).padEnd(30) + tkey(s.team_key) + " " + s.wins + "-" + s.losses
           + (s.points_for ? " (" + s.points_for + " pts)" : "")
         ).join("\n");
         const ai_recommendation = generateStandingsInsight(data);
@@ -362,7 +363,7 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
           "  " + "-".repeat(49),
         ];
         for (const t of data.teams) {
-          lines.push("  " + str(t.name).padEnd(30) + String(t.moves).padStart(6)
+          lines.push("  " + str(t.name).padEnd(30) + tkey(t.team_key) + String(t.moves).padStart(6)
             + String(t.trades).padStart(7) + String(t.total).padStart(6));
         }
         var mostActive = (data.teams || [])[0];
@@ -396,7 +397,7 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
         ];
         for (const r of data.rankings) {
           const marker = r.is_my_team ? " <-- YOU" : "";
-          lines.push("  " + String(r.rank).padStart(3) + "  " + str(r.name).padEnd(30)
+          lines.push("  " + String(r.rank).padStart(3) + "  " + str(r.name).padEnd(30) + tkey(r.team_key)
             + String(r.avg_owned_pct).padStart(8) + "%  " + r.hitting_count + "/" + r.pitching_count + marker);
         }
         const ai_recommendation = generatePowerRankInsight(data);
@@ -456,10 +457,10 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
         const data = await apiGet<PositionalRanksResponse>("/api/positional-ranks");
         const lines = ["League Positional Rankings:"];
         for (const team of data.teams || []) {
-          lines.push("\n" + str(team.name) + ":");
+          lines.push("\n" + str(team.name) + tkey(team.team_key) + ":");
           for (const pr of team.positional_ranks || []) {
             const grade = pr.grade === "strong" ? "+" : pr.grade === "weak" ? "-" : " ";
-            const starters = (pr.starters || []).map((p) => p.name).join(", ");
+            const starters = (pr.starters || []).map((p) => p.name + " (" + p.player_key + ")").join(", ");
             lines.push("  " + grade + " " + str(pr.position).padEnd(5) + " #" + String(pr.rank).padStart(2) + "  " + starters);
           }
           if (team.recommended_trade_partners && team.recommended_trade_partners.length > 0) {

@@ -4,6 +4,7 @@ import { z } from "zod";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { apiGet, apiPost, toolError } from "../api/python-client.js";
+import { pid } from "../api/format-text.js";
 import { str, type RosterResponse, type FreeAgentsResponse, type PlayerListResponse, type SearchResponse, type ActionResponse, type WaiverClaimResponse, type WaiverClaimSwapResponse, type WhoOwnsResponse, type PercentOwnedResponse, type ChangeTeamNameResponse, type ChangeTeamLogoResponse, type PlayerStatsResponse, type WaiversResponse, type TakenPlayersResponse } from "../api/types.js";
 
 export const ROSTER_URI = "ui://baseclaw/roster.html";
@@ -54,7 +55,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
         const data = await apiGet<RosterResponse>("/api/roster");
         const text = "Current Roster:\n" + data.players.map((p) => {
           let line = "  " + str(p.position || "?").padEnd(4) + " " + str(p.name).padEnd(25) + " " + (p.eligible_positions || []).join(",")
-            + (p.status ? " [" + p.status + "]" : "");
+            + pid(p.player_id) + (p.status ? " [" + p.status + "]" : "");
           if (p.intel && p.intel.statcast && p.intel.statcast.quality_tier) {
             line += " {" + p.intel.statcast.quality_tier + "}";
           }
@@ -131,7 +132,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
         const data = await apiGet<PlayerListResponse>("/api/player-list", { pos_type, count: String(count), status });
         const label = pos_type === "B" ? "Batters" : pos_type === "P" ? "Pitchers" : pos_type;
         const text = "Player List - " + label + " (" + data.count + " players):\n" + (data.players || []).slice(0, 25).map((p) => {
-          let line = "  " + str(p.name).padEnd(25) + " " + (p.eligible_positions || []).join(",").padEnd(12) + " " + String(p.percent_owned || 0).padStart(3) + "% owned";
+          let line = "  " + str(p.name).padEnd(25) + " " + (p.eligible_positions || []).join(",").padEnd(12) + " " + String(p.percent_owned || 0).padStart(3) + "% owned" + pid(p.player_id);
           if (p.stats) {
             var statParts: string[] = [];
             for (var [k, v] of Object.entries(p.stats)) {
@@ -527,6 +528,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
         const label = position ? "Rostered " + position + " Players" : "All Rostered Players";
         const text = label + " (" + data.count + "):\n" + players.slice(0, 50).map((p) => {
           let line = "  " + str(p.name).padEnd(25) + " " + (p.eligible_positions || []).join(",").padEnd(12) + " " + String(p.percent_owned || 0).padStart(3) + "% owned";
+          line += pid(p.player_id);
           if (p.owner) line += "  -> " + p.owner;
           return line;
         }).join("\n");

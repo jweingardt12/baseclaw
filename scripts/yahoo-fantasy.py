@@ -373,12 +373,14 @@ def cmd_standings(args, as_json=False):
     if as_json:
         # Fetch teams for logo/avatar data
         team_meta = {}
+        team_key_map = {}
         try:
             teams = lg.teams()
             for tk, td in teams.items():
                 tname = td.get("name", "")
                 logo_url, mgr_image = _extract_team_meta(td)
                 team_meta[tname] = {"team_logo": logo_url, "manager_image": mgr_image}
+                team_key_map[tname] = tk
         except Exception:
             pass
         result = []
@@ -389,6 +391,7 @@ def cmd_standings(args, as_json=False):
                 {
                     "rank": i,
                     "name": name,
+                    "team_key": team_key_map.get(name, ""),
                     "wins": team.get("outcome_totals", {}).get("wins", 0),
                     "losses": team.get("outcome_totals", {}).get("losses", 0),
                     "points_for": team.get("points_for", ""),

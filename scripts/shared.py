@@ -473,3 +473,106 @@ def enrich_with_trends(players, count=None):
                     p["score"] = p.get("score", 0) - 3
     except Exception:
         pass
+
+
+# ---------------------------------------------------------------------------
+# Player news search (lightweight web search for trade context)
+# ---------------------------------------------------------------------------
+_news_cache = {}
+_NEWS_CACHE_TTL = 600  # 10 minutes
+
+
+def search_player_news(name, max_results=5):
+    """Search for recent fantasy-relevant news about a player using Google News RSS.
+    Returns a dict with headlines, sentiment keywords, and flags.
+    Results are cached for 10 minutes."""
+    import requests as req_lib
+    from bs4 import BeautifulSoup
+
+    cache_key = name.lower().strip()
+    cached = _news_cache.get(cache_key)
+    if cached and time.time() - cached.get("ts", 0) < _NEWS_CACHE_TTL:
+        return cached.get("result", {})
+
+    result = {"name": name, "headlines": [], "flags": [], "sentiment": "neutral"}
+
+    try:
+        # Google News RSS — no API key needed
+        query = name + " fantasy baseball 2026"
+        url = ("https://news.google.com/rss/search?q="
+               + urllib.request.quote(query)
+               + "&hl=en-US&gl=US&ceid=US:en")
+        resp = req_lib.get(url, timeout=8, headers={
+            "User-Agent": "Mozilla/5.0 (compatible; FantasyBot/1.0)"
+        })
+        if resp.status_code != 200:
+            _news_cache[cache_key] = {"ts": time.time(), "result": result}
+            return result
+
+        soup = BeautifulSoup(resp.text, "lxml-xml")
+        items = soup.find_all("item")[:max_results]
+
+        headlines = []
+        for item in items:
+            title = item.find("title")
+            if title:
+                headlines.append(title.get_text(strip=True))
+
+        result["headlines"] = headlines
+
+        # Scan headlines for sentiment keywords
+        all_text = " ".join(headlines).lower()
+
+        negative_keywords = [
+            "injury", "injured", "il stint", "out for", "shut down",
+            "surgery", "torn", "fracture", "strain", "sprain",
+            "demotion", "demoted", "sent down", "optioned",
+            "benched", "platoon", "lost job", "loses role",
+            "struggling", "slump", "bust", "avoid", "overrated",
+            "suspended", "suspension",
+        ]
+        positive_keywords = [
+            "breakout", "surge", "hot streak", "career year",
+            "promoted", "called up", "named closer", "closing",
+            "everyday", "locked in", "extension", "deal",
+            "ace", "dominant", "elite", "sleeper", "must-add",
+            "return", "returning", "comeback", "activated",
+            "velocity up", "stuff plus",
+        ]
+
+        neg_hits = [kw for kw in negative_keywords if kw in all_text]
+        pos_hits = [kw for kw in positive_keywords if kw in all_text]
+
+        flags = []
+        if neg_hits:
+            flags.extend(["news_negative:" + kw for kw in neg_hits[:3]])
+        if pos_hits:
+            flags.extend(["news_positive:" + kw for kw in pos_hits[:3]])
+
+        if len(neg_hits) > len(pos_hits) + 1:
+            result["sentiment"] = "negative"
+        elif len(pos_hits) > len(neg_hits) + 1:
+            result["sentiment"] = "positive"
+        else:
+            result["sentiment"] = "mixed" if (neg_hits and pos_hits) else "neutral"
+
+        result["flags"] = flags
+
+    except Exception as e:
+        result["error"] = str(e)[:80]
+
+    _news_cache[cache_key] = {"ts": time.time(), "result": result}
+    return result
+
+
+def batch_player_news(names, max_results=3):
+    """Search news for multiple players. Returns dict of name -> news result."""
+    results = {}
+    for name in names:
+        if not name:
+            continue
+        try:
+            results[name] = search_player_news(name, max_results)
+        except Exception:
+            results[name] = {"name": name, "headlines": [], "flags": [], "sentiment": "neutral"}
+    return results

@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 import { apiGet, apiPost, toolError } from "../api/python-client.js";
-import { header, actionList, issueList, waiverPairList, compactSection } from "../api/format-text.js";
+import { header, actionList, issueList, waiverPairList, compactSection, pid, tkey } from "../api/format-text.js";
 import {
   str,
   type MorningBriefingResponse,
@@ -147,7 +147,7 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
         if (partners.length > 0) {
           lines.push("TRADE TARGETS:");
           for (const p of partners) {
-            lines.push("  " + str(p.team_name) + " — complementary: " + (p.complementary_categories || []).join(", "));
+            lines.push("  " + str(p.team_name) + tkey(p.team_key) + " — complementary: " + (p.complementary_categories || []).join(", "));
           }
         }
 
@@ -292,14 +292,16 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
         // Player values
         lines.push("");
         lines.push("GIVING:");
-        for (const p of data.give_players || []) {
+        for (const [i, p] of (data.give_players || []).entries()) {
           const total = Number(p.z_scores?.Final ?? 0);
-          lines.push("  " + str(p.name).padEnd(25) + " z-total=" + total.toFixed(2));
+          const playerId = data.give_ids?.[i] || "?";
+          lines.push("  " + str(p.name).padEnd(25) + "  (id:" + playerId + ") z-total=" + total.toFixed(2));
         }
         lines.push("GETTING:");
-        for (const p of data.get_players || []) {
+        for (const [i, p] of (data.get_players || []).entries()) {
           const total = Number(p.z_scores?.Final ?? 0);
-          lines.push("  " + str(p.name).padEnd(25) + " z-total=" + total.toFixed(2));
+          const playerId = data.get_ids?.[i] || "?";
+          lines.push("  " + str(p.name).padEnd(25) + "  (id:" + playerId + ") z-total=" + total.toFixed(2));
         }
 
         // Trade eval if available
@@ -452,7 +454,7 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
 
         for (const partner of data.partners || []) {
           lines.push("");
-          lines.push("PARTNER: " + str(partner.team) + " — complementary: " + (partner.complementary_categories || []).join(", "));
+          lines.push("PARTNER: " + str(partner.team) + tkey(partner.team_key) + " — complementary: " + (partner.complementary_categories || []).join(", "));
           for (const [i, prop] of (partner.proposals || []).entries()) {
             lines.push("  " + (i + 1) + ". Give: " + prop.give.join(", ") + " (" + prop.give_value + "z)"
               + " -> Get: " + prop.get.join(", ") + " (" + prop.get_value + "z)"

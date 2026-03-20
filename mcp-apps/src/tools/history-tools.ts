@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 import { apiGet, toolError } from "../api/python-client.js";
+import { pid } from "../api/format-text.js";
 import {
   str,
   type LeagueHistoryResponse,
@@ -239,7 +240,7 @@ export function registerHistoryTools(server: McpServer) {
         const players = data.players || [];
         const lines = ["Roster for " + data.label + ":"];
         for (const p of players) {
-          let line = "  " + str(p.position).padEnd(4) + " " + str(p.name).padEnd(25) + " " + (p.eligible_positions || []).join(",");
+          let line = "  " + str(p.position).padEnd(4) + " " + str(p.name).padEnd(25) + " " + (p.eligible_positions || []).join(",") + pid(p.player_id);
           if (p.status) line += " [" + p.status + "]";
           lines.push(line);
         }

@@ -4,6 +4,7 @@ import { z } from "zod";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { apiGet, apiPost, toolError } from "../api/python-client.js";
+import { pid } from "../api/format-text.js";
 import {
   generateLineupInsight,
   generateMatchupInsight,
@@ -115,7 +116,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
         if (data.active_off_day.length > 0) {
           lines.push("PROBLEM: Active players on OFF DAY:");
           for (const p of data.active_off_day) {
-            lines.push("  " + str(p.position || "?").padEnd(4) + " " + str(p.name).padEnd(25) + " (" + str(p.team || "?") + ") - NO GAME");
+            lines.push("  " + str(p.position || "?").padEnd(4) + " " + str(p.name).padEnd(25) + " (" + str(p.team || "?") + ") - NO GAME" + pid(p.player_id));
           }
         } else {
           lines.push("All active players have games today.");
@@ -123,7 +124,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
         if (data.bench_playing.length > 0) {
           lines.push("OPPORTUNITY: Bench players WITH games today:");
           for (const p of data.bench_playing) {
-            lines.push("  BN   " + str(p.name).padEnd(25) + " (" + str(p.team || "?") + ")");
+            lines.push("  BN   " + str(p.name).padEnd(25) + " (" + str(p.team || "?") + ")" + pid(p.player_id));
           }
         }
         if (data.suggested_swaps.length > 0) {
@@ -192,7 +193,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
         if (data.injured_active.length > 0) {
           lines.push("PROBLEM: Injured players in ACTIVE lineup:");
           for (const p of data.injured_active) {
-            lines.push("  " + str(p.position).padEnd(4) + " " + str(p.name).padEnd(25) + " [" + str(p.status) + "]" + (p.injury_description ? " - " + p.injury_description : ""));
+            lines.push("  " + str(p.position).padEnd(4) + " " + str(p.name).padEnd(25) + " [" + str(p.status) + "]" + pid(p.player_id) + (p.injury_description ? " - " + p.injury_description : ""));
           }
         } else {
           lines.push("No injured players in active lineup.");
@@ -200,13 +201,13 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
         if (data.healthy_il.length > 0) {
           lines.push("INEFFICIENCY: Players on IL with no injury status:");
           for (const p of data.healthy_il) {
-            lines.push("  " + str(p.position).padEnd(4) + " " + str(p.name).padEnd(25) + " - may be activatable");
+            lines.push("  " + str(p.position).padEnd(4) + " " + str(p.name).padEnd(25) + " - may be activatable" + pid(p.player_id));
           }
         }
         if (data.injured_bench.length > 0) {
           lines.push("NOTE: Injured players on bench:");
           for (const p of data.injured_bench) {
-            lines.push("  BN   " + str(p.name).padEnd(25) + " [" + str(p.status) + "]");
+            lines.push("  BN   " + str(p.name).padEnd(25) + " [" + str(p.status) + "]" + pid(p.player_id));
           }
         }
         const ai_recommendation = generateInjuryInsight(data);
@@ -310,12 +311,12 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
         ];
         for (const p of data.give_players) {
           const tier = (p.intel && p.intel.statcast && p.intel.statcast.quality_tier) ? " {" + p.intel.statcast.quality_tier + "}" : "";
-          lines.push("  " + str(p.name).padEnd(25) + " " + (p.positions || []).join(",") + tier);
+          lines.push("  " + str(p.name).padEnd(25) + pid(p.player_id) + " " + (p.positions || []).join(",") + tier);
         }
         lines.push("GETTING:");
         for (const p of data.get_players) {
           const tier = (p.intel && p.intel.statcast && p.intel.statcast.quality_tier) ? " {" + p.intel.statcast.quality_tier + "}" : "";
-          lines.push("  " + str(p.name).padEnd(25) + " " + (p.positions || []).join(",") + tier);
+          lines.push("  " + str(p.name).padEnd(25) + pid(p.player_id) + " " + (p.positions || []).join(",") + tier);
         }
         lines.push("");
         lines.push("Give Value:    " + data.give_value.toFixed(1));
@@ -502,8 +503,8 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
         }
         const lines = ["Pending Trade Proposals:"];
         for (const t of data.trades) {
-          const traderNames = (t.trader_players || []).map((p) => p.name || "?").join(", ");
-          const tradeeNames = (t.tradee_players || []).map((p) => p.name || "?").join(", ");
+          const traderNames = (t.trader_players || []).map((p) => (p.name || "?") + pid(p.player_id)).join(", ");
+          const tradeeNames = (t.tradee_players || []).map((p) => (p.name || "?") + pid(p.player_id)).join(", ");
           lines.push("  " + (t.trader_team_name || t.trader_team_key) + " sends: " + traderNames);
           lines.push("  " + (t.tradee_team_name || t.tradee_team_key) + " sends: " + tradeeNames);
           lines.push("  Status: " + t.status + "  Key: " + t.transaction_key);
@@ -608,7 +609,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
         if (data.injuries.length > 0) {
           sections.push("INJURIES (" + data.injuries.length + "):");
           for (const p of data.injuries) {
-            sections.push("  " + str(p.name).padEnd(25) + " [" + str(p.status) + "]");
+            sections.push("  " + str(p.name).padEnd(25) + " [" + str(p.status) + "]" + pid(p.player_id));
           }
         }
         if (data.pending_trades.length > 0) {
@@ -673,6 +674,10 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
               var prop = proposals[i];
               lines.push("Proposal " + (i + 1) + " (fairness: " + str(prop.fairness_score) + "):");
               lines.push("  " + str(prop.summary || ""));
+              var offerIds = (prop.offer_details || []).map(function (pl) { return pl.name + pid(pl.player_id); }).join(", ");
+              var receiveIds = (prop.receive_details || []).map(function (pl) { return pl.name + pid(pl.player_id); }).join(", ");
+              if (offerIds) lines.push("  Give: " + offerIds);
+              if (receiveIds) lines.push("  Get: " + receiveIds);
               lines.push("  Your net Z: " + str(prop.your_z_change) + " | Their net Z: " + str(prop.their_z_change));
               if (prop.addresses_needs && prop.addresses_needs.length > 0) {
                 lines.push("  Addresses their needs: " + prop.addresses_needs.join(", "));
@@ -690,10 +695,10 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
             lines.push("No complementary trade partners found");
           } else {
             for (var p of data.partners) {
-              lines.push("Partner: " + p.team_name + " (complementary: " + p.complementary_categories.join(", ") + ")");
+              lines.push("Partner: " + p.team_name + " (" + p.team_key + ") — complementary: " + p.complementary_categories.join(", "));
               for (var pkg of p.packages || []) {
-                var give = (pkg.give || []).map(function (pl) { return pl.name; }).join(", ");
-                var get = (pkg.get || []).map(function (pl) { return pl.name; }).join(", ");
+                var give = (pkg.give || []).map(function (pl) { return pl.name + " (id:" + pl.player_id + ", z:" + (pl.z_score ?? "?") + ")"; }).join(", ");
+                var get = (pkg.get || []).map(function (pl) { return pl.name + " (id:" + pl.player_id + ", z:" + (pl.z_score ?? "?") + ")"; }).join(", ");
                 lines.push("  Give: " + give + " <-> Get: " + get);
               }
               lines.push("");
@@ -759,7 +764,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
           lines.push("Your Closers/RPs:");
           for (const p of data.my_closers) {
             const status = p.status ? " [" + p.status + "]" : "";
-            lines.push("  " + str(p.name).padEnd(25) + " " + p.percent_owned + "% owned" + status);
+            lines.push("  " + str(p.name).padEnd(25) + " " + p.percent_owned + "% owned" + status + pid(p.player_id));
           }
           lines.push("");
         }
@@ -767,7 +772,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
           lines.push("Available Closers:");
           for (const p of data.available_closers.slice(0, 10)) {
             const status = p.status ? " [" + p.status + "]" : "";
-            lines.push("  " + str(p.name).padEnd(25) + " " + p.percent_owned + "% owned" + status + "  (id:" + p.player_id + ")");
+            lines.push("  " + str(p.name).padEnd(25) + " " + p.percent_owned + "% owned" + status + pid(p.player_id));
           }
         }
         if (data.saves_leaders && data.saves_leaders.length > 0) {
@@ -843,7 +848,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
         const data = await apiGet<RosterStatsResponse>("/api/roster-stats", params);
         const lines = ["Roster Stats (" + data.period + (data.week ? " week " + data.week : "") + "):"];
         for (const p of data.players || []) {
-          lines.push("  " + str(p.position).padEnd(4) + " " + str(p.name).padEnd(25));
+          lines.push("  " + str(p.position).padEnd(4) + " " + str(p.name).padEnd(25) + pid(p.player_id));
           const stats = p.stats || {};
           const statParts: string[] = [];
           for (const [key, val] of Object.entries(stats)) {
@@ -1070,7 +1075,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
           lines.push("  " + "-".repeat(65));
           for (var p of data.your_il_players) {
             var rec = str(p.recommendation).toUpperCase();
-            lines.push("  " + str(p.name).padEnd(25) + str(p.position).padEnd(6) + str(p.z_score).padStart(6) + "  " + str(p.tier).padEnd(12) + "  " + rec);
+            lines.push("  " + str(p.name).padEnd(25) + pid(p.player_id) + str(p.position).padEnd(6) + str(p.z_score).padStart(6) + "  " + str(p.tier).padEnd(12) + "  " + rec);
             lines.push("      " + str(p.reasoning));
           }
         } else {
@@ -1083,7 +1088,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
           lines.push("  " + "-".repeat(65));
           for (var fa of data.fa_il_stash_candidates) {
             var faRec = str(fa.recommendation).toUpperCase();
-            lines.push("  " + str(fa.name).padEnd(25) + str(fa.position).padEnd(6) + str(fa.z_score).padStart(6) + "  " + str(fa.tier).padEnd(12) + "  " + faRec);
+            lines.push("  " + str(fa.name).padEnd(25) + pid(fa.player_id) + str(fa.position).padEnd(6) + str(fa.z_score).padStart(6) + "  " + str(fa.tier).padEnd(12) + "  " + faRec);
             lines.push("      " + str(fa.reasoning));
           }
         }
@@ -1130,7 +1135,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
           for (var move of data.moves) {
             var d = move.drop;
             var a = move.add;
-            lines.push("  " + str(move.rank).padStart(3) + "  " + str(d.name).padEnd(22) + str(d.z_score).padStart(6) + "  ->  " + str(a.name).padEnd(22) + str(a.z_score).padStart(6) + "  +" + str(move.z_improvement).padStart(5));
+            lines.push("  " + str(move.rank).padStart(3) + "  " + str(d.name).padEnd(22) + pid(d.player_id) + str(d.z_score).padStart(6) + "  ->  " + str(a.name).padEnd(22) + pid(a.player_id) + str(a.z_score).padStart(6) + "  +" + str(move.z_improvement).padStart(5));
             var details: string[] = [];
             if (move.categories_gained.length > 0) details.push("Gains: " + move.categories_gained.join(", "));
             if (move.categories_lost.length > 0) details.push("Loses: " + move.categories_lost.join(", "));

@@ -51,8 +51,26 @@ def write_method():
 
 
 def _league_url(path=""):
-    """Build a league-specific URL"""
+    """Build a league-specific URL. Tries /b2/ (in-season) first, falls back to /b1/ (pre-season)."""
     return BASE_URL + "/b2/" + LEAGUE_NUM + path
+
+
+def _league_url_b1(path=""):
+    """Build a pre-season league URL using /b1/"""
+    return BASE_URL + "/b1/" + LEAGUE_NUM + path
+
+
+def _navigate_league(page, path=""):
+    """Navigate to a league page, trying /b1/ first (pre-season) then /b2/ (in-season)."""
+    url = _league_url_b1(path)
+    page.goto(url, wait_until="domcontentloaded", timeout=20000)
+    page.wait_for_timeout(2000)
+    # If /b1/ redirected away, try /b2/ (in-season)
+    if LEAGUE_NUM not in page.url:
+        url = _league_url(path)
+        page.goto(url, wait_until="domcontentloaded", timeout=20000)
+        page.wait_for_timeout(2000)
+    _check_for_login_redirect(page)
 
 
 def is_session_valid():
@@ -304,19 +322,243 @@ def set_lineup(moves):
         _cleanup(pw, browser, context)
 
 
-def propose_trade(tradee_team_key, your_player_ids, their_player_ids, trade_note=""):
+def _get_session_cookies():
+    """Load cookies from Playwright session file into a requests-compatible dict."""
+    import requests as req_lib
+    with open(SESSION_FILE, "r") as f:
+        data = json.load(f)
+    jar = req_lib.cookies.RequestsCookieJar()
+    for c in data.get("cookies", []):
+        jar.set(c["name"], c["value"], domain=c.get("domain", ""), path=c.get("path", "/"))
+    return jar
+
+
+def _extract_crumb(html, field="crumb"):
+    """Extract a Yahoo CSRF crumb from page HTML by field name."""
+    import re
+    m = re.search(r'name=["\']' + field + r'["\'][^>]*value=["\']([^"\']+)["\']', html)
+    if m:
+        return m.group(1)
+    m = re.search(r'value=["\']([^"\']+)["\'][^>]*name=["\']' + field + r'["\']', html)
+    if m:
+        return m.group(1)
+    return ""
+
+
+def propose_trade_http(tradee_team_key, your_player_ids, their_player_ids, trade_note=""):
+    """Propose a trade via direct HTTP requests using saved Yahoo session cookies.
+    Much faster and more reliable than browser automation."""
+    import requests as req_lib
+
+    tradee_num = tradee_team_key.split(".")[-1] if "." in tradee_team_key else tradee_team_key
+    cookies = _get_session_cookies()
+
+    # Headers that Yahoo expects
+    headers = {
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Origin": BASE_URL,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+
+    base_trade_url = BASE_URL + "/b1/" + LEAGUE_NUM + "/" + TEAM_NUM + "/proposetrade"
+
+    # Step 1: POST stage=3 (skip player selection page, go straight to review)
+    stage1_url = base_trade_url + "?stage=1&mid2=" + tradee_num
+    form_data = [
+        ("stage", "3"),
+        ("mid2", tradee_num),
+        ("trid", ""),
+        ("onote", ""),
+        ("note", trade_note),
+        ("evaluate", ""),
+        ("jsubmit", "continue"),
+    ]
+    for pid in your_player_ids:
+        form_data.append(("tpids[]", str(pid)))
+    for pid in their_player_ids:
+        form_data.append(("tpids2[]", str(pid)))
+
+    headers["Referer"] = stage1_url
+    resp2 = req_lib.post(base_trade_url, data=form_data, cookies=cookies, headers=headers, timeout=15, allow_redirects=True)
+
+    if "login.yahoo.com" in resp2.url:
+        return {"success": False, "method": "http", "message": "Session expired — redirected to login. Run './yf browser-login' to refresh."}
+
+    # Extract crumb from the review page (stage=5 form)
+    crumb = _extract_crumb(resp2.text)
+    if not crumb:
+        return {"success": False, "method": "http", "message": "Could not extract crumb from review page"}
+
+    # Step 2: POST stage=5 (Confirm trade proposal)
+    confirm_data = [
+        ("stage", "5"),
+        ("mid2", tradee_num),
+        ("trid", ""),
+        ("onote", ""),
+        ("note", trade_note),
+        ("crumb", crumb),
+        ("fr", "sports"),
+        ("fr2", "p:sprt,m:sb"),
+        ("jsubmit", ""),
+    ]
+    for pid in your_player_ids:
+        confirm_data.append(("tpids[]", str(pid)))
+    for pid in their_player_ids:
+        confirm_data.append(("tpids2[]", str(pid)))
+
+    headers["Referer"] = base_trade_url
+    resp3 = req_lib.post(base_trade_url, data=confirm_data, cookies=cookies, headers=headers, timeout=15, allow_redirects=True)
+
+    # Check if we landed on the team page (success) or stayed on trade page (error)
+    final_text = resp3.text.lower()
+    if "proposed" in final_text or resp3.url.endswith("/" + TEAM_NUM) or "stage" not in resp3.url:
+        return {
+            "success": True,
+            "method": "http",
+            "tradee_team_key": tradee_team_key,
+            "message": "Trade proposed to " + tradee_team_key + " via HTTP",
+        }
+
+    return {
+        "success": False,
+        "method": "http",
+        "message": "Trade submission may have failed — final URL: " + resp3.url,
+    }
+
+
+def _click_trade_players(page, player_ids, cb_field, name_to_cb):
+    """Click checkboxes for trade players, using name-based fallback when API IDs don't match web IDs."""
+    results = []
+    for pid in player_ids:
+        pid_str = str(pid)
+        # Try direct checkbox value match first
+        sel = "#checkbox-" + pid_str + ", input[name='" + cb_field + "'][value='" + pid_str + "']"
+        clicked = _click_if_visible(page, sel)
+        method = "id"
+
+        # If direct match fails, try name-based matching via img URL
+        # Yahoo img URLs contain the player ID: /players_l/YYYYMMDD/{web_id}.png
+        # We can also match by finding which checkbox row has an img URL containing the API player ID
+        if not clicked:
+            try:
+                # Search for a row with an img src containing this player ID
+                row_sel = "tr:has(img[src*='/" + pid_str + ".png'])"
+                row = page.locator(row_sel).first
+                if row.is_visible():
+                    cb = row.locator("input[name='" + cb_field + "']").first
+                    if cb.is_visible():
+                        cb.click()
+                        clicked = True
+                        method = "img_url"
+            except Exception:
+                pass
+
+        results.append({"player_id": pid_str, "clicked": clicked, "method": method})
+    return results
+
+
+def propose_trade(tradee_team_key, your_player_ids, their_player_ids, trade_note="", debug=False):
     """Propose a trade via Yahoo Fantasy web UI"""
     pw, browser, context = _get_browser_context()
     try:
         page = context.new_page()
-        page.goto(_league_url("/proposetrade?tgt_team_key=" + tradee_team_key), wait_until="networkidle")
-        _check_for_login_redirect(page)
+        # Extract opponent team number from team key (e.g. "469.l.16960.t.3" -> "3")
+        tradee_num = tradee_team_key.split(".")[-1] if "." in tradee_team_key else tradee_team_key
 
-        # Select players to trade
-        for pid in your_player_ids:
-            _click_if_visible(page, "input[value*='" + str(pid) + "'][type='checkbox'], input[name*='trader'][value*='" + str(pid) + "']")
-        for pid in their_player_ids:
-            _click_if_visible(page, "input[value*='" + str(pid) + "'][type='checkbox'], input[name*='tradee'][value*='" + str(pid) + "']")
+        # Navigate directly to stage=1 (player selection) with the target team
+        _navigate_league(page, "/" + TEAM_NUM + "/proposetrade?stage=1&mid2=" + tradee_num)
+
+        debug_info = {}
+        if debug:
+            page.screenshot(path="/tmp/trade_debug_1_loaded.png", full_page=True)
+            debug_info["url_after_load"] = page.url
+            debug_info["page_title"] = page.title()
+
+        if debug:
+            page.screenshot(path="/tmp/trade_debug_1b_create.png", full_page=True)
+            debug_info["url_after_create"] = page.url
+            # Capture all checkboxes and inputs on the page
+            checkboxes = page.locator("input[type='checkbox']").all()
+            debug_info["checkbox_count"] = len(checkboxes)
+            cb_details = []
+            for cb in checkboxes[:50]:
+                try:
+                    cb_details.append({
+                        "name": cb.get_attribute("name") or "",
+                        "value": cb.get_attribute("value") or "",
+                        "id": cb.get_attribute("id") or "",
+                        "visible": cb.is_visible(),
+                    })
+                except Exception:
+                    pass
+            debug_info["checkboxes"] = cb_details
+            # Dump HTML around a few checkboxes to understand the structure
+            cb_html_samples = []
+            for cb in checkboxes[:3]:
+                try:
+                    parent_html = cb.evaluate("el => el.closest('tr')?.outerHTML?.substring(0, 1200) || ''")
+                    cb_html_samples.append(parent_html)
+                except Exception:
+                    pass
+            debug_info["cb_html_samples"] = cb_html_samples
+            # Also search for "Cease" in page HTML
+            cease_in_html = page.evaluate("() => document.body.innerHTML.includes('Cease')")
+            debug_info["cease_in_html"] = cease_in_html
+            # Get the form action
+            forms = page.locator("form").all()
+            form_actions = []
+            for f in forms[:3]:
+                try:
+                    form_actions.append(f.get_attribute("action") or "")
+                except Exception:
+                    pass
+            debug_info["form_actions"] = form_actions
+
+        # Build a name->checkbox_value map from the page so we can match by name
+        # Yahoo web UI uses different player IDs than the Fantasy API
+        name_to_cb = page.evaluate("""() => {
+            const map = {};
+            document.querySelectorAll('input[type=checkbox][name^=tpids]').forEach(cb => {
+                const tr = cb.closest('tr');
+                if (!tr) return;
+                // Player name is in the alt attribute of the player headshot img
+                const img = tr.querySelector('td.player img[alt]');
+                const name = img ? img.alt.trim() : '';
+                if (name && cb.value) {
+                    map[name.toLowerCase()] = {value: cb.value, name: cb.name};
+                }
+            });
+            return map;
+        }""")
+
+        if debug:
+            debug_info["name_to_cb"] = name_to_cb
+
+        # Select players by clicking their checkboxes
+        # Yahoo web uses different player IDs than the Fantasy API, so match by name
+        your_clicked = _click_trade_players(page, your_player_ids, "tpids[]", name_to_cb)
+        their_clicked = _click_trade_players(page, their_player_ids, "tpids2[]", name_to_cb)
+
+        if debug:
+            debug_info["your_clicked"] = your_clicked
+            debug_info["their_clicked"] = their_clicked
+            page.screenshot(path="/tmp/trade_debug_2_selected.png", full_page=True)
+            # Capture all buttons and submit elements
+            buttons = page.evaluate("""() => {
+                const result = [];
+                document.querySelectorAll('button, input[type=submit], a.Btn-primary, [class*=Btn]').forEach(el => {
+                    result.push({
+                        tag: el.tagName,
+                        type: el.type || '',
+                        text: el.textContent?.trim()?.substring(0, 60) || '',
+                        class: el.className?.substring(0, 80) || '',
+                        id: el.id || '',
+                        visible: el.offsetParent !== null,
+                    });
+                });
+                return result;
+            }""")
+            debug_info["buttons"] = buttons
 
         # Add trade note
         if trade_note:
@@ -324,28 +566,103 @@ def propose_trade(tradee_team_key, your_player_ids, their_player_ids, trade_note
             if note_input.is_visible():
                 note_input.fill(trade_note)
 
-        # Submit and confirm
-        if _click_if_visible(page, "button[type='submit'], input[type='submit'], .Btn-primary"):
-            _wait_and_check(page)
-        if _click_if_visible(page, _CONFIRM_SELECTOR):
-            _wait_and_check(page)
+        # Capture network requests to understand the form submission
+        captured_requests = []
+        if debug:
+            def on_request(req):
+                if "proposetrade" in req.url and req.method == "POST":
+                    captured_requests.append({
+                        "url": req.url,
+                        "method": req.method,
+                        "post_data": req.post_data,
+                        "headers": {k: v for k, v in req.headers.items() if k.lower() in ("content-type", "cookie", "referer", "origin")},
+                    })
+            page.on("request", on_request)
+
+        # Step 1: Click "Continue" to go from player selection to review
+        continue_btn = page.locator("a.Btn-primary:has-text('Continue'), a:has-text('Continue')").first
+        submit_clicked = False
+        if continue_btn.is_visible():
+            continue_btn.click()
+            page.wait_for_load_state("networkidle", timeout=15000)
+            _check_for_login_redirect(page)
+            submit_clicked = True
+
+        if debug:
+            debug_info["submit_clicked"] = submit_clicked
+            page.screenshot(path="/tmp/trade_debug_3_submitted.png", full_page=True)
+            debug_info["url_after_submit"] = page.url
+
+        # Step 2: On review page, add trade note and click final submit
+        if trade_note:
+            note_input = page.locator("textarea[name*='note'], textarea[name*='message'], input[name*='note']").first
+            if note_input.is_visible():
+                note_input.fill(trade_note)
+
+        # Capture the crumb/csrf token from the page if present
+        if debug:
+            crumb = page.evaluate("() => document.querySelector('input[name=crumb]')?.value || ''")
+            debug_info["crumb"] = crumb
+            # Also capture all hidden inputs
+            hidden_inputs = page.evaluate("""() => {
+                const inputs = {};
+                document.querySelectorAll('form input[type=hidden]').forEach(el => {
+                    inputs[el.name] = el.value;
+                });
+                return inputs;
+            }""")
+            debug_info["hidden_inputs"] = hidden_inputs
+
+        # Click "Send Trade Proposal" or similar final confirm button
+        confirm_clicked = False
+        final_btn = page.locator("a.Btn-primary, button.Btn-primary, input[type='submit']").first
+        if final_btn.is_visible():
+            final_btn.click()
+            page.wait_for_load_state("networkidle", timeout=15000)
+            _check_for_login_redirect(page)
+            confirm_clicked = True
+
+        if debug:
+            debug_info["confirm_clicked"] = confirm_clicked
+            debug_info["captured_requests"] = captured_requests
+            page.screenshot(path="/tmp/trade_debug_4_confirmed.png", full_page=True)
+            debug_info["url_after_confirm"] = page.url
 
         page_text = page.inner_text("body").lower()
-        if "proposed" in page_text or "success" in page_text or "trade" in page_text:
-            return {
+
+        if debug:
+            # Save a snippet of the page text for debugging
+            debug_info["page_text_snippet"] = page_text[:500]
+
+        # Check for actual trade confirmation — "proposed" is the real signal
+        if "proposed" in page_text or "your trade proposal has been" in page_text:
+            result = {
                 "success": True,
                 "method": "browser",
                 "tradee_team_key": tradee_team_key,
                 "message": "Trade proposed to " + tradee_team_key + " via browser",
             }
+            if debug:
+                result["debug"] = debug_info
+            return result
 
         error_text = _get_page_error(page)
         if error_text:
-            return {"success": False, "method": "browser", "message": "Browser error: " + error_text}
+            result = {"success": False, "method": "browser", "message": "Browser error: " + error_text}
+            if debug:
+                result["debug"] = debug_info
+            return result
 
-        return {"success": True, "method": "browser", "message": "Trade proposal submitted via browser"}
+        # If we got here, we're not sure it worked — report as uncertain
+        result = {"success": False, "method": "browser", "message": "Trade submission uncertain — no confirmation found on page"}
+        if debug:
+            result["debug"] = debug_info
+        return result
     except Exception as e:
-        return {"success": False, "method": "browser", "message": "Browser propose trade failed: " + str(e)}
+        result = {"success": False, "method": "browser", "message": "Browser propose trade failed: " + str(e)}
+        if debug:
+            result["debug"] = debug_info if "debug_info" in dir() else {}
+        return result
     finally:
         _cleanup(pw, browser, context)
 

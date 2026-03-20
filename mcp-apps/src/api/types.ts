@@ -93,6 +93,7 @@ export interface ActionResponse {
 export interface StandingsEntry {
   rank: number;
   name: string;
+  team_key?: string;
   wins: number;
   losses: number;
   ties?: number;
@@ -300,6 +301,7 @@ export interface CategoryCheckResponse {
 // Python _player_info + optional injury_description
 export interface InjuredPlayer {
   name: string;
+  player_id?: string;
   position: string;
   team?: string;
   eligible_positions?: string[];
@@ -1012,6 +1014,7 @@ export interface TradeActionResponse {
 // What's New Digest response
 export interface WhatsNewInjury {
   name: string;
+  player_id?: string;
   status: string;
   position: string;
   section: string;
@@ -1532,6 +1535,7 @@ export interface TakenPlayersResponse {
 // IL Stash Advisor response
 export interface ILStashPlayer {
   name: string;
+  player_id?: string;
   position: string;
   status: string;
   z_score: number;
@@ -1545,6 +1549,7 @@ export interface ILStashPlayer {
 
 export interface ILStashFACandidate {
   name: string;
+  player_id?: string;
   position: string;
   status: string;
   z_score: number;

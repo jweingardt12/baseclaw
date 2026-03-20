@@ -4,6 +4,16 @@
 import { str } from "./types.js";
 import type { ActionItem, RosterIssue, WaiverPair } from "./types.js";
 
+/** Append player ID suffix for agent-readable output */
+export function pid(id: string | undefined | null): string {
+  return id ? "  (id:" + id + ")" : "";
+}
+
+/** Append team key suffix for agent-readable output */
+export function tkey(key: string | undefined | null): string {
+  return key ? " (" + key + ")" : "";
+}
+
 /** Format a workflow header tag with summary stats */
 export function header(tag: string, summary: string): string {
   return "[" + tag + "] " + summary;
@@ -26,7 +36,7 @@ export function issueList(issues: RosterIssue[]): string {
   const lines: string[] = [];
   for (const issue of issues) {
     const tag = issue.severity === "critical" ? "!!!" : issue.severity === "warning" ? " ! " : "   ";
-    lines.push(tag + " " + issue.message + " -> " + issue.fix);
+    lines.push(tag + " " + issue.message + pid(issue.player_id) + " -> " + issue.fix);
   }
   return lines.join("\n");
 }
