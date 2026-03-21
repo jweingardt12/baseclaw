@@ -222,7 +222,7 @@ export function TodayPage() {
       {/* Enrichment Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Week Planner */}
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 space-y-2 transition-shadow duration-150 hover:shadow-md hover:shadow-zinc-950/5 dark:hover:shadow-white/5">
+        <div className="rounded-lg border border-zinc-950/5 dark:border-white/10 p-4 space-y-2 transition-shadow duration-150 hover:shadow-md hover:shadow-zinc-950/5 dark:hover:shadow-white/5">
           <Subheading>Week Planner</Subheading>
           {weekPlanner.isLoading ? (
             <LoadingSkeleton lines={3} />
@@ -249,7 +249,7 @@ export function TodayPage() {
         </div>
 
         {/* News Headlines */}
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 space-y-2 transition-shadow duration-150 hover:shadow-md hover:shadow-zinc-950/5 dark:hover:shadow-white/5">
+        <div className="rounded-lg border border-zinc-950/5 dark:border-white/10 p-4 space-y-2 transition-shadow duration-150 hover:shadow-md hover:shadow-zinc-950/5 dark:hover:shadow-white/5">
           <Subheading>News</Subheading>
           {news.isLoading ? (
             <LoadingSkeleton lines={3} />
@@ -270,7 +270,7 @@ export function TodayPage() {
         </div>
 
         {/* Injury Report */}
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 space-y-2 transition-shadow duration-150 hover:shadow-md hover:shadow-zinc-950/5 dark:hover:shadow-white/5">
+        <div className="rounded-lg border border-zinc-950/5 dark:border-white/10 p-4 space-y-2 transition-shadow duration-150 hover:shadow-md hover:shadow-zinc-950/5 dark:hover:shadow-white/5">
           <Subheading>Injury Report</Subheading>
           {injuryReport.isLoading ? (
             <LoadingSkeleton lines={3} />
@@ -301,7 +301,7 @@ export function TodayPage() {
       {/* Two-column: Matchup + Scoreboard */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Matchup Snapshot */}
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 space-y-4">
+        <div className="rounded-lg border border-zinc-950/5 dark:border-white/10 p-4 space-y-4">
           <Subheading>Week {matchup.data?.week || leagueCtx.data?.current_week || 1} Matchup</Subheading>
           {matchup.isLoading ? (
             <LoadingSkeleton lines={4} />
@@ -369,7 +369,7 @@ export function TodayPage() {
         </div>
 
         {/* League Scoreboard */}
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 space-y-3">
+        <div className="rounded-lg border border-zinc-950/5 dark:border-white/10 p-4 space-y-3">
           <Subheading>League Scoreboard</Subheading>
           {scoreboard.data?.matchups && scoreboard.data.matchups.length > 0 ? (
             <div className="space-y-2">

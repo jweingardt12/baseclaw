@@ -165,7 +165,7 @@ export function RosterStrength() {
   }
 
   return (
-    <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 space-y-4">
+    <div className="rounded-lg border border-zinc-950/5 dark:border-white/10 p-4 space-y-4">
       <div className="flex items-center justify-between">
         <Subheading>Roster Strength</Subheading>
         <Badge color="zinc" className="text-[10px]">Based on {bulkStats.data?.season || "2025"} stats</Badge>

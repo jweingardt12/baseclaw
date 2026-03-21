@@ -156,11 +156,13 @@ export function AppShell() {
           </Sidebar>
         }
       >
-        <Outlet />
+        <div className="pb-20 lg:pb-0">
+          <Outlet />
+        </div>
       </SidebarLayout>
 
       {/* Mobile bottom tab bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 flex lg:hidden h-16 border-t border-zinc-950/5 dark:border-white/10 bg-white/95 dark:bg-zinc-900/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-zinc-900/60">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 flex lg:hidden h-[4.5rem] border-t border-zinc-950/5 dark:border-white/10 bg-white/95 dark:bg-zinc-900/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-zinc-900/60 pb-[env(safe-area-inset-bottom)]">
         {mobileNavItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
