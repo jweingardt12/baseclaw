@@ -35,7 +35,7 @@ function getAskPrompt(name: string, context?: string): string {
 
 export function PlayerName({ name, playerId, mlbId, app, navigate, context, showHeadshot }: PlayerNameProps) {
   var headshot = mlbId && showHeadshot !== false
-    ? <Avatar src={mlbHeadshotUrl(mlbId)} className="size-7" />
+    ? <Avatar imageUrl={mlbHeadshotUrl(mlbId)} size={28} />
     : null;
 
   if (!app) {

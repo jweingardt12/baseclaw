@@ -22,7 +22,7 @@ export function PlayerCard({ name, position, positions, status, team, mlbId, per
   if (compact) {
     return (
       <div className="flex items-center gap-2">
-        {mlbId && <Avatar src={mlbHeadshotUrl(mlbId)} className="size-8" />}
+        {mlbId && <Avatar imageUrl={mlbHeadshotUrl(mlbId)} size={32} />}
         <span className="font-medium">{name}</span>
         {posArray.map((p) => <Badge key={p} color="secondary" className="text-xs">{p}</Badge>)}
         {status && status !== "Healthy" && <Badge color="danger" className="text-xs">{status}</Badge>}
@@ -32,7 +32,7 @@ export function PlayerCard({ name, position, positions, status, team, mlbId, per
 
   return (
     <div className="flex items-center gap-3 py-1.5">
-      {mlbId && <Avatar src={mlbHeadshotUrl(mlbId)} className="size-10" />}
+      {mlbId && <Avatar imageUrl={mlbHeadshotUrl(mlbId)} size={40} />}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="font-medium truncate">{name}</span>
