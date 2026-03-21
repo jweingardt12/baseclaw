@@ -23,7 +23,7 @@
   --color-card-foreground: var(--color-text-primary, light-dark(#0f172a, #f1f5f9));
   --color-popover: var(--color-background-primary, light-dark(#f8fafc, #1e293b));
   --color-popover-foreground: var(--color-text-primary, light-dark(#0f172a, #f1f5f9));
-  --color-primary: light-dark(#2563eb, #3b82f6);
+  --color-primary: light-dark(#059669, #34d399);
   --color-primary-foreground: light-dark(#ffffff, #0f172a);
   --color-secondary: var(--color-background-secondary, light-dark(#f1f5f9, #1e293b));
   --color-secondary-foreground: var(--color-text-primary, light-dark(#0f172a, #f1f5f9));
@@ -33,7 +33,7 @@
   --color-accent-foreground: var(--color-text-primary, light-dark(#0f172a, #f1f5f9));
   --color-border: var(--color-border-primary, light-dark(#e2e8f0, #334155));
   --color-input: var(--color-border-primary, light-dark(#e2e8f0, #334155));
-  --color-ring: var(--color-ring-primary, light-dark(#2563eb, #3b82f6));
+  --color-ring: var(--color-ring-primary, light-dark(#059669, #34d399));
   --color-surface-1: var(--color-background-primary, light-dark(#ffffff, #0f172a));
   --color-surface-2: var(--color-background-secondary, light-dark(#f8fafc, #1e293b));
   --color-surface-3: var(--color-background-secondary, light-dark(#f1f5f9, #334155));
@@ -81,6 +81,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   font-size: var(--app-text-base);
   line-height: 1.45;
+  font-variant-numeric: tabular-nums;
 }
 
 button, a, [role="button"] {
@@ -133,6 +134,10 @@ button, a, [role="button"] {
   background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
+  transition: box-shadow 150ms ease, border-color 150ms ease;
+}
+.surface-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .mcp-app-content {
