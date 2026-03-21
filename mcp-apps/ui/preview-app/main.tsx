@@ -178,9 +178,11 @@ function PreviewApp() {
     const html = document.documentElement;
     if (darkMode) {
       html.classList.add("dark");
+      html.setAttribute("data-theme", "dark");
       html.style.colorScheme = "dark";
     } else {
       html.classList.remove("dark");
+      html.setAttribute("data-theme", "light");
       html.style.colorScheme = "light";
     }
     try {
