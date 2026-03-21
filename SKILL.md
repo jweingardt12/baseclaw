@@ -1,18 +1,6 @@
 ---
 name: baseclaw
-version: 1.0.0
 description: Autonomous fantasy baseball GM — 113 MCP tools, rich inline UIs, workflow automation, and agent scheduling for Yahoo Fantasy Baseball
-requires:
-  bins:
-    - docker
-  env:
-    - YAHOO_CONSUMER_KEY
-    - YAHOO_CONSUMER_SECRET
-    - LEAGUE_ID
-    - TEAM_ID
-primaryEnv: YAHOO_CONSUMER_KEY
-emoji: "⚾"
-homepage: https://github.com/jweingardt12/baseclaw
 ---
 
 # BaseClaw

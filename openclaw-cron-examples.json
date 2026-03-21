@@ -2,6 +2,7 @@
   {
     "name": "Daily morning briefing + auto lineup",
     "schedule": { "kind": "cron", "expr": "0 9 * * *", "tz": "America/New_York" },
+    "agentId": "main",
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",
@@ -13,6 +14,7 @@
   {
     "name": "Daily pre-lock lineup check",
     "schedule": { "kind": "cron", "expr": "30 10 * * *", "tz": "America/New_York" },
+    "agentId": "main",
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",
@@ -24,6 +26,7 @@
   {
     "name": "Monday matchup plan",
     "schedule": { "kind": "cron", "expr": "0 8 * * 1", "tz": "America/New_York" },
+    "agentId": "main",
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",
@@ -35,6 +38,7 @@
   {
     "name": "Tuesday waiver deadline prep",
     "schedule": { "kind": "cron", "expr": "0 20 * * 2", "tz": "America/New_York" },
+    "agentId": "main",
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",
@@ -46,6 +50,7 @@
   {
     "name": "Thursday streaming check",
     "schedule": { "kind": "cron", "expr": "0 9 * * 4", "tz": "America/New_York" },
+    "agentId": "main",
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",
@@ -57,6 +62,7 @@
   {
     "name": "Saturday roster audit",
     "schedule": { "kind": "cron", "expr": "0 9 * * 6", "tz": "America/New_York" },
+    "agentId": "main",
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",
@@ -68,6 +74,7 @@
   {
     "name": "Sunday weekly digest",
     "schedule": { "kind": "cron", "expr": "0 21 * * 0", "tz": "America/New_York" },
+    "agentId": "main",
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",
@@ -79,6 +86,7 @@
   {
     "name": "Monthly season checkpoint",
     "schedule": { "kind": "cron", "expr": "0 10 1 * *", "tz": "America/New_York" },
+    "agentId": "main",
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",

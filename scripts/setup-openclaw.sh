@@ -20,6 +20,7 @@ OC_HOME="$HOME/.openclaw"
 MCPORTER_CFG="$OC_HOME/workspace/config/mcporter.json"
 SKILL_DIR="$OC_HOME/workspace/skills/baseclaw"
 GATEWAY="http://localhost:18789"
+# NOTE: Cron API path is /api/cron/jobs — verify against your gateway version
 ENV_FILE="$INSTALL_DIR/.env"
 
 # Colors
@@ -173,6 +174,7 @@ except Exception:
       fi
       SYS_TZ="${SYS_TZ:-America/New_York}"
 
+      echo "  (MLB games use Eastern time — most users should keep America/New_York)"
       read -rp "Timezone for cron jobs? [$SYS_TZ] " USER_TZ
       USER_TZ="${USER_TZ:-$SYS_TZ}"
 
