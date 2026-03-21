@@ -258,45 +258,32 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_waiver_claim",
     {
-      description: "Submit a waiver claim with optional FAAB bid. Use for players on waivers (not free agents).",
-      inputSchema: { player_id: z.string().describe("Yahoo player ID to claim"), faab: z.number().describe("FAAB bid amount in dollars").optional() },
+      description: "Submit a waiver claim with optional FAAB bid and optional drop. Use for players on waivers (not free agents).",
+      inputSchema: { player_id: z.string().describe("Yahoo player ID to claim"), drop_id: z.string().describe("Yahoo player ID to drop (optional, for claim+drop)").optional(), faab: z.number().describe("FAAB bid amount in dollars").optional() },
       annotations: { readOnlyHint: false, destructiveHint: false },
       _meta: { ui: { resourceUri: ROSTER_URI } },
     },
-    async ({ player_id, faab }) => {
+    async ({ player_id, drop_id, faab }) => {
       try {
-        const body: Record<string, string> = { player_id };
-        if (faab !== undefined) body.faab = String(faab);
-        const data = await apiPost<WaiverClaimResponse>("/api/waiver-claim", body);
-        var ai_recommendation: string | null = data.message ? "Waiver claim submitted. Results process at the next waiver period." : null;
-        return {
-          content: [{ type: "text" as const, text: data.message || "Waiver claim result: " + JSON.stringify(data) }],
-          structuredContent: { type: "waiver-claim", ai_recommendation, ...data },
-        };
-      } catch (e) { return toolError(e); }
-    },
-  );
-
-  // yahoo_waiver_claim_swap
-  registerAppTool(
-    server,
-    "yahoo_waiver_claim_swap",
-    {
-      description: "Submit a waiver claim + drop with optional FAAB bid",
-      inputSchema: { add_id: z.string().describe("Yahoo player ID to claim"), drop_id: z.string().describe("Yahoo player ID to drop"), faab: z.number().describe("FAAB bid amount in dollars").optional() },
-      annotations: { readOnlyHint: false, destructiveHint: true },
-      _meta: { ui: { resourceUri: ROSTER_URI } },
-    },
-    async ({ add_id, drop_id, faab }) => {
-      try {
-        const body: Record<string, string> = { add_id, drop_id };
-        if (faab !== undefined) body.faab = String(faab);
-        const data = await apiPost<WaiverClaimSwapResponse>("/api/waiver-claim-swap", body);
-        var ai_recommendation: string | null = data.message ? "Waiver claim with drop submitted. Results process at the next waiver period." : null;
-        return {
-          content: [{ type: "text" as const, text: data.message || "Waiver claim+drop result: " + JSON.stringify(data) }],
-          structuredContent: { type: "waiver-claim-swap", ai_recommendation, ...data },
-        };
+        if (drop_id) {
+          const body: Record<string, string> = { add_id: player_id, drop_id };
+          if (faab !== undefined) body.faab = String(faab);
+          const data = await apiPost<WaiverClaimSwapResponse>("/api/waiver-claim-swap", body);
+          var ai_recommendation: string | null = data.message ? "Waiver claim with drop submitted. Results process at the next waiver period." : null;
+          return {
+            content: [{ type: "text" as const, text: data.message || "Waiver claim+drop result: " + JSON.stringify(data) }],
+            structuredContent: { type: "waiver-claim-swap", ai_recommendation, ...data },
+          };
+        } else {
+          const body: Record<string, string> = { player_id };
+          if (faab !== undefined) body.faab = String(faab);
+          const data = await apiPost<WaiverClaimResponse>("/api/waiver-claim", body);
+          var ai_recommendation2: string | null = data.message ? "Waiver claim submitted. Results process at the next waiver period." : null;
+          return {
+            content: [{ type: "text" as const, text: data.message || "Waiver claim result: " + JSON.stringify(data) }],
+            structuredContent: { type: "waiver-claim", ai_recommendation: ai_recommendation2, ...data },
+          };
+        }
       } catch (e) { return toolError(e); }
     },
   );

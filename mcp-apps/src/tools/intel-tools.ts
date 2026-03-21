@@ -4,19 +4,16 @@ import { z } from "zod";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { apiGet, toolError } from "../api/python-client.js";
-import { generatePlayerReportInsight, generateBreakoutInsight } from "../insights.js";
+import { generatePlayerReportInsight } from "../insights.js";
 import {
   str,
   type IntelPlayerReportResponse,
-  type BreakoutsResponse,
-  type BustsResponse,
   type RedditBuzzResponse,
   type TrendingResponse,
   type ProspectWatchResponse,
   type IntelTransactionsResponse,
   type StatcastCompareResponse,
   type AggregatedNewsFeedResponse,
-  type NewsSourcesResponse,
 } from "../api/types.js";
 
 export const INTEL_URI = "ui://baseclaw/intel.html";
@@ -117,63 +114,6 @@ export function registerIntelTools(server: McpServer, distDir: string) {
   );
 
   // fantasy_breakout_candidates
-  registerAppTool(
-    server,
-    "fantasy_breakout_candidates",
-    {
-      description: "Find breakout candidates: players whose expected stats (xwOBA) exceed actual performance, suggesting positive regression",
-      inputSchema: { pos_type: z.string().describe("B for batters, P for pitchers").default("B"), count: z.number().describe("Number of candidates to return").default(15) },
-      annotations: { readOnlyHint: true },
-      _meta: {},
-    },
-    async ({ pos_type, count }) => {
-      try {
-        const data = await apiGet<BreakoutsResponse>("/api/intel/breakouts", { pos_type, count: String(count) });
-        const label = pos_type === "B" ? "Hitter" : "Pitcher";
-        const lines = ["Breakout Candidates (" + label + "s) - xwOBA exceeds actual wOBA:"];
-        lines.push("  " + "Player".padEnd(25) + "wOBA".padStart(7) + "  xwOBA".padStart(7) + "  Diff".padStart(7) + "  PA".padStart(5));
-        lines.push("  " + "-".repeat(55));
-        for (const c of data.candidates) {
-          lines.push("  " + str(c.name).padEnd(25) + str(c.woba.toFixed(3)).padStart(7) + "  " + str(c.xwoba.toFixed(3)).padStart(7) + "  +" + str(c.diff.toFixed(3)).padStart(6) + str(c.pa).padStart(5));
-        }
-        var ai_recommendation = generateBreakoutInsight(data);
-        return {
-          content: [{ type: "text" as const, text: lines.join("\n") }],
-          structuredContent: { type: "intel-breakouts", ai_recommendation, ...data },
-        };
-      } catch (e) { return toolError(e); }
-    },
-  );
-
-  // fantasy_bust_candidates
-  registerAppTool(
-    server,
-    "fantasy_bust_candidates",
-    {
-      description: "Find bust candidates: players whose actual performance (wOBA) exceeds expected stats (xwOBA), suggesting negative regression",
-      inputSchema: { pos_type: z.string().describe("B for batters, P for pitchers").default("B"), count: z.number().describe("Number of candidates to return").default(15) },
-      annotations: { readOnlyHint: true },
-      _meta: {},
-    },
-    async ({ pos_type, count }) => {
-      try {
-        const data = await apiGet<BustsResponse>("/api/intel/busts", { pos_type, count: String(count) });
-        const label = pos_type === "B" ? "Hitter" : "Pitcher";
-        const lines = ["Bust Candidates (" + label + "s) - actual wOBA exceeds xwOBA:"];
-        lines.push("  " + "Player".padEnd(25) + "wOBA".padStart(7) + "  xwOBA".padStart(7) + "  Diff".padStart(7) + "  PA".padStart(5));
-        lines.push("  " + "-".repeat(55));
-        for (const c of data.candidates) {
-          lines.push("  " + str(c.name).padEnd(25) + str(c.woba.toFixed(3)).padStart(7) + "  " + str(c.xwoba.toFixed(3)).padStart(7) + "  " + str(c.diff.toFixed(3)).padStart(7) + str(c.pa).padStart(5));
-        }
-        var ai_recommendation: string | null = null;
-        return {
-          content: [{ type: "text" as const, text: lines.join("\n") }],
-          structuredContent: { type: "intel-busts", ai_recommendation, ...data },
-        };
-      } catch (e) { return toolError(e); }
-    },
-  );
-
   // fantasy_reddit_buzz
   registerAppTool(
     server,
@@ -371,32 +311,4 @@ export function registerIntelTools(server: McpServer, distDir: string) {
     },
   );
 
-  // fantasy_news_sources
-  registerAppTool(
-    server,
-    "fantasy_news_sources",
-    {
-      description: "List available news sources and their status (enabled/disabled, last fetch time, item count)",
-      annotations: { readOnlyHint: true },
-      _meta: {},
-    },
-    async () => {
-      try {
-        const data = await apiGet<NewsSourcesResponse>("/api/news/sources");
-        const lines = ["News Sources:"];
-        lines.push("  " + "ID".padEnd(22) + "Name".padEnd(28) + "Status".padEnd(10) + "Items".padEnd(8) + "TTL");
-        lines.push("  " + "-".repeat(74));
-        for (const s of (data.sources || [])) {
-          const status = s.enabled ? "on" : "OFF";
-          const items = s.item_count > 0 ? String(s.item_count) : "-";
-          const ttl = String(Math.round(s.ttl / 60)) + "m";
-          lines.push("  " + str(s.id).padEnd(22) + str(s.name).padEnd(28) + status.padEnd(10) + items.padEnd(8) + ttl);
-        }
-        return {
-          content: [{ type: "text" as const, text: lines.join("\n") }],
-          structuredContent: { type: "news-sources", ...data },
-        };
-      } catch (e) { return toolError(e); }
-    },
-  );
 }

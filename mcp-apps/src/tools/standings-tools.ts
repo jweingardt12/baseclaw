@@ -15,12 +15,9 @@ import {
   type PositionalRanksResponse,
   type StandingsResponse,
   type MatchupsResponse,
-  type ScoreboardResponse,
   type MatchupDetailResponse,
-  type LeagueInfoResponse,
   type LeagueContextResponse,
   type TransactionsResponse,
-  type StatCategoriesResponse,
   type TransactionTrendsResponse,
   type LeaguePulseResponse,
   type PowerRankingsResponse,
@@ -114,30 +111,6 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
     },
   );
 
-  // yahoo_scoreboard
-  registerAppTool(
-    server,
-    "yahoo_scoreboard",
-    {
-      description: "Show live scoring overview for the current week",
-      annotations: { readOnlyHint: true },
-      _meta: { ui: { resourceUri: STANDINGS_URI } },
-    },
-    async () => {
-      try {
-        const data = await apiGet<ScoreboardResponse>("/api/scoreboard");
-        const text = "Scoreboard - Week " + data.week + ":\n" + data.matchups.map((m) =>
-          "  " + str(m.team1).padEnd(28) + " vs  " + str(m.team2).padEnd(28) + str(m.status)
-        ).join("\n");
-        var ai_recommendation: string | null = "Live scoreboard for week " + data.week + ". " + data.matchups.length + " matchups in progress.";
-        return {
-          content: [{ type: "text" as const, text }],
-          structuredContent: { type: "scoreboard", ai_recommendation, ...data },
-        };
-      } catch (e) { return toolError(e); }
-    },
-  );
-
   // yahoo_my_matchup
   registerAppTool(
     server,
@@ -161,47 +134,6 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
         return {
           content: [{ type: "text" as const, text }],
           structuredContent: { type: "matchup-detail", ai_recommendation, ...data },
-        };
-      } catch (e) { return toolError(e); }
-    },
-  );
-
-  // yahoo_info
-  registerAppTool(
-    server,
-    "yahoo_info",
-    {
-      description: "Show league settings and team info",
-      annotations: { readOnlyHint: true },
-      _meta: {},
-    },
-    async () => {
-      try {
-        const data = await apiGet<LeagueInfoResponse>("/api/info");
-        var lines = [
-          "League Info:",
-          "  Name: " + data.name,
-          "  Draft Status: " + data.draft_status,
-          "  Season: " + data.season,
-          "  Start: " + data.start_date,
-          "  End: " + data.end_date,
-          "  Current Week: " + data.current_week,
-          "  Teams: " + data.num_teams,
-          "  Playoff Teams: " + data.playoff_teams,
-          "  Max Weekly Adds: " + data.max_weekly_adds,
-          "  Your Team: " + data.team_name + " (" + data.team_id + ")",
-        ];
-        if (data.waiver_type != null) lines.push("  Waiver Type: " + data.waiver_type);
-        if (data.scoring_type != null) lines.push("  Scoring Type: " + data.scoring_type);
-        if (data.waiver_priority != null) lines.push("  Waiver Priority: " + data.waiver_priority);
-        if (data.faab_balance != null) lines.push("  FAAB Balance: $" + data.faab_balance);
-        if (data.number_of_moves != null) lines.push("  Moves Made: " + data.number_of_moves);
-        if (data.number_of_trades != null) lines.push("  Trades Made: " + data.number_of_trades);
-        var text = lines.join("\n");
-        var ai_recommendation: string | null = null;
-        return {
-          content: [{ type: "text" as const, text }],
-          structuredContent: { type: "info", ai_recommendation, ...data },
         };
       } catch (e) { return toolError(e); }
     },
@@ -281,32 +213,6 @@ export function registerStandingsTools(server: McpServer, distDir: string) {
         return {
           content: [{ type: "text" as const, text }],
           structuredContent: { type: "transactions", ai_recommendation, ...data },
-        };
-      } catch (e) { return toolError(e); }
-    },
-  );
-
-  // yahoo_stat_categories
-  registerAppTool(
-    server,
-    "yahoo_stat_categories",
-    {
-      description: "Show league scoring categories",
-      annotations: { readOnlyHint: true },
-      _meta: {},
-    },
-    async () => {
-      try {
-        const data = await apiGet<StatCategoriesResponse>("/api/stat-categories");
-        const text = "Stat Categories:\n" + data.categories.map((c) =>
-          "  " + c.name + (c.position_type ? " (" + c.position_type + ")" : "")
-        ).join("\n");
-        var batting = (data.categories || []).filter(function (c) { return c.position_type === "B"; });
-        var pitching = (data.categories || []).filter(function (c) { return c.position_type === "P"; });
-        var ai_recommendation: string | null = batting.length + " batting and " + pitching.length + " pitching categories in this league.";
-        return {
-          content: [{ type: "text" as const, text }],
-          structuredContent: { type: "stat-categories", ai_recommendation, ...data },
         };
       } catch (e) { return toolError(e); }
     },

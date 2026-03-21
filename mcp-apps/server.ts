@@ -6,7 +6,6 @@ import { registerRosterTools } from "./src/tools/roster-tools.js";
 import { registerStandingsTools } from "./src/tools/standings-tools.js";
 import { registerValuationsTools } from "./src/tools/valuations-tools.js";
 import { registerSeasonTools } from "./src/tools/season-tools.js";
-import { registerDraftTools } from "./src/tools/draft-tools.js";
 import { registerHistoryTools } from "./src/tools/history-tools.js";
 import { registerMlbTools } from "./src/tools/mlb-tools.js";
 import { registerIntelTools } from "./src/tools/intel-tools.js";
@@ -17,6 +16,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST_DIR = __dirname;
 
 const WRITES_ENABLED = process.env.ENABLE_WRITE_OPS === "true";
+const HISTORY_ENABLED = process.env.ENABLE_HISTORY === "true";
 
 // Base64-encoded 128x128 PNG logo (pixel-art baseball)
 const LOGO_DATA_URI = "data:image/png;base64,"
@@ -37,8 +37,7 @@ export function createServer(): McpServer {
   registerStandingsTools(server, DIST_DIR);
   registerValuationsTools(server);
   registerSeasonTools(server, DIST_DIR, WRITES_ENABLED);
-  registerDraftTools(server);
-  registerHistoryTools(server);
+  if (HISTORY_ENABLED) registerHistoryTools(server);
   registerMlbTools(server);
   registerIntelTools(server, DIST_DIR);
   registerWorkflowTools(server, WRITES_ENABLED);

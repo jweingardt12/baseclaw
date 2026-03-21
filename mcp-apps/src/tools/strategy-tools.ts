@@ -6,9 +6,7 @@ import {
   str,
   type ProbablePitchersResponse,
   type ScheduleAnalysisResponse,
-  type CategoryImpactResponse,
   type RegressionCandidatesResponse,
-  type PlayerTierResponse,
 } from "../api/types.js";
 
 export function registerStrategyTools(server: McpServer) {
@@ -78,53 +76,6 @@ export function registerStrategyTools(server: McpServer) {
     },
   );
 
-  // fantasy_category_impact
-  registerAppTool(
-    server,
-    "fantasy_category_impact",
-    {
-      description: "Project the category impact of adding/dropping players. Shows how each stat category would change.",
-      inputSchema: {
-        add_players: z.array(z.string()).describe("Player names to add"),
-        drop_players: z.array(z.string()).describe("Player names to drop"),
-      },
-      annotations: { readOnlyHint: true },
-      _meta: {},
-    },
-    async ({ add_players, drop_players }) => {
-      try {
-        const data = await apiPost<CategoryImpactResponse>("/api/category-impact", { add_players, drop_players });
-        const lines = ["Category Impact Analysis:"];
-        lines.push("  Adding: " + add_players.join(", "));
-        lines.push("  Dropping: " + drop_players.join(", "));
-        lines.push("");
-        const impact = data.category_impact || {};
-        const entries = Object.entries(impact);
-        if (entries.length > 0) {
-          lines.push("  " + "Category".padEnd(12) + "Add Z".padStart(8) + "Drop Z".padStart(9) + "Delta".padStart(8) + "Direction".padStart(12));
-          lines.push("  " + "-".repeat(49));
-          for (const [cat, info] of entries) {
-            const sign = info.delta >= 0 ? "+" : "";
-            lines.push("  " + str(cat).padEnd(12) + str(info.add_z.toFixed(2)).padStart(8) + str(info.drop_z.toFixed(2)).padStart(9) + (sign + info.delta.toFixed(2)).padStart(8) + str(info.direction).padStart(12));
-          }
-        }
-        lines.push("");
-        lines.push("  Net Z change: " + str(data.net_z_change));
-        lines.push("  Assessment:   " + str(data.assessment));
-        if ((data.improving_categories || []).length > 0) {
-          lines.push("  Improving:    " + data.improving_categories.join(", "));
-        }
-        if ((data.declining_categories || []).length > 0) {
-          lines.push("  Declining:    " + data.declining_categories.join(", "));
-        }
-        return {
-          content: [{ type: "text" as const, text: lines.join("\n") }],
-          structuredContent: { type: "category-impact", ai_recommendation: null, ...data },
-        };
-      } catch (e) { return toolError(e); }
-    },
-  );
-
   // fantasy_regression_candidates
   registerAppTool(
     server,
@@ -181,38 +132,4 @@ export function registerStrategyTools(server: McpServer) {
     },
   );
 
-  // fantasy_player_tier
-  registerAppTool(
-    server,
-    "fantasy_player_tier",
-    {
-      description: "Get a player's z-score tier and category breakdown from the valuation engine",
-      inputSchema: { player_name: z.string().describe("Player name to look up") },
-      annotations: { readOnlyHint: true },
-      _meta: {},
-    },
-    async ({ player_name }) => {
-      try {
-        const data = await apiGet<PlayerTierResponse>("/api/player-tier", { name: player_name });
-        const lines = ["Player Tier: " + str(data.name)];
-        lines.push("  Tier:    " + str(data.tier));
-        lines.push("  Z-Score: " + str(data.z_final));
-        lines.push("  Rank:    " + str(data.rank));
-        const zScores = data.per_category_zscores || {};
-        const entries = Object.entries(zScores);
-        if (entries.length > 0) {
-          lines.push("");
-          lines.push("  Category Breakdown:");
-          for (const [cat, val] of entries) {
-            const sign = Number(val) >= 0 ? "+" : "";
-            lines.push("    " + str(cat).padEnd(12) + sign + Number(val).toFixed(2));
-          }
-        }
-        return {
-          content: [{ type: "text" as const, text: lines.join("\n") }],
-          structuredContent: { type: "player-tier", ai_recommendation: null, ...data },
-        };
-      } catch (e) { return toolError(e); }
-    },
-  );
 }

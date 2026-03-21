@@ -8,19 +8,14 @@ import { pid } from "../api/format-text.js";
 import {
   generateLineupInsight,
   generateMatchupInsight,
-  generateWaiverInsight,
   generateInjuryInsight,
   generateCategoryInsight,
   generateStreamingInsight,
-  generateTradeInsight,
   generateWhatsNewInsight,
-  generateTradeFinderInsight,
   generateCloserInsight,
   generateScoutInsight,
   generateWeekPlannerInsight,
   generatePitcherMatchupInsight,
-  generateDailyUpdateInsight,
-  generateSimulateInsight,
   generateILStashInsight,
   generateOptimalMovesInsight,
   generatePlayoffPlannerInsight,
@@ -33,11 +28,7 @@ import {
   type LineupOptimizeResponse,
   type CategoryCheckResponse,
   type InjuryReportResponse,
-  type WaiverAnalyzeResponse,
   type StreamingResponse,
-  type TradeEvalResponse,
-  type DailyUpdateResponse,
-  type CategorySimulateResponse,
   type ScoutOpponentResponse,
   type MatchupStrategyResponse,
   type SetLineupResponse,
@@ -45,7 +36,6 @@ import {
   type ProposeTradeResponse,
   type TradeActionResponse,
   type WhatsNewResponse,
-  type TradeFinderResponse,
   type WeekPlannerResponse,
   type CloserMonitorResponse,
   type PitcherMatchupResponse,
@@ -219,43 +209,6 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     },
   );
 
-  // yahoo_waiver_analyze
-  registerAppTool(
-    server,
-    "yahoo_waiver_analyze",
-    {
-      description: "Score free agents by how much they'd improve your weakest categories. pos_type: B or P",
-      inputSchema: { pos_type: z.string().describe("B for batters, P for pitchers").default("B"), count: z.number().describe("Number of recommendations to return").default(15) },
-      annotations: { readOnlyHint: true },
-      _meta: {},
-    },
-    async ({ pos_type, count }) => {
-      try {
-        const data = await apiGet<WaiverAnalyzeResponse>("/api/waiver-analyze", { pos_type, count: String(count) });
-        const label = pos_type === "B" ? "Batters" : "Pitchers";
-        const lines = [
-          "Waiver Wire Analysis (" + label + "):",
-        ];
-        if (data.weak_categories.length > 0) {
-          lines.push("Weak categories: " + data.weak_categories.map((c) => c.name).join(", "));
-        }
-        lines.push("  " + "Player".padEnd(25) + "Pos".padEnd(12) + "Own%".padStart(5) + "  Score  Status");
-        lines.push("  " + "-".repeat(60));
-        for (const p of data.recommendations) {
-          const status = p.status ? " [" + p.status + "]" : "";
-          const tier = (p.intel && p.intel.statcast && p.intel.statcast.quality_tier) ? " {" + p.intel.statcast.quality_tier + "}" : "";
-          lines.push("  " + str(p.name).padEnd(25) + str(p.positions).padEnd(12) + str(p.pct).padStart(5)
-            + "  " + str(p.score.toFixed(1)).padStart(5) + status + tier + "  (id:" + p.pid + ")");
-        }
-        const ai_recommendation = generateWaiverInsight(data);
-        return {
-          content: [{ type: "text" as const, text: lines.join("\n") }],
-          structuredContent: { type: "waiver-analyze", ai_recommendation, ...data },
-        };
-      } catch (e) { return toolError(e); }
-    },
-  );
-
   // yahoo_streaming
   registerAppTool(
     server,
@@ -292,67 +245,6 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     },
   );
 
-  // yahoo_trade_eval
-  registerAppTool(
-    server,
-    "yahoo_trade_eval",
-    {
-      description: "Evaluate a trade. give_ids and get_ids are comma-separated player IDs (e.g. '12345,12346')",
-      inputSchema: { give_ids: z.string().describe("Comma-separated Yahoo player IDs you would give"), get_ids: z.string().describe("Comma-separated Yahoo player IDs you would get") },
-      annotations: { readOnlyHint: true },
-      _meta: {},
-    },
-    async ({ give_ids, get_ids }) => {
-      try {
-        const data = await apiPost<TradeEvalResponse>("/api/trade-eval", { give_ids, get_ids });
-        const lines = [
-          "Trade Evaluation:",
-          "GIVING:",
-        ];
-        for (const p of data.give_players) {
-          const tier = (p.intel && p.intel.statcast && p.intel.statcast.quality_tier) ? " {" + p.intel.statcast.quality_tier + "}" : "";
-          lines.push("  " + str(p.name).padEnd(25) + pid(p.player_id) + " " + (p.positions || []).join(",") + tier);
-        }
-        lines.push("GETTING:");
-        for (const p of data.get_players) {
-          const tier = (p.intel && p.intel.statcast && p.intel.statcast.quality_tier) ? " {" + p.intel.statcast.quality_tier + "}" : "";
-          lines.push("  " + str(p.name).padEnd(25) + pid(p.player_id) + " " + (p.positions || []).join(",") + tier);
-        }
-        lines.push("");
-        lines.push("Give Value:    " + data.give_value.toFixed(1));
-        lines.push("Get Value:     " + data.get_value.toFixed(1));
-        lines.push("Net Value:     " + data.net_value.toFixed(1));
-        lines.push("Trade Grade:   " + data.grade);
-        const ai_recommendation = generateTradeInsight(data);
-        return {
-          content: [{ type: "text" as const, text: lines.join("\n") }],
-          structuredContent: { type: "trade-eval", ai_recommendation, ...data },
-        };
-      } catch (e) { return toolError(e); }
-    },
-  );
-
-  // yahoo_daily_update
-  registerAppTool(
-    server,
-    "yahoo_daily_update",
-    {
-      description: "Run all daily checks: lineup optimization and injury report",
-      annotations: { readOnlyHint: true },
-      _meta: {},
-    },
-    async () => {
-      try {
-        const data = await apiGet<DailyUpdateResponse>("/api/daily-update");
-        const ai_recommendation = generateDailyUpdateInsight(data);
-        return {
-          content: [{ type: "text" as const, text: "Daily update complete" }],
-          structuredContent: { type: "daily-update", ai_recommendation, ...data },
-        };
-      } catch (e) { return toolError(e); }
-    },
-  );
-
   // yahoo_scout_opponent
   registerAppTool(
     server,
@@ -379,35 +271,6 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
           structuredContent: { type: "scout-opponent", ai_recommendation, ...data },
-        };
-      } catch (e) { return toolError(e); }
-    },
-  );
-
-  // yahoo_category_simulate
-  registerAppTool(
-    server,
-    "yahoo_category_simulate",
-    {
-      description: "Simulate category rank impact of adding a player. Shows how your weak/strong categories would change.",
-      inputSchema: { add_name: z.string().describe("Player name to simulate adding"), drop_name: z.string().describe("Player name to simulate dropping, empty to skip").default("") },
-      annotations: { readOnlyHint: true },
-      _meta: {},
-    },
-    async ({ add_name, drop_name }) => {
-      try {
-        const params: Record<string, string> = { add_name };
-        if (drop_name) params.drop_name = drop_name;
-        const data = await apiGet<CategorySimulateResponse>("/api/category-simulate", params);
-        const lines = ["Category Simulation:"];
-        lines.push("Adding: " + data.add_player.name);
-        if (data.drop_player) lines.push("Dropping: " + data.drop_player.name);
-        lines.push("");
-        lines.push(data.summary);
-        const ai_recommendation = generateSimulateInsight(data);
-        return {
-          content: [{ type: "text" as const, text: lines.join("\n") }],
-          structuredContent: { type: "category-simulate", ai_recommendation, ...data },
         };
       } catch (e) { return toolError(e); }
     },
@@ -643,77 +506,6 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
   );
 
   // yahoo_trade_finder
-  registerAppTool(
-    server,
-    "yahoo_trade_finder",
-    {
-      description: "Find optimal trade packages to acquire a target player, analyzing both teams' needs and z-score values. If no target given, scans league for complementary trade partners.",
-      inputSchema: { target_player: z.string().describe("Name of the player you want to acquire (leave empty to scan league for trade partners)").default("") },
-      annotations: { readOnlyHint: true },
-      _meta: {},
-    },
-    async ({ target_player }) => {
-      try {
-        var params: Record<string, string> = {};
-        if (target_player) params.target = target_player;
-        var data = await apiGet<TradeFinderResponse>("/api/trade-finder", params);
-        var lines: string[] = [];
-
-        // Target-player mode: new response shape with proposals
-        if (data.target_player) {
-          lines.push("Trade Package Builder for " + data.target_player + ":");
-          lines.push("Owner: " + str(data.target_team || "?"));
-          lines.push("Target Z-Score: " + str(data.target_z_score || "?") + " (" + str(data.target_tier || "?") + ")");
-          lines.push("Their weak categories: " + (data.target_team_needs || []).join(", "));
-          lines.push("");
-          var proposals = data.proposals || [];
-          if (proposals.length === 0) {
-            lines.push("No viable trade packages found.");
-          } else {
-            for (var i = 0; i < proposals.length; i++) {
-              var prop = proposals[i];
-              lines.push("Proposal " + (i + 1) + " (fairness: " + str(prop.fairness_score) + "):");
-              lines.push("  " + str(prop.summary || ""));
-              var offerIds = (prop.offer_details || []).map(function (pl) { return pl.name + pid(pl.player_id); }).join(", ");
-              var receiveIds = (prop.receive_details || []).map(function (pl) { return pl.name + pid(pl.player_id); }).join(", ");
-              if (offerIds) lines.push("  Give: " + offerIds);
-              if (receiveIds) lines.push("  Get: " + receiveIds);
-              lines.push("  Your net Z: " + str(prop.your_z_change) + " | Their net Z: " + str(prop.their_z_change));
-              if (prop.addresses_needs && prop.addresses_needs.length > 0) {
-                lines.push("  Addresses their needs: " + prop.addresses_needs.join(", "));
-              }
-              lines.push("");
-            }
-          }
-        } else {
-          // League-scan mode: original response shape
-          lines.push("Trade Finder:");
-          lines.push("Weak categories: " + (data.weak_categories || []).join(", "));
-          lines.push("Strong categories: " + (data.strong_categories || []).join(", "));
-          lines.push("");
-          if (!data.partners || data.partners.length === 0) {
-            lines.push("No complementary trade partners found");
-          } else {
-            for (var p of data.partners) {
-              lines.push("Partner: " + p.team_name + " (" + p.team_key + ") — complementary: " + p.complementary_categories.join(", "));
-              for (var pkg of p.packages || []) {
-                var give = (pkg.give || []).map(function (pl) { return pl.name + " (id:" + pl.player_id + ", z:" + (pl.z_score ?? "?") + ")"; }).join(", ");
-                var get = (pkg.get || []).map(function (pl) { return pl.name + " (id:" + pl.player_id + ", z:" + (pl.z_score ?? "?") + ")"; }).join(", ");
-                lines.push("  Give: " + give + " <-> Get: " + get);
-              }
-              lines.push("");
-            }
-          }
-        }
-        var ai_recommendation = generateTradeFinderInsight(data);
-        return {
-          content: [{ type: "text" as const, text: lines.join("\n") }],
-          structuredContent: { type: "trade-finder", ai_recommendation, ...data },
-        };
-      } catch (e) { return toolError(e); }
-    },
-  );
-
   // yahoo_week_planner
   registerAppTool(
     server,
