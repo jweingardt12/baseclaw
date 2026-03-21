@@ -1968,6 +1968,17 @@ def _build_statcast(name, mlb_id):
 
         if not expected_row and not statcast_row and not sprint_row:
             result["note"] = "Player not found in Savant leaderboards (may not meet minimum PA/IP threshold)"
+            # Fall back to projection-based tier from z-scores
+            try:
+                from valuations import get_player_zscore
+                z_info = get_player_zscore(name)
+                if z_info:
+                    tier = z_info.get("tier", "Unknown")
+                    result["quality_tier"] = tier
+                    result["quality_source"] = "projections"
+                    result["projection_z"] = z_info.get("z_final", 0)
+            except Exception:
+                pass
 
         # Save daily snapshot for historical comparison
         _save_statcast_snapshot(name, result)

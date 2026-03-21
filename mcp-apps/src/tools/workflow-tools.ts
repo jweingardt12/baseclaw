@@ -360,14 +360,22 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
 
         // Intel summary
         const intel = data.intel || {};
-        const intelEntries = Object.entries(intel).filter(([, v]) => v && !("_error" in v));
+        const intelEntries = Object.entries(intel).filter(([, v]) => v != null);
         if (intelEntries.length > 0) {
           lines.push("");
           lines.push("INTEL:");
           for (const [name, report] of intelEntries) {
+            if ("_error" in report) {
+              lines.push("  " + str(name).padEnd(25) + " (intel unavailable: " + str((report as Record<string, string>)._error) + ")");
+              continue;
+            }
             const sc = report.statcast || {};
             if (sc.quality_tier) {
               lines.push("  " + str(name).padEnd(25) + " tier=" + str(sc.quality_tier));
+            } else if (sc.note) {
+              lines.push("  " + str(name).padEnd(25) + " (" + str(sc.note) + ")");
+            } else if ((sc as Record<string, unknown>).error) {
+              lines.push("  " + str(name).padEnd(25) + " (statcast: " + str((sc as Record<string, unknown>).error) + ")");
             }
           }
         }
