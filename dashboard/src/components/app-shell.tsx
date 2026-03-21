@@ -105,7 +105,7 @@ export function AppShell() {
                 <Avatar
                   square
                   initials="BC"
-                  className="size-6 bg-blue-600 text-white"
+                  className="size-6 bg-emerald-600 text-white"
                 />
                 <SidebarLabel className="font-semibold tracking-tight">
                   BaseClaw
@@ -170,7 +170,7 @@ export function AppShell() {
               onTouchStart={() => handlePrefetch(item.path)}
               className={`flex flex-1 flex-col items-center justify-center gap-1 text-xs transition-colors ${
                 isActive
-                  ? "text-blue-600 dark:text-blue-400"
+                  ? "text-emerald-600 dark:text-emerald-400"
                   : "text-zinc-500 dark:text-zinc-400"
               }`}
             >

@@ -96,7 +96,7 @@ export function MatchupPage() {
 
           {/* AI Strategy */}
           {scout.data && (
-            <div className="rounded-lg border border-blue-500/10 bg-blue-50/50 dark:bg-blue-950/20 p-4 space-y-3">
+            <div className="rounded-lg border border-emerald-500/10 bg-emerald-50/50 dark:bg-emerald-950/20 p-4 space-y-3">
               <Subheading>🤖 AI Strategy</Subheading>
               {Array.isArray(scout.data.strategy) && scout.data.strategy.length > 0 ? (
                 <ul className="space-y-1">

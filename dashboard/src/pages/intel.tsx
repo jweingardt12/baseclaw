@@ -30,7 +30,7 @@ export function IntelPage() {
                 clsx(
                   "px-3 py-2 text-sm font-medium rounded-t-lg transition-colors outline-none",
                   selected
-                    ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 -mb-px"
+                    ? "text-emerald-600 dark:text-emerald-400 border-b-2 border-emerald-600 dark:border-emerald-400 -mb-px"
                     : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
                 )
               }
@@ -99,7 +99,7 @@ function NewsFeedPanel() {
               )}
               <div className="flex items-center gap-2">
                 {item.playerName && (
-                  <Badge color="blue" className="text-[10px]">{item.playerName}</Badge>
+                  <Badge color="emerald" className="text-[10px]">{item.playerName}</Badge>
                 )}
                 {item.source && (
                   <span className="text-[10px] text-zinc-400">{item.source}</span>
@@ -233,7 +233,7 @@ function WaiverLabPanel() {
             className={clsx(
               "px-3 py-1 text-xs font-medium rounded-full transition-colors",
               posType === t
-                ? "bg-blue-600 text-white dark:bg-blue-500"
+                ? "bg-emerald-600 text-white dark:bg-emerald-500"
                 : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400"
             )}
           >
@@ -299,8 +299,8 @@ function WaiverLabPanel() {
 
       {/* Simulation result */}
       {simResult && (
-        <div className="rounded-lg border border-blue-500/10 bg-blue-50/50 dark:bg-blue-950/10 p-3 space-y-1">
-          <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">Simulating: {simName}</p>
+        <div className="rounded-lg border border-emerald-500/10 bg-emerald-50/50 dark:bg-emerald-950/10 p-3 space-y-1">
+          <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Simulating: {simName}</p>
           <CategorySimResult result={simResult} />
         </div>
       )}

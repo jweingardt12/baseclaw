@@ -144,7 +144,7 @@ export function TodayPage() {
           </Text>
         </div>
         <Button
-          color="blue"
+          color="emerald"
           onClick={() => optimizeMutation.mutate()}
           disabled={optimizeMutation.isPending}
         >
@@ -167,7 +167,7 @@ export function TodayPage() {
                 item.color === "red"
                   ? "bg-red-500/10 dark:bg-red-500/10"
                   : item.color === "blue"
-                  ? "bg-blue-500/10 dark:bg-blue-500/10"
+                  ? "bg-emerald-500/10 dark:bg-emerald-500/10"
                   : "bg-amber-500/10 dark:bg-amber-400/10"
               }`}
             >
@@ -176,7 +176,7 @@ export function TodayPage() {
                   item.color === "red" ? "text-red-500" : "text-amber-500"
                 }`} />
               ) : item.icon === "suggestion" ? (
-                <LightBulbIcon className="size-5 text-blue-500 shrink-0 mt-0.5" />
+                <LightBulbIcon className="size-5 text-emerald-500 shrink-0 mt-0.5" />
               ) : (
                 <CheckCircleIcon className="size-5 text-green-500 shrink-0 mt-0.5" />
               )}
@@ -234,7 +234,7 @@ export function TodayPage() {
                   <div className="flex-1 mx-2">
                     <div className="h-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-blue-500"
+                        className="h-full rounded-full bg-emerald-500"
                         style={{ width: `${Math.min((day.games / 15) * 100, 100)}%` }}
                       />
                     </div>

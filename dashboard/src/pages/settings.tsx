@@ -95,7 +95,7 @@ export function SettingsPage() {
                   {actionDescriptions[action] || `Allow BaseClaw to ${action.replace(/_/g, " ")}.`}
                 </Description>
                 <Switch
-                  color="blue"
+                  color="emerald"
                   checked={enabled}
                   onChange={(val: boolean) => handleActionToggle(action, val)}
                   disabled={updateAutonomy.isPending}

@@ -149,7 +149,7 @@ export function PlayersPage() {
                 clsx(
                   "px-3 py-2 text-sm font-medium rounded-t-lg transition-colors outline-none",
                   selected
-                    ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 -mb-px"
+                    ? "text-emerald-600 dark:text-emerald-400 border-b-2 border-emerald-600 dark:border-emerald-400 -mb-px"
                     : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
                 )
               }
@@ -171,7 +171,7 @@ export function PlayersPage() {
                   className={clsx(
                     "px-3 py-1 text-xs font-medium rounded-full transition-colors",
                     status === s
-                      ? "bg-blue-600 text-white dark:bg-blue-500"
+                      ? "bg-emerald-600 text-white dark:bg-emerald-500"
                       : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
                   )}
                 >
@@ -189,7 +189,7 @@ export function PlayersPage() {
                   className={clsx(
                     "px-2.5 py-1 text-xs font-medium rounded-md transition-colors",
                     posType === pos
-                      ? "bg-blue-600 text-white dark:bg-blue-500"
+                      ? "bg-emerald-600 text-white dark:bg-emerald-500"
                       : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
                   )}
                 >
@@ -496,7 +496,7 @@ export function PlayersPage() {
                 </div>
                 <div className="flex items-end">
                   <Button
-                    color="blue"
+                    color="emerald"
                     disabled={compareLoading || !comparePlayer1.trim() || !comparePlayer2.trim()}
                     onClick={async () => {
                       setCompareLoading(true);

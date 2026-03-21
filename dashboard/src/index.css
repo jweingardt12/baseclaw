@@ -14,7 +14,7 @@
     @apply antialiased;
   }
   body {
-    @apply bg-white text-zinc-950 dark:bg-zinc-900 dark:text-white;
+    @apply bg-white text-zinc-950 dark:bg-[#161618] dark:text-white;
     font-family: var(--font-sans);
     font-feature-settings: var(--font-sans--font-feature-settings);
     font-variant-numeric: tabular-nums;

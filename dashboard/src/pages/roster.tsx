@@ -269,7 +269,7 @@ export function RosterPage() {
                       <PlayerAvatar name={player.name} mlbId={player.mlb_id} size="sm" />
                       <div className="min-w-0">
                         <button
-                          className="text-sm font-medium text-zinc-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left truncate block max-w-[140px]"
+                          className="text-sm font-medium text-zinc-900 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors text-left truncate block max-w-[140px]"
                           onClick={() => setSelectedPlayer(player)}
                         >
                           {player.name}
@@ -394,7 +394,7 @@ export function RosterPage() {
                       <PlayerAvatar name={player.name} mlbId={player.mlb_id} size="sm" />
                       <div className="min-w-0">
                         <button
-                          className="text-sm font-medium text-zinc-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left truncate block max-w-[140px]"
+                          className="text-sm font-medium text-zinc-900 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors text-left truncate block max-w-[140px]"
                           onClick={() => setSelectedPlayer(player)}
                         >
                           {player.name}

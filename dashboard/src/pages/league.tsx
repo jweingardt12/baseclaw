@@ -59,7 +59,7 @@ export function LeaguePage() {
                 clsx(
                   "px-3 py-2 text-sm font-medium rounded-t-lg transition-colors outline-none",
                   selected
-                    ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 -mb-px"
+                    ? "text-emerald-600 dark:text-emerald-400 border-b-2 border-emerald-600 dark:border-emerald-400 -mb-px"
                     : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
                 )
               }
