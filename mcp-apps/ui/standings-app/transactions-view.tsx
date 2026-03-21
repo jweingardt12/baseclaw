@@ -81,7 +81,7 @@ export function TransactionsView({ data }: { data: TransactionsData }) {
   var dateKeys = Object.keys(dateGroups).sort().reverse();
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <Subheading>
         {"Recent Transactions" + (data.trans_type ? " (" + data.trans_type + ")" : "")}
       </Subheading>

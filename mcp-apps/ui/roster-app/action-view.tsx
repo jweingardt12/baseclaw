@@ -28,9 +28,9 @@ export function ActionView({ data, app, navigate }: { data: ActionData; app: any
   };
 
   return (
-    <div className="space-y-3 mt-2 animate-slide-up">
+    <div className="space-y-4 mt-2 animate-slide-up">
       <div className={"surface-card overflow-hidden"}>
-        <div className={"p-4 " + (data.success ? "bg-sem-success-subtle" : "bg-destructive/5")}>
+        <div className={"p-5 " + (data.success ? "bg-sem-success-subtle" : "bg-destructive/5")}>
           <div className="flex items-center gap-2">
             <Subheading>{title}</Subheading>
             {data.success
@@ -39,7 +39,7 @@ export function ActionView({ data, app, navigate }: { data: ActionData; app: any
             }
           </div>
         </div>
-        <div className="p-4">
+        <div className="p-5">
           <p className="text-base">{data.message}</p>
           {data.player_id && <Text className="mt-2">{"Player ID: " + data.player_id}</Text>}
           {data.add_id && <Text className="mt-1">{"Added ID: " + data.add_id}</Text>}
@@ -51,7 +51,7 @@ export function ActionView({ data, app, navigate }: { data: ActionData; app: any
 
       <div className="flex items-center gap-2">
         <Button variant="outline" color="secondary" onClick={handleBackToRoster}>
-          <ArrowLeft size={14} className="mr-1" />
+          <ArrowLeft size={14} />
           Back to Roster
         </Button>
         {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}

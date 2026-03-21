@@ -68,7 +68,7 @@ export function OptimalMovesView({ data, app, navigate }: { data: OptimalMovesRe
         var lost = move.categories_lost || [];
         return (
           <Card key={i} className={improvement > 0 ? "border-green-500/20" : ""}>
-            <CardContent className="p-3">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <Badge color="secondary" size="sm">Move #{move.rank || i + 1}</Badge>
                 <Badge size="sm" className={improvement > 0 ? "bg-sem-success" : "bg-sem-risk"}>

@@ -243,11 +243,11 @@ export function WaiverAnalyzeView({ data, app, navigate }: { data: WaiverData; a
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
-                      <Button color="secondary" onClick={() => handleAdd(playerId)} disabled={loading} title="Add player">
+                    <div className="flex gap-1.5">
+                      <Button color="secondary" size="xs" uniform onClick={() => handleAdd(playerId)} disabled={loading} title="Add player">
                         <UserPlus size={14} />
                       </Button>
-                      <Button variant="outline" color="secondary" onClick={() => setSwapTarget(p)} disabled={loading} title="Swap for roster player">
+                      <Button variant="outline" color="secondary" size="xs" uniform onClick={() => setSwapTarget(p)} disabled={loading} title="Swap for roster player">
                         <ArrowRightLeft size={14} />
                       </Button>
                     </div>

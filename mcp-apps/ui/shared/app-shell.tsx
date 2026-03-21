@@ -293,7 +293,7 @@ export function AppShell({ name, version = "1.0.0", children }: AppShellProps) {
           <Button
             variant="ghost"
             color="secondary"
-            className="h-8 w-8 p-0"
+            uniform size="sm"
             onClick={function () {
               var newMode = displayMode === "fullscreen" ? "inline" : "fullscreen";
               if (!layout.availableDisplayModes.includes(newMode as any)) return;

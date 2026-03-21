@@ -83,7 +83,7 @@ export function OwnershipTrendsView({ data }: { data: OwnershipTrendsData; app?:
 
       {hasTrend && (
         <Card>
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             <div className="h-48 sm:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trend} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>

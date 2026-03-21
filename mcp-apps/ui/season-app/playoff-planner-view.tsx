@@ -79,7 +79,7 @@ export function PlayoffPlannerView({ data }: { data: PlayoffPlannerResponse; app
 
       {/* Status banner */}
       <Card className={isIn ? "border-green-500/30 bg-green-500/5" : "border-red-500/30 bg-red-500/5"}>
-        <CardContent className="p-3">
+        <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className={"text-sm font-semibold " + (isIn ? "text-sem-success" : "text-sem-risk")}>
@@ -100,7 +100,7 @@ export function PlayoffPlannerView({ data }: { data: PlayoffPlannerResponse; app
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {targetCats.length > 0 && (
           <Card className="border-green-500/30 border-t-2 border-t-green-500">
-            <CardContent className="p-3">
+            <CardContent className="p-4">
               <p className="text-xs text-muted-foreground mb-1.5">Target Categories</p>
               <div className="flex flex-wrap gap-1">
                 {targetCats.map(function (cat) {
@@ -112,7 +112,7 @@ export function PlayoffPlannerView({ data }: { data: PlayoffPlannerResponse; app
         )}
         {puntCats.length > 0 && (
           <Card className="border-red-500/30 border-t-2 border-t-red-500">
-            <CardContent className="p-3">
+            <CardContent className="p-4">
               <p className="text-xs text-muted-foreground mb-1.5">Punt Categories</p>
               <div className="flex flex-wrap gap-1">
                 {puntCats.map(function (cat) {
@@ -173,7 +173,7 @@ export function PlayoffPlannerView({ data }: { data: PlayoffPlannerResponse; app
             <div className="space-y-2">
               {actions.map(function (a, i) {
                 return (
-                  <div key={i} className="flex items-start gap-2 py-1.5 border-b last:border-0">
+                  <div key={i} className="flex items-start gap-2.5 py-2 border-b last:border-0">
                     <Badge color={priorityColor(a.priority)}  size="sm" className="mt-0.5 shrink-0">{a.priority}</Badge>
                     <div className="flex-1">
                       <p className="text-sm font-medium">{a.description}</p>

@@ -72,7 +72,7 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
     .sort(function (a, b) { return a.appearances - b.appearances; });
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <Tabs value={tab} onChange={setTab} aria-label="Record book sections">
         <Tabs.Tab value="champions">Champions</Tabs.Tab>
         <Tabs.Tab value="careers">Career Leaders</Tabs.Tab>
@@ -82,7 +82,7 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
 
         {tab === "champions" && (<div>
           {champChartData.length > 1 && (
-            <div className="surface-card p-4 mb-3">
+            <div className="surface-card p-5 mb-3">
               <div className="flex items-center gap-2 mb-3">
                 <Trophy className="h-4 w-4 text-muted-foreground" />
                 <Subheading>Champion Win % by Year</Subheading>
@@ -148,7 +148,7 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
 
         {tab === "careers" && (<div>
           {careerChartData.length > 1 && (
-            <div className="surface-card p-4 mb-3">
+            <div className="surface-card p-5 mb-3">
               <div className="flex items-center gap-2 mb-3">
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 <Subheading>Career Win %</Subheading>
@@ -252,7 +252,7 @@ export function RecordBookView({ data }: { data: RecordBookData }) {
 
         {tab === "playoffs" && (<div>
           {playoffChartData.length > 1 && (
-            <div className="surface-card p-4 mb-3">
+            <div className="surface-card p-5 mb-3">
               <div className="flex items-center gap-2 mb-3">
                 <Award className="h-4 w-4 text-muted-foreground" />
                 <Subheading>Playoff Appearances</Subheading>

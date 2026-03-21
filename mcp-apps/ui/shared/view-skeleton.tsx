@@ -27,7 +27,7 @@ export function ViewSkeleton() {
         <CardHeader className="pb-2">
           <Skeleton className="h-5 w-32" />
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-5/6" />
           <Skeleton className="h-4 w-4/6" />

@@ -45,7 +45,7 @@ export function CheatsheetView({ data, app, navigate }: { data: CheatsheetData; 
                 <div className={"rounded-t-[var(--radius)] px-3 py-2 " + colorClass}>
                   <span className="text-sm font-black tracking-wide uppercase">{roundInfo.label}</span>
                 </div>
-                <CardContent className="p-3 sm:p-4">
+                <CardContent className="p-4">
                   <p className="text-sm leading-6 break-words">{strategy}</p>
                 </CardContent>
               </Card>
@@ -80,7 +80,7 @@ export function CheatsheetView({ data, app, navigate }: { data: CheatsheetData; 
           <CardHeader className="pb-2">
             <CardTitle className="text-base text-green-600 dark:text-green-400">Key Targets</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             {Object.entries(targetMap as Record<string, string[]>).map(function (entry) {
               var rawCategory = entry[0];
               var category = parseRoundKey(rawCategory).label;
@@ -91,8 +91,8 @@ export function CheatsheetView({ data, app, navigate }: { data: CheatsheetData; 
                   <div className="flex flex-wrap gap-1.5">
                     {players.map(function (t) {
                       return (
-                        <div key={t} className="surface-card p-1.5 px-2.5 border-l-2 border-l-green-500">
-                          <span className="text-xs font-semibold"><PlayerName name={t} app={app} navigate={navigate} context="draft" /></span>
+                        <div key={t} className="surface-card p-2 px-3 border-l-2 border-l-green-500">
+                          <span className="text-sm font-semibold"><PlayerName name={t} app={app} navigate={navigate} context="draft" /></span>
                         </div>
                       );
                     })}
@@ -117,8 +117,8 @@ export function CheatsheetView({ data, app, navigate }: { data: CheatsheetData; 
             <div className="flex flex-wrap gap-2">
               {(data.avoid || []).map(function (name) {
                 return (
-                  <div key={name} className="surface-card p-1.5 px-2.5 border-l-2 border-l-yellow-500">
-                    <span className="text-xs font-semibold text-yellow-600 dark:text-yellow-400">{name}</span>
+                  <div key={name} className="surface-card p-2 px-3 border-l-2 border-l-yellow-500">
+                    <span className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">{name}</span>
                   </div>
                 );
               })}
@@ -134,10 +134,10 @@ export function CheatsheetView({ data, app, navigate }: { data: CheatsheetData; 
             <CardTitle className="text-base">Opponents</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {(data.opponents || []).map(function (opp) {
                 return (
-                  <div key={opp.name} className="flex items-center justify-between text-sm">
+                  <div key={opp.name} className="flex items-center justify-between text-sm py-0.5">
                     <span className="font-medium">{opp.name}</span>
                     <span className="text-xs text-muted-foreground">{opp.tendency}</span>
                   </div>

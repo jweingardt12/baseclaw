@@ -139,7 +139,7 @@ export function CloserMonitorView({ data, app, navigate }: { data: CloserMonitor
                     )}
                   </TableCell>
                   <TableCell>
-                    <Button color="secondary" onClick={() => handleAdd(p.player_id)} disabled={loading} title="Add player">
+                    <Button color="secondary" size="xs" uniform onClick={() => handleAdd(p.player_id)} disabled={loading} title="Add player">
                       <UserPlus size={14} />
                     </Button>
                   </TableCell>

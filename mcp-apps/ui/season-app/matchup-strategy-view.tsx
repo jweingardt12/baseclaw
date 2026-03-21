@@ -151,8 +151,8 @@ export function MatchupStrategyView({ data, app, navigate }: { data: MatchupStra
           <Subheading>Matchup Strategy</Subheading>
         </div>
         {app && (
-          <Button variant="outline" color="secondary" onClick={handleRefresh} disabled={loading} className="h-8 text-xs gap-1">
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+          <Button variant="outline" color="secondary" size="xs" onClick={handleRefresh} disabled={loading}>
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             Refresh
           </Button>
         )}
@@ -177,7 +177,7 @@ export function MatchupStrategyView({ data, app, navigate }: { data: MatchupStra
       {/* Summary Card */}
       {d.summary && (
         <Card className={"border-" + resultColor(score.wins, score.losses) + "-500/30 bg-" + resultColor(score.wins, score.losses) + "-500/5"}>
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             <p className="text-sm leading-relaxed">{d.summary}</p>
           </CardContent>
         </Card>
@@ -350,7 +350,7 @@ export function MatchupStrategyView({ data, app, navigate }: { data: MatchupStra
                         <TableCell>
                           <Button
                             variant="ghost" color="secondary"
-                            className="h-8 w-8 p-0"
+                            uniform size="sm"
                             onClick={function () { handleAdd(wt.pid); }}
                             disabled={loading}
                           >

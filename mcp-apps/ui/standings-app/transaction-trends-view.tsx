@@ -119,7 +119,7 @@ export function TransactionTrendsView({ data }: { data: TransactionTrendsData })
   var hottest = added.length > 0 ? added[0] : null;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <Subheading>Transaction Trends</Subheading>
 
       <AiInsight recommendation={data.ai_recommendation} />

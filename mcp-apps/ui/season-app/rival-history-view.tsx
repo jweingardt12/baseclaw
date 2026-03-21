@@ -175,7 +175,7 @@ function RivalDetailView({ data }: { data: RivalHistoryDetailResponse }) {
       {/* Narrative */}
       {data.narrative && (
         <Card>
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             <p className="text-sm leading-relaxed">{data.narrative}</p>
           </CardContent>
         </Card>
@@ -220,7 +220,7 @@ function RivalDetailView({ data }: { data: RivalHistoryDetailResponse }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {youDom.length > 0 && (
             <Card className="border-green-500/30 bg-sem-success-subtle">
-              <CardContent className="p-3">
+              <CardContent className="p-4">
                 <p className="text-xs font-semibold text-sem-success mb-1.5">You Dominate</p>
                 <div className="flex flex-wrap gap-1">
                   {youDom.map(function (cat) {
@@ -232,7 +232,7 @@ function RivalDetailView({ data }: { data: RivalHistoryDetailResponse }) {
           )}
           {theyDom.length > 0 && (
             <Card className="border-red-500/30 bg-sem-risk-subtle">
-              <CardContent className="p-3">
+              <CardContent className="p-4">
                 <p className="text-xs font-semibold text-sem-risk mb-1.5">They Dominate</p>
                 <div className="flex flex-wrap gap-1">
                   {theyDom.map(function (cat) {

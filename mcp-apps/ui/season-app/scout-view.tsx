@@ -85,8 +85,8 @@ export function ScoutView({ data, app, navigate }: { data: ScoutOpponentData; ap
           <Subheading>Opponent Scout Report</Subheading>
         </div>
         {app && (
-          <Button variant="outline" color="secondary" onClick={handleRefresh} disabled={loading} className="h-8 text-xs gap-1">
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+          <Button variant="outline" color="secondary" size="xs" onClick={handleRefresh} disabled={loading}>
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             Refresh
           </Button>
         )}
@@ -106,7 +106,7 @@ export function ScoutView({ data, app, navigate }: { data: ScoutOpponentData; ap
 
       {/* Score Card */}
       <Card>
-        <CardContent className="p-3">
+        <CardContent className="p-4">
           <div className="flex items-center justify-around">
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Wins</p>
@@ -167,7 +167,7 @@ export function ScoutView({ data, app, navigate }: { data: ScoutOpponentData; ap
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {(d.opp_strengths || []).length > 0 && (
           <Card className="border-red-500/30 bg-sem-risk-subtle">
-            <CardContent className="p-3">
+            <CardContent className="p-4">
               <div className="flex items-center gap-1.5 mb-2">
                 <AlertTriangle className="h-3.5 w-3.5 text-sem-risk" />
                 <p className="text-xs font-semibold text-red-600 dark:text-red-400">Their Strengths</p>
@@ -182,7 +182,7 @@ export function ScoutView({ data, app, navigate }: { data: ScoutOpponentData; ap
         )}
         {(d.opp_weaknesses || []).length > 0 && (
           <Card className="border-green-500/30 bg-sem-success-subtle">
-            <CardContent className="p-3">
+            <CardContent className="p-4">
               <div className="flex items-center gap-1.5 mb-2">
                 <Target className="h-3.5 w-3.5 text-sem-success" />
                 <p className="text-xs font-semibold text-sem-success">Their Weaknesses</p>

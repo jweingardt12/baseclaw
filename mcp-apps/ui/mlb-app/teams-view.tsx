@@ -10,7 +10,7 @@ interface MlbTeam {
 
 export function TeamsView({ data }: { data: { teams: MlbTeam[] } }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {(data.teams || []).map(function (t) {
           return (

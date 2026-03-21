@@ -61,7 +61,7 @@ export function SetLineupView({ data, app, navigate }: { data: SetLineupData; ap
         {data.message && <p className="text-xs text-muted-foreground">{data.message}</p>}
         <div className="flex items-center gap-2 pt-2">
           <Button variant="outline" color="secondary" onClick={handleViewRoster}>
-            <ArrowLeft size={14} className="mr-1" />
+            <ArrowLeft size={14} />
             View Roster
           </Button>
           {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}

@@ -65,7 +65,7 @@ export function PuntAdvisorView({ data }: { data: PuntAdvisorResponse; app?: any
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {puntCandidates.length > 0 && (
           <Card className="border-red-500/30 border-t-2 border-t-red-500">
-            <CardContent className="p-3">
+            <CardContent className="p-4">
               <p className="text-xs text-muted-foreground mb-1.5">Punt Candidates</p>
               <div className="flex flex-wrap gap-1">
                 {puntCandidates.map(function (cat) {
@@ -77,7 +77,7 @@ export function PuntAdvisorView({ data }: { data: PuntAdvisorResponse; app?: any
         )}
         {targetCategories.length > 0 && (
           <Card className="border-green-500/30 border-t-2 border-t-green-500">
-            <CardContent className="p-3">
+            <CardContent className="p-4">
               <p className="text-xs text-muted-foreground mb-1.5">Target Categories</p>
               <div className="flex flex-wrap gap-1">
                 {targetCategories.map(function (cat) {
@@ -127,7 +127,7 @@ export function PuntAdvisorView({ data }: { data: PuntAdvisorResponse; app?: any
       {/* Correlation warnings */}
       {warnings.length > 0 && (
         <Card className="border-yellow-500/30">
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
               <AlertTriangle size={14} className="text-sem-warning" />
               <span className="text-xs font-semibold text-muted-foreground">Correlation Warnings</span>

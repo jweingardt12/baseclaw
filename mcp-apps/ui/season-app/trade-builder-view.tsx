@@ -98,7 +98,7 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
             <div className="flex items-center justify-between">
               <CardTitle className="text-base text-destructive">You Give</CardTitle>
               {myRoster.length === 0 && app && (
-                <Button variant="outline" color="secondary" onClick={handleLoadRoster} disabled={loading}>
+                <Button variant="outline" color="secondary" size="xs" onClick={handleLoadRoster} disabled={loading}>
                   Load Roster
                 </Button>
               )}
@@ -151,7 +151,7 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
                 onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
                 className="flex-1 h-8 rounded-md border border-input bg-background px-2 text-sm"
               />
-              <Button variant="outline" color="secondary" onClick={handleSearch} disabled={loading}>
+              <Button variant="outline" color="secondary" size="xs" uniform onClick={handleSearch} disabled={loading}>
                 <Search size={14} />
               </Button>
             </div>
@@ -190,7 +190,7 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
       {/* Trade Summary */}
       {(givePlayers.length > 0 || getPlayers.length > 0) && (
         <Card>
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1">
                 <p className="text-xs text-muted-foreground mb-1">Give</p>
@@ -213,8 +213,8 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
               </div>
             </div>
             <div className="mt-3 flex justify-center">
-              <Button color="secondary" onClick={handleEvaluate} disabled={loading || givePlayers.length === 0 || getPlayers.length === 0}>
-                {loading ? <Loader2 size={14} className="animate-spin mr-1.5" /> : <TrendingUp size={14} className="mr-1.5" />}
+              <Button color="secondary" size="sm" onClick={handleEvaluate} disabled={loading || givePlayers.length === 0 || getPlayers.length === 0}>
+                {loading ? <Loader2 size={14} className="animate-spin" /> : <TrendingUp size={14} />}
                 Evaluate Trade
               </Button>
             </div>

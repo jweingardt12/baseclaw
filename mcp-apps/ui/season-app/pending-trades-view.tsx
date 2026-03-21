@@ -120,12 +120,12 @@ export function PendingTradesView({ data, app, navigate }: { data: PendingTrades
             <div className="flex items-center justify-between pt-1">
               <span className="text-xs text-muted-foreground font-mono">{trade.transaction_key}</span>
               <div className="flex gap-2">
-                <Button color="secondary" onClick={() => setConfirmAction({ type: "accept", trade })} disabled={loading}>
-                  <Check size={14} className="mr-1" />
+                <Button color="success" size="sm" onClick={() => setConfirmAction({ type: "accept", trade })} disabled={loading}>
+                  <Check size={14} />
                   Accept
                 </Button>
-                <Button color="danger" onClick={() => setConfirmAction({ type: "reject", trade })} disabled={loading}>
-                  <X size={14} className="mr-1" />
+                <Button color="danger" size="sm" onClick={() => setConfirmAction({ type: "reject", trade })} disabled={loading}>
+                  <X size={14} />
                   Reject
                 </Button>
               </div>

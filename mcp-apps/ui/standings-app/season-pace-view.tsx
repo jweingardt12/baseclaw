@@ -49,7 +49,7 @@ export function SeasonPaceView({ data }: { data: SeasonPaceData }) {
   var myProjected = myTeam ? myTeam.projected_wins : 0;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <AiInsight recommendation={data.ai_recommendation} />
 
       <div className="kpi-grid">

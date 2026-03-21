@@ -16,7 +16,7 @@ export function StatCategoriesView({ data }: { data: { categories: StatCategory[
   var renderGroup = function (title: string, cats: StatCategory[], colorClass: string) {
     if (cats.length === 0) return null;
     return (
-      <div className="surface-card p-4">
+      <div className="surface-card p-5">
         <Subheading level={3} className={"mb-3 " + colorClass}>{title}</Subheading>
         <div className="flex flex-wrap gap-2">
           {cats.map((c) => (
@@ -30,7 +30,7 @@ export function StatCategoriesView({ data }: { data: { categories: StatCategory[
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <Subheading>Stat Categories</Subheading>
 
       <AiInsight recommendation={data.ai_recommendation} />

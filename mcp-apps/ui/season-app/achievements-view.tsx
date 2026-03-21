@@ -58,7 +58,7 @@ export function AchievementsView({ data, app, navigate }: { data: AchievementsRe
             {earned.map(function (a, idx) {
               return (
                 <Card key={a.name + "-" + idx} className="border-green-500/30 bg-sem-success-subtle">
-                  <CardContent className="p-3">
+                  <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       <span className="text-2xl flex-shrink-0">{a.icon}</span>
                       <div className="min-w-0">
@@ -85,7 +85,7 @@ export function AchievementsView({ data, app, navigate }: { data: AchievementsRe
             {unearned.map(function (a, idx) {
               return (
                 <Card key={a.name + "-locked-" + idx} className="opacity-60">
-                  <CardContent className="p-3">
+                  <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       <span className="text-2xl flex-shrink-0 grayscale">{a.icon}</span>
                       <div className="min-w-0">

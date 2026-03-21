@@ -17,9 +17,9 @@ interface MlbScheduleData {
 
 export function ScheduleView({ data }: { data: MlbScheduleData }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {(data.games || []).length === 0 ? (
-        <div className="surface-card p-4 text-center">
+        <div className="surface-card p-5 text-center">
           <p className="text-muted-foreground font-semibold">No games scheduled for this date.</p>
         </div>
       ) : (

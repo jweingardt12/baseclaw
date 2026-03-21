@@ -31,10 +31,10 @@ export function InfoView({ data }: { data: LeagueInfo }) {
   ];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <AiInsight recommendation={data.ai_recommendation} />
 
-      <div className="surface-card p-4">
+      <div className="surface-card p-5">
         <div className="flex items-center gap-2 mb-3">
           <Subheading>{data.name}</Subheading>
           <Badge color="secondary">{data.season}</Badge>
@@ -51,7 +51,7 @@ export function InfoView({ data }: { data: LeagueInfo }) {
         </DescriptionList>
       </div>
 
-      <div className="surface-card p-4">
+      <div className="surface-card p-5">
         <Subheading level={3} className="mb-2">Your Team</Subheading>
         <p className="font-medium">{data.team_name}</p>
         <p className="text-xs text-muted-foreground">{data.team_id}</p>

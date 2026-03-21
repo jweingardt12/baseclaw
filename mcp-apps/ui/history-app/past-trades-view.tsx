@@ -29,7 +29,7 @@ export function PastTradesView({ data, app, navigate }: { data: PastTradesData; 
   var trades = data.trades || [];
 
   return (
-    <div className="space-y-3 animate-fade-in">
+    <div className="space-y-4 animate-fade-in">
       <div className="flex items-center justify-between gap-2">
         <Button variant="outline" color="secondary" disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
           <ChevronLeft className="h-4 w-4" />
@@ -48,14 +48,14 @@ export function PastTradesView({ data, app, navigate }: { data: PastTradesData; 
         )}
 
         {trades.length === 0 ? (
-          <div className="surface-card p-4 text-center">
+          <div className="surface-card p-5 text-center">
             <p className="text-sm text-muted-foreground font-semibold">No trades for this season.</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {trades.map(function (t, i) {
               return (
-                <div key={i} className="surface-card p-4">
+                <div key={i} className="surface-card p-5">
                   <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3 items-start">
                     <div>
                       <p className="text-sm font-bold mb-2">{t.team1 + " sends:"}</p>

@@ -87,7 +87,7 @@ export function LineupOptimizeView({ data, app, navigate }: { data: LineupData; 
       {/* Post-Apply Success State */}
       {data.applied && (data.swaps || []).length > 0 && (
         <Card className="border-green-500/50">
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle size={18} className="text-green-500" />
               <span className="font-semibold text-green-700 dark:text-green-400">Lineup Updated</span>
@@ -166,7 +166,7 @@ export function LineupOptimizeView({ data, app, navigate }: { data: LineupData; 
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               Suggested Swaps
-              <Button variant="ghost" color="secondary" className="h-8 w-8 p-0" onClick={handleCopySwaps}>
+              <Button variant="ghost" color="secondary" uniform size="sm" onClick={handleCopySwaps}>
                 {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
               </Button>
             </CardTitle>
@@ -240,9 +240,9 @@ export function LineupOptimizeView({ data, app, navigate }: { data: LineupData; 
       )}
 
       {!data.applied && (data.swaps || []).length > 0 && (
-        <Button color="secondary" className="w-full" onClick={() => setConfirmOpen(true)} disabled={loading}>
+        <Button color="secondary" size="sm" block onClick={() => setConfirmOpen(true)} disabled={loading}>
           {loading ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-          <span className="ml-1.5">Apply Swaps</span>
+          Apply Swaps
         </Button>
       )}
 
@@ -280,7 +280,7 @@ export function LineupOptimizeView({ data, app, navigate }: { data: LineupData; 
 
       {!hasIssues && (
         <Card>
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             <Text>All active players have games today. Lineup looks good!</Text>
           </CardContent>
         </Card>

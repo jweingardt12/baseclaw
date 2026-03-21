@@ -114,13 +114,13 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
     : "Player List";
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <Subheading>{title}</Subheading>
 
       <AiInsight recommendation={data.ai_recommendation} />
 
       {/* Position filter pills */}
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-1.5">
         {ALL_POSITIONS.map(function (pos) {
           var label = pos === "B" ? "All Batters" : pos === "P" ? "All Pitchers" : pos;
           var isActive = activePos === pos;
@@ -129,7 +129,8 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
               key={pos}
               variant={isActive ? "solid" : "outline"}
               color="secondary"
-              className={"text-xs px-2 py-1 h-7" + (isActive ? "" : " text-muted-foreground")}
+              size="2xs"
+              className={isActive ? "" : "text-muted-foreground"}
               onClick={function () { handlePositionChange(pos); }}
               disabled={loading}
             >
@@ -214,10 +215,10 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
                         </span>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
-                        <div className="flex gap-0.5 flex-wrap">
+                        <div className="flex gap-1 flex-wrap">
                           {posDisplay.split(",").map(function (pos) {
                             var trimmed = pos.trim();
-                            return trimmed ? <Badge key={trimmed} color="secondary" className="text-[10px] px-1 py-0">{trimmed}</Badge> : null;
+                            return trimmed ? <Badge key={trimmed} color="secondary" size="sm">{trimmed}</Badge> : null;
                           })}
                         </div>
                       </TableCell>
@@ -246,15 +247,15 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
                       })}
                       <TableCell>
                         {p.status && p.status !== "Healthy" ? (
-                          <Badge color="danger" className="text-[10px] px-1">{p.status}</Badge>
+                          <Badge color="danger" size="sm">{p.status}</Badge>
                         ) : isRostered ? (
-                          <Badge color="secondary" className="text-[10px] px-1">Rostered</Badge>
+                          <Badge color="secondary" size="sm">Rostered</Badge>
                         ) : null}
                       </TableCell>
                       <TableCell>
                         {!isRostered && (
-                          <Button color="secondary" className="h-6 text-xs px-2" onClick={function () { setAddTarget(p); }}>
-                            <UserPlus size={12} className="mr-1" />
+                          <Button color="secondary" size="xs" onClick={function () { setAddTarget(p); }}>
+                            <UserPlus size={14} />
                             Add
                           </Button>
                         )}

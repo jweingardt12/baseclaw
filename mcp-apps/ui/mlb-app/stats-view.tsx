@@ -8,7 +8,7 @@ export function StatsView({ data }: { data: MlbStatsData }) {
   var entries = Object.entries(data.stats || {});
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {entries.map(function (pair) {
           var key = pair[0];

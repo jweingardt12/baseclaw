@@ -125,7 +125,7 @@ export function StandingsView({ data }: { data: { standings: StandingsEntry[]; p
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <AiInsight recommendation={data.ai_recommendation} />
 
       <div className="kpi-grid">
@@ -182,7 +182,7 @@ export function StandingsView({ data }: { data: { standings: StandingsEntry[]; p
       {/* Points Distribution Chart (collapsible) */}
       {hasPoints && (
         <Card>
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             <button
               onClick={() => setShowDistribution(!showDistribution)}
               className="flex items-center justify-between w-full text-left"

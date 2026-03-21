@@ -5,7 +5,7 @@ export function Card({ className, ...props }: React.ComponentPropsWithoutRef<'di
     <div
       {...props}
       className={cn(
-        'flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-sm text-card-foreground ring-1 ring-border',
+        'flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-5 text-sm text-card-foreground ring-1 ring-border',
         className,
       )}
     />
@@ -16,7 +16,7 @@ export function CardHeader({ className, ...props }: React.ComponentPropsWithoutR
   return (
     <div
       {...props}
-      className={cn('grid auto-rows-min items-start gap-1 px-4', className)}
+      className={cn('grid auto-rows-min items-start gap-1.5 px-5', className)}
     />
   )
 }
@@ -40,14 +40,14 @@ export function CardDescription({ className, ...props }: React.ComponentPropsWit
 }
 
 export function CardContent({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
-  return <div {...props} className={cn('px-4', className)} />
+  return <div {...props} className={cn('px-5', className)} />
 }
 
 export function CardFooter({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
   return (
     <div
       {...props}
-      className={cn('flex items-center border-t border-border px-4 pt-4', className)}
+      className={cn('flex items-center border-t border-border px-5 pt-4', className)}
     />
   )
 }

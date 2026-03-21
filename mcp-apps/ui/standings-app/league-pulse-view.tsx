@@ -56,7 +56,7 @@ export function LeaguePulseView({ data }: { data: { teams: LeaguePulseTeam[]; ai
   }));
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <Subheading>League Pulse</Subheading>
 
       <AiInsight recommendation={data.ai_recommendation} />
@@ -106,7 +106,7 @@ export function LeaguePulseView({ data }: { data: { teams: LeaguePulseTeam[]; ai
       </Table>
 
       <Card>
-        <CardContent className="p-3">
+        <CardContent className="p-4">
           <button onClick={() => setShowChart(!showChart)} className="flex items-center justify-between w-full text-left">
             <div className="flex items-center gap-2">
               <Subheading level={3} className="text-sm">Activity Chart</Subheading>

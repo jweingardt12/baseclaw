@@ -12,8 +12,8 @@ interface MlbInjury {
 export function InjuriesView({ data }: { data: { injuries: MlbInjury[] } }) {
   if ((data.injuries || []).length === 0) {
     return (
-      <div className="space-y-3">
-        <div className="surface-card p-4 text-center">
+      <div className="space-y-4">
+        <div className="surface-card p-5 text-center">
           <p className="text-muted-foreground font-semibold">No injuries reported (may be offseason).</p>
         </div>
       </div>
@@ -21,7 +21,7 @@ export function InjuriesView({ data }: { data: { injuries: MlbInjury[] } }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="surface-card overflow-hidden">
         <Table>
           <TableHeader>

@@ -57,8 +57,8 @@ export function BestAvailableView({ data, app, navigate }: { data: BestAvailable
   var lastTier = "";
 
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-2">
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
         <Subheading>Best Available {label}</Subheading>
         <span className="text-xs text-muted-foreground">Top {data.count || filteredPlayers.length}</span>
       </div>

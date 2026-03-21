@@ -90,7 +90,7 @@ export function WeeklyNarrativeView({ data, app, navigate }: { data: WeeklyNarra
       {/* Narrative */}
       {data.narrative && (
         <Card>
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             <p className="text-sm leading-relaxed">{data.narrative}</p>
           </CardContent>
         </Card>
@@ -100,7 +100,7 @@ export function WeeklyNarrativeView({ data, app, navigate }: { data: WeeklyNarra
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {mvp.name && (
           <Card className="border-green-500/30 bg-sem-success-subtle">
-            <CardContent className="p-3">
+            <CardContent className="p-4">
               <div className="flex items-center gap-1.5 mb-1">
                 <Trophy className="h-3.5 w-3.5 text-sem-success" />
                 <p className="text-xs font-semibold text-sem-success">MVP Category</p>
@@ -114,7 +114,7 @@ export function WeeklyNarrativeView({ data, app, navigate }: { data: WeeklyNarra
         )}
         {weak.name && (
           <Card className="border-red-500/30 bg-sem-risk-subtle">
-            <CardContent className="p-3">
+            <CardContent className="p-4">
               <div className="flex items-center gap-1.5 mb-1">
                 <Target className="h-3.5 w-3.5 text-sem-risk" />
                 <p className="text-xs font-semibold text-sem-risk">Weakness</p>

@@ -58,10 +58,10 @@ export function TransactionsView({ data, app, navigate }: { data: TransactionsDa
           <Subheading>MLB Transactions</Subheading>
           <Text>{"Last " + (data.days || 7) + " days"}</Text>
         </div>
-        <div className="flex gap-1">
-          <Button variant="outline" color="secondary" onClick={function() { handleRefresh(3); }} disabled={loading}>3d</Button>
-          <Button variant="outline" color="secondary" onClick={function() { handleRefresh(7); }} disabled={loading}>7d</Button>
-          <Button variant="outline" color="secondary" onClick={function() { handleRefresh(14); }} disabled={loading}>14d</Button>
+        <div className="flex gap-1.5">
+          <Button variant="outline" color="secondary" size="xs" onClick={function() { handleRefresh(3); }} disabled={loading}>3d</Button>
+          <Button variant="outline" color="secondary" size="xs" onClick={function() { handleRefresh(7); }} disabled={loading}>7d</Button>
+          <Button variant="outline" color="secondary" size="xs" onClick={function() { handleRefresh(14); }} disabled={loading}>14d</Button>
         </div>
       </div>
 
@@ -74,10 +74,10 @@ export function TransactionsView({ data, app, navigate }: { data: TransactionsDa
         {transactions.length === 0 ? (
           <Text>No transactions found.</Text>
         ) : (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {transactions.map(function(t, i) {
               return (
-                <div key={i} className={"surface-card p-3 border-l-4 flex items-center gap-3 " + typeBorderColor(t.type)}>
+                <div key={i} className={"surface-card p-4 border-l-4 flex items-center gap-3 " + typeBorderColor(t.type)}>
                   <div className="shrink-0">
                     <TeamLogo abbrev={t.team} />
                   </div>

@@ -36,7 +36,7 @@ export function MatchupsView({ data, app, navigate, toolName }: { data: Matchups
   var isScoreboard = data.type === "scoreboard";
   var refreshToolName = toolName === "scoreboard" ? "yahoo_scoreboard" : "yahoo_matchups";
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <Subheading>
           {isScoreboard ? "Scoreboard" : "Matchups"} - Week {data.week}

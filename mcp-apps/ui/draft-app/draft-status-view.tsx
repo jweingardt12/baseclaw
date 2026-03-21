@@ -105,7 +105,7 @@ export function DraftStatusView({ data }: { data: DraftStatusData }) {
   var draftPct = Math.round((data.total_picks / TOTAL_DRAFT_PICKS) * 100);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {/* KPI Grid */}
       <div className="kpi-grid">
         <KpiTile value={data.current_round} label="Round" color="primary" />

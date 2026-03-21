@@ -31,7 +31,7 @@ interface InjuryReportData {
 
 function PlayerRow({ player, showFind, onFind, readyToActivate, loading, app, navigate }: { player: InjuredPlayer; showFind?: boolean; onFind?: () => void; readyToActivate?: boolean; loading?: boolean; app?: any; navigate?: (data: any) => void }) {
   return (
-    <div className="flex items-center gap-2 py-1.5 border-b last:border-0">
+    <div className="flex items-center gap-2.5 py-2 border-b last:border-0">
       <Badge color="secondary" size="sm" className="w-8 justify-center">{player.position}</Badge>
       <span className="font-medium text-sm flex-1"><PlayerName name={player.name} mlbId={player.mlb_id} app={app} navigate={navigate} context="roster" /></span>
       {player.intel && <IntelBadge intel={player.intel} size="sm" />}
@@ -44,8 +44,8 @@ function PlayerRow({ player, showFind, onFind, readyToActivate, loading, app, na
         </Badge>
       )}
       {showFind && onFind && (
-        <Button variant="outline" color="secondary" onClick={onFind} disabled={loading} className="h-8 text-xs px-2 gap-1">
-          <Search className="h-3 w-3" />
+        <Button variant="outline" color="secondary" size="xs" onClick={onFind} disabled={loading}>
+          <Search className="h-3.5 w-3.5" />
           Find FA
         </Button>
       )}
@@ -153,7 +153,7 @@ export function InjuryReportView({ data, app, navigate }: { data: InjuryReportDa
 
       {!hasAnyIssues && (
         <Card>
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             <Text>No injury issues found. Roster is healthy!</Text>
           </CardContent>
         </Card>

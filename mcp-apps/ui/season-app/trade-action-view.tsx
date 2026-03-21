@@ -49,7 +49,7 @@ export function TradeActionView({ data, app, navigate }: { data: TradeActionData
         )}
         <div className="mt-4 flex items-center gap-2">
           <Button variant="outline" color="secondary" onClick={handleViewTrades}>
-            <ArrowLeft size={14} className="mr-1" />
+            <ArrowLeft size={14} />
             View Pending Trades
           </Button>
           {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}

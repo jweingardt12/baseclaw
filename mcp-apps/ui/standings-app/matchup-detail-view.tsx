@@ -44,15 +44,15 @@ function CategoryRow({ cat, isSwing }: { cat: MatchupCategory; isSwing: boolean 
 
   return (
     <tr className={"border-b border-border/40 " + rowBg}>
-      <td className="px-3 py-1.5 font-medium">
-        <span className="flex items-center gap-1">
+      <td className="px-3 py-2 font-medium">
+        <span className="flex items-center gap-1.5">
           {cat.name}
-          {isSwing && <span className="text-sem-warning text-[10px]" title="Swing category">&#9679;</span>}
+          {isSwing && <span className="text-sem-warning text-xs" title="Swing category">&#9679;</span>}
         </span>
       </td>
-      <td className={"text-right px-3 py-1.5 font-mono text-sm " + myWeight}>{cat.my_value}</td>
-      <td className={"hidden sm:table-cell text-right px-3 py-1.5 font-mono text-sm " + oppWeight}>{cat.opp_value}</td>
-      <td className={"text-center px-2 py-1.5 text-xs font-bold " + resultColor}>{resultLetter}</td>
+      <td className={"text-right px-3 py-2 font-mono text-sm " + myWeight}>{cat.my_value}</td>
+      <td className={"hidden sm:table-cell text-right px-3 py-2 font-mono text-sm " + oppWeight}>{cat.opp_value}</td>
+      <td className={"text-center px-2 py-2 text-xs font-bold " + resultColor}>{resultLetter}</td>
     </tr>
   );
 }
@@ -82,7 +82,7 @@ export function MatchupDetailView({ data, app, navigate }: { data: MatchupDetail
   var statusColor = score.wins > score.losses ? "text-sem-success" : score.losses > score.wins ? "text-sem-risk" : "text-sem-warning";
 
   return (
-    <div className="space-y-3 animate-stagger">
+    <div className="space-y-4 animate-stagger">
       <div className="flex items-center justify-between">
         <Subheading>Week {String(data.week)} Matchup</Subheading>
         {app && navigate && (

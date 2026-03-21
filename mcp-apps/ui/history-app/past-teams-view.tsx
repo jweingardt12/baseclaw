@@ -27,7 +27,7 @@ export function PastTeamsView({ data, app, navigate }: { data: PastTeamsData; ap
   };
 
   return (
-    <div className="space-y-3 animate-fade-in">
+    <div className="space-y-4 animate-fade-in">
       <div className="flex items-center justify-between gap-2">
         <Button variant="outline" color="secondary" disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
           <ChevronLeft className="h-4 w-4" />

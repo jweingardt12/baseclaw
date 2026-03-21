@@ -37,7 +37,7 @@ export function WorkflowSummaryView({ data }: { data: WorkflowSummaryData }) {
     .slice(0, 6);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <AiInsight recommendation={data.ai_recommendation || data.summary || null} />
 
       <Card>

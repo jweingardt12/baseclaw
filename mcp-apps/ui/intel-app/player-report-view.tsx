@@ -58,7 +58,7 @@ export function PlayerReportView({ data, app, navigate }: { data: PlayerReportDa
               </p>
               <div className="flex items-center gap-2 mt-1">
                 <IntelBadge intel={data} size="md" />
-                <Button variant="ghost" color="secondary" className="h-8 w-8 p-0" onClick={handleCopy}>
+                <Button variant="ghost" color="secondary" uniform size="sm" onClick={handleCopy}>
                   {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
                 </Button>
               </div>

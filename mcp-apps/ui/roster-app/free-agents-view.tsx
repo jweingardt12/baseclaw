@@ -58,18 +58,18 @@ export function FreeAgentsView({ data, app, navigate }: { data: FreeAgentsData; 
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <Subheading>{title}</Subheading>
 
       <AiInsight recommendation={data.ai_recommendation} />
 
       {data.type !== "search" && (
-        <Tabs value={activeTab} onChange={handleTabChange} aria-label="Player type" className="mb-2">
+        <Tabs value={activeTab} onChange={handleTabChange} aria-label="Player type">
           <Tabs.Tab value="B">Batters</Tabs.Tab>
           <Tabs.Tab value="P">Pitchers</Tabs.Tab>
         </Tabs>
       )}
-      <form onSubmit={handleSearch} className="flex gap-2 mb-2">
+      <form onSubmit={handleSearch} className="flex gap-2">
         <Input
           placeholder="Search players..."
           value={searchQuery}
@@ -110,9 +110,9 @@ export function FreeAgentsView({ data, app, navigate }: { data: FreeAgentsData; 
                   context="free-agents"
                   colSpan={6}
                   actions={
-                    <Button color="secondary" onClick={() => setAddTarget(p)} className="font-bold px-3">
-                      <UserPlus size={14} className="mr-1" />
-                      ADD
+                    <Button color="secondary" size="xs" onClick={() => setAddTarget(p)}>
+                      <UserPlus size={14} />
+                      Add
                     </Button>
                   }
                 />

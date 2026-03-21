@@ -175,7 +175,7 @@ export function CategoryTrendView({ data }: { data: CategoryTrendData }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {improving.length > 0 && (
           <Card className="border-green-500/30 border-t-2 border-t-green-500">
-            <CardContent className="p-3">
+            <CardContent className="p-4">
               <p className="text-xs text-muted-foreground mb-1.5">Improving</p>
               <div className="flex flex-wrap gap-1">
                 {improving.map(function (c) {
@@ -187,7 +187,7 @@ export function CategoryTrendView({ data }: { data: CategoryTrendData }) {
         )}
         {declining.length > 0 && (
           <Card className="border-red-500/30 border-t-2 border-t-red-500">
-            <CardContent className="p-3">
+            <CardContent className="p-4">
               <p className="text-xs text-muted-foreground mb-1.5">Declining</p>
               <div className="flex flex-wrap gap-1">
                 {declining.map(function (c) {
@@ -209,7 +209,7 @@ export function CategoryTrendView({ data }: { data: CategoryTrendData }) {
       {/* Line Chart */}
       {chartData.length > 1 && (
         <Card>
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             <div className="h-64 sm:h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>

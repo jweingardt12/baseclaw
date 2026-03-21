@@ -71,7 +71,7 @@ export function FaabRecommendView({ data }: { data: FaabRecommendData; app?: any
 
       {/* Player info card */}
       <Card>
-        <CardContent className="p-3">
+        <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {player.mlb_id && <Avatar imageUrl={mlbHeadshotUrl(player.mlb_id)} size={40} />}
@@ -123,7 +123,7 @@ export function FaabRecommendView({ data }: { data: FaabRecommendData; app?: any
       {/* Reasoning */}
       {reasons.length > 0 && (
         <Card>
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             <p className="text-sm font-medium mb-2">Reasoning</p>
             <ul className="space-y-1">
               {reasons.map(function (reason, i) {

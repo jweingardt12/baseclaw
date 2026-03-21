@@ -164,12 +164,12 @@ export function TradeFinderView({ data, app, navigate }: { data: TradeFinderData
                   <p className="text-xs text-muted-foreground italic">{pkg.rationale}</p>
                 )}
                 <div className="flex gap-2 pt-1">
-                  <Button variant="outline" color="secondary" onClick={() => handleEvaluate(pkg)} disabled={loading}>
-                    <BarChart3 size={14} className="mr-1" />
+                  <Button variant="outline" color="secondary" size="xs" onClick={() => handleEvaluate(pkg)} disabled={loading}>
+                    <BarChart3 size={14} />
                     Evaluate
                   </Button>
-                  <Button color="secondary" onClick={() => setProposePkg({ partner, pkg })} disabled={loading}>
-                    <Send size={14} className="mr-1" />
+                  <Button color="secondary" size="xs" onClick={() => setProposePkg({ partner, pkg })} disabled={loading}>
+                    <Send size={14} />
                     Propose
                   </Button>
                 </div>

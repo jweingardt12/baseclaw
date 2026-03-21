@@ -285,7 +285,7 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
 
       {/* Summary */}
       <Card>
-        <CardContent className="p-3">
+        <CardContent className="p-4">
           <p className="text-sm">{data.summary}</p>
         </CardContent>
       </Card>

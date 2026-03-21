@@ -18,7 +18,7 @@ interface MlbDivision {
 
 export function StandingsView({ data }: { data: { divisions: MlbDivision[] } }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {(data.divisions || []).map(function (div) {
         return (
           <div key={div.division} className="surface-card overflow-hidden">

@@ -123,7 +123,7 @@ export function LeagueHistoryView({ data }: { data: { seasons: SeasonResult[] } 
   }).length;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Summary Stats */}
       {seasonsPlayed > 0 && (
         <div className="kpi-grid">
@@ -135,7 +135,7 @@ export function LeagueHistoryView({ data }: { data: { seasons: SeasonResult[] } 
 
       {/* Finish Position Chart */}
       {sortedFinishData.length > 1 && (
-        <div className="surface-card p-4">
+        <div className="surface-card p-5">
           <div className="flex items-center gap-2 mb-3">
             <Trophy className="h-4 w-4 text-muted-foreground" />
             <Subheading>Finish by Season</Subheading>
@@ -261,7 +261,7 @@ export function LeagueHistoryView({ data }: { data: { seasons: SeasonResult[] } 
 
       {/* Win % Trend Chart */}
       {sortedChartData.length > 1 && (
-        <div className="surface-card p-4">
+        <div className="surface-card p-5">
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
             <Subheading>Win % by Season</Subheading>

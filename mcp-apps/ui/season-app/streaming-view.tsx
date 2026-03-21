@@ -84,7 +84,7 @@ export function StreamingView({ data, app, navigate }: { data: StreamingData; ap
                   {p.two_start && <Zap size={14} className="text-amber-500" />}
                 </TableCell>
                 <TableCell>
-                  <Button color="secondary" onClick={() => handleAdd(p.player_id)}>
+                  <Button color="secondary" size="xs" uniform onClick={() => handleAdd(p.player_id)}>
                     <UserPlus size={14} />
                   </Button>
                 </TableCell>

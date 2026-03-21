@@ -28,7 +28,7 @@ export function RosterView({ data, app, navigate }: { data: { players: PlayerRow
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <Subheading className="flex items-center gap-2">
         <Users className="h-5 w-5" />
         Current Roster
@@ -74,7 +74,7 @@ export function RosterView({ data, app, navigate }: { data: { players: PlayerRow
                 colSpan={9}
                 actions={
                   p.player_id ? (
-                    <Button color="danger" onClick={() => setDropTarget(p)}>
+                    <Button color="danger" size="xs" variant="soft" onClick={() => setDropTarget(p)}>
                       <UserMinus size={14} />
                     </Button>
                   ) : undefined

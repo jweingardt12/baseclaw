@@ -73,7 +73,7 @@ export function PastStandingsView({ data, app, navigate }: { data: PastStandings
     }>;
 
   return (
-    <div className="space-y-3 animate-fade-in">
+    <div className="space-y-4 animate-fade-in">
       <div className="flex items-center justify-between gap-2">
         <Button variant="outline" color="secondary" disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
           <ChevronLeft className="h-4 w-4" />
@@ -120,7 +120,7 @@ export function PastStandingsView({ data, app, navigate }: { data: PastStandings
         </div>
         {/* Win/Loss Chart */}
         {standingsChartData.length > 1 && (
-          <div className="surface-card p-4 mt-3">
+          <div className="surface-card p-5 mt-3">
             <div className="flex items-center gap-2 mb-3">
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
               <Subheading>Win-Loss Breakdown</Subheading>

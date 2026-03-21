@@ -65,7 +65,7 @@ function gradeColor(grade: string): string {
 function TradePlayerRow({ player, app, navigate }: { player: Player; app?: any; navigate?: (data: any) => void }) {
   const positions = player.positions || player.eligible_positions || [];
   return (
-    <div className="flex items-center gap-2 py-1.5 border-b last:border-0">
+    <div className="flex items-center gap-2.5 py-2 border-b last:border-0">
       <span className="font-medium text-sm flex-1"><PlayerCell player={player} app={app} navigate={navigate} context="trade" /></span>
       <div className="flex gap-1">
         {positions.map((pos) => (
@@ -113,7 +113,7 @@ export function TradeEvalView({ data, app, navigate }: { data: TradeEvalData; ap
 
       {/* Grade + Net Value Hero */}
       <Card>
-        <CardContent className="p-3">
+        <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Net Z-Value</p>
@@ -129,7 +129,7 @@ export function TradeEvalView({ data, app, navigate }: { data: TradeEvalData; ap
                   {grade}
                 </span>
               </div>
-              <Button variant="ghost" color="secondary" className="h-8 w-8 p-0" onClick={handleCopy}>
+              <Button variant="ghost" color="secondary" uniform size="sm" onClick={handleCopy}>
                 {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
               </Button>
             </div>
@@ -139,7 +139,7 @@ export function TradeEvalView({ data, app, navigate }: { data: TradeEvalData; ap
 
       {/* Value Comparison Bar */}
       <Card>
-        <CardContent className="p-3">
+        <CardContent className="p-4">
           <ComparisonBar
             label="Total Value"
             leftValue={fmtOne(giveValue)}
@@ -181,7 +181,7 @@ export function TradeEvalView({ data, app, navigate }: { data: TradeEvalData; ap
       {/* Position Impact */}
       {impact && ((impact.losing || []).length > 0 || (impact.gaining || []).length > 0) && (
         <Card>
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             <p className="text-sm font-medium mb-2">Position Impact</p>
             <div className="flex gap-3">
               {(impact.losing || []).length > 0 && (

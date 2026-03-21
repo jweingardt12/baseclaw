@@ -231,8 +231,8 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
           {matchup.week && <Badge color="secondary" size="sm">Week {matchup.week}</Badge>}
         </div>
         {app && (
-          <Button variant="outline" color="secondary" onClick={handleRefresh} disabled={loading} className="h-8 text-xs gap-1">
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+          <Button variant="outline" color="secondary" size="xs" onClick={handleRefresh} disabled={loading}>
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             Refresh
           </Button>
         )}
@@ -360,7 +360,7 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
           <CardContent>
             {(injury.injured_active || []).map(function (p: InjuredPlayer) {
               return (
-                <div key={p.name} className="flex items-center gap-2 py-1.5 border-b last:border-0">
+                <div key={p.name} className="flex items-center gap-2.5 py-2 border-b last:border-0">
                   <Badge color="secondary" size="sm" className="w-8 justify-center">{p.position}</Badge>
                   <span className="font-medium text-sm flex-1">
                     <PlayerName name={p.name} mlbId={p.mlb_id} app={app} navigate={navigate} context="roster" />
@@ -388,7 +388,7 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
           <CardContent>
             {(injury.healthy_il || []).map(function (p: InjuredPlayer) {
               return (
-                <div key={p.name} className="flex items-center gap-2 py-1.5 border-b last:border-0">
+                <div key={p.name} className="flex items-center gap-2.5 py-2 border-b last:border-0">
                   <Badge color="secondary" size="sm" className="w-8 justify-center">{p.position}</Badge>
                   <span className="font-medium text-sm flex-1">
                     <PlayerName name={p.name} mlbId={p.mlb_id} app={app} navigate={navigate} context="roster" />
@@ -501,7 +501,7 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
                         <TableCell>
                           <Button
                             variant="ghost" color="secondary"
-                            className="h-8 w-8 p-0"
+                            uniform size="sm"
                             onClick={function () { handleAdd(wt.pid); }}
                             disabled={loading}
                           >

@@ -57,8 +57,8 @@ export function RankingsView({ data, app, navigate }: { data: RankingsData; app:
   };
 
   return (
-    <div className="animate-fade-in">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="animate-fade-in space-y-4">
+      <div className="flex items-center gap-2">
         <BarChart3 size={18} />
         <Subheading>{label} Rankings</Subheading>
         <Badge color="secondary">{data.source}</Badge>
@@ -66,7 +66,7 @@ export function RankingsView({ data, app, navigate }: { data: RankingsData; app:
       </div>
 
       {/* KPI */}
-      <div className="kpi-grid mb-2">
+      <div className="kpi-grid">
         {topPlayer && (
           <KpiTile
             value={formatFixed(topPlayer.z_score, 2, "0.00")}
@@ -81,7 +81,7 @@ export function RankingsView({ data, app, navigate }: { data: RankingsData; app:
 
       {/* Top player highlight */}
       {topPlayer && (
-        <Card className="mb-2 border-primary/40">
+        <Card className="border-primary/40">
           <CardContent className="p-4 flex items-center gap-3">
             <span className="font-mono text-xs text-muted-foreground w-6 text-right">#1</span>
             <div className="shrink-0">
@@ -102,7 +102,7 @@ export function RankingsView({ data, app, navigate }: { data: RankingsData; app:
 
       <ZScoreExplainer />
 
-      <Tabs value={data.pos_type || "B"} onChange={handleTabChange} aria-label="Player type" className="mb-4 mt-2">
+      <Tabs value={data.pos_type || "B"} onChange={handleTabChange} aria-label="Player type">
         <Tabs.Tab value="B">Batters</Tabs.Tab>
         <Tabs.Tab value="P">Pitchers</Tabs.Tab>
       </Tabs>
@@ -115,7 +115,7 @@ export function RankingsView({ data, app, navigate }: { data: RankingsData; app:
         )}
 
         {chartData.length > 0 && (
-          <div className="mb-4 h-36 sm:h-48">
+          <div className="h-36 sm:h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} angle={-35} textAnchor="end" height={60} />
