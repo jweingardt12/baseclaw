@@ -1,0 +1,37 @@
+<h2>What should the Intel page include?</h2>
+<p class="subtitle">These are research/information features. Select all that you want as tabs on the Intel page.</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="news" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>News Feed</h3>
+      <p>Player news headlines with sentiment analysis, source attribution, and filtering by your roster players. Uses <code>/news</code>, <code>/news/feed</code>, <code>/news/player</code>.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="streaming" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Streaming Pitchers</h3>
+      <p>Weekly SP streaming recommendations with matchup ratings, team game counts, and z-score projections. Uses <code>/streaming</code>, <code>/probable-pitchers</code>, <code>/pitcher-matchup</code>.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="waiver" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content">
+      <h3>Waiver Wire Lab</h3>
+      <p>Smart waiver analysis: weak category identification, targeted pickup recs, FAAB bid guidance, IL stash advisor, and category-simulate before adding. Uses <code>/waiver-analyze</code>, <code>/faab-recommend</code>, <code>/il-stash-advisor</code>, <code>/category-simulate</code>.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="closers" onclick="toggleSelect(this)">
+    <div class="letter">4</div>
+    <div class="content">
+      <h3>Closer Monitor + Probable Pitchers</h3>
+      <p>Track closer situations across MLB — who's safe, who's losing the job, and handcuff opportunities. Plus daily probable starters with matchup quality. Uses <code>/closer-monitor</code>, <code>/probable-pitchers</code>.</p>
+    </div>
+  </div>
+</div>
+<p class="subtitle" style="margin-top:16px">Click multiple to select all that you want.</p>

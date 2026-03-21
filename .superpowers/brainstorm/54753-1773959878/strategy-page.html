@@ -1,0 +1,37 @@
+<h2>What should the Strategy page include?</h2>
+<p class="subtitle">Pick the features that matter most for your in-season strategy. All have working API endpoints.</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="trade-finder" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>Trade Finder</h3>
+      <p>Identifies trade partners based on positional strengths/weaknesses across the league. Shows which teams have surplus where you're weak, and vice versa. Uses <code>/trade-finder</code> and <code>/positional-ranks</code>.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="trade-eval" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Trade Evaluator</h3>
+      <p>Grade proposed trades before making them. Input "give" and "get" players, see z-score impact, category simulation, and a letter grade. Uses <code>/trade-eval</code> and <code>/category-simulate</code>.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="category-tracker" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content">
+      <h3>Category Tracker</h3>
+      <p>Track your performance in each scoring category vs league. Shows trends, targets, and which categories to punt or push. Uses <code>/category-check</code>, <code>/category-trends</code>, <code>/punt-advisor</code>.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="playoff-planner" onclick="toggleSelect(this)">
+    <div class="letter">4</div>
+    <div class="content">
+      <h3>Playoff Planner</h3>
+      <p>Playoff scenario analysis — schedule strength, optimal roster moves for the stretch run. Uses <code>/playoff-planner</code>, <code>/season-pace</code>, <code>/schedule-analysis</code>.</p>
+    </div>
+  </div>
+</div>
+<p class="subtitle" style="margin-top:16px">Click multiple to select all that you want. These will become tabs on the Strategy page.</p>

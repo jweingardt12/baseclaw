@@ -1,0 +1,53 @@
+<h2>How should we organize the expanded dashboard?</h2>
+<p class="subtitle">You currently have 6 pages: Today, Roster, Matchup, Players, League, Settings. We need to fit ~15 new feature areas.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Enrich Existing Pages</h3>
+      <p>Keep the same 6 pages but add tabs/sections within them. Today gets games strip + news + streaming recs. Matchup gets category sim + trade tools. Players gets waiver analysis tab. League gets power rankings.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Simple navigation</li><li>Related data stays together</li><li>Less context switching</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Pages get heavy/long</li><li>Some features feel buried</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Add 2-3 New Pages</h3>
+      <p>Keep existing pages + add a "Strategy" page (trade finder, category sim, punt advisor, playoff planner) and a "Intel" page (news, breakouts, probable pitchers, closer monitor, streaming). Enrich existing pages with the obvious fits.</p>
+      <div class="mockup">
+        <div class="mockup-header">Navigation</div>
+        <div class="mockup-body" style="display:flex;gap:16px;flex-wrap:wrap;padding:12px">
+          <span style="padding:4px 12px;background:#3b82f6;color:white;border-radius:6px;font-size:13px">Today</span>
+          <span style="padding:4px 12px;background:#27272a;color:#a1a1aa;border-radius:6px;font-size:13px">Roster</span>
+          <span style="padding:4px 12px;background:#27272a;color:#a1a1aa;border-radius:6px;font-size:13px">Matchup</span>
+          <span style="padding:4px 12px;background:#27272a;color:#a1a1aa;border-radius:6px;font-size:13px">Players</span>
+          <span style="padding:4px 12px;background:#27272a;color:#a1a1aa;border-radius:6px;font-size:13px">League</span>
+          <span style="padding:4px 12px;background:#16a34a;color:white;border-radius:6px;font-size:13px">Strategy ✨</span>
+          <span style="padding:4px 12px;background:#16a34a;color:white;border-radius:6px;font-size:13px">Intel ✨</span>
+          <span style="padding:4px 12px;background:#27272a;color:#a1a1aa;border-radius:6px;font-size:13px">Settings</span>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Clear feature grouping</li><li>Dedicated space for advanced tools</li><li>Mobile-friendly (5 bottom tabs + overflow)</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>More nav items</li><li>Need to decide on grouping</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Hub + Spoke (Smart Today Page)</h3>
+      <p>Make "Today" a rich command center that surfaces the most important data from everywhere. Other pages become detail views you drill into. Today shows: games strip, matchup score, action items, waiver recs, streaming picks, news headlines, injury alerts — all in a dense card grid.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>One-stop overview</li><li>Most actionable layout for daily use</li><li>Matches how fantasy managers actually check their team</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Today page becomes complex</li><li>Still need detail pages</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

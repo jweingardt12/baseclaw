@@ -1,0 +1,1 @@
+import{j as a}from"./index-6zz4ikL1.js";function i({lines:s=4,height:n="h-4"}){return a.jsx("div",{className:"space-y-2",children:Array.from({length:s}).map((r,e)=>a.jsx("div",{className:`${n} rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse`,style:{width:`${100-e*10}%`}},e))})}export{i as L};

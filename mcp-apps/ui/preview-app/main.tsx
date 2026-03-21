@@ -372,8 +372,10 @@ function PreviewApp() {
 
         {/* Mobile drawer — rendered by SidebarMobile, visible only on <768px */}
         <MobileNav
-          sidebarHeaderContent={sidebarHeaderContent}
           sidebarMenuContent={sidebarMenuContent}
+          search={search}
+          setSearch={setSearch}
+          handleSelectView={handleSelectView}
         />
 
         <SidebarInset>
@@ -477,11 +479,15 @@ function PreviewApp() {
  * by Plex UI's built-in CSS.
  */
 function MobileNav({
-  sidebarHeaderContent,
   sidebarMenuContent,
+  search,
+  setSearch,
+  handleSelectView,
 }: {
-  sidebarHeaderContent: React.ReactNode;
   sidebarMenuContent: React.ReactNode;
+  search: string;
+  setSearch: (v: string) => void;
+  handleSelectView: (id: string) => void;
 }) {
   const { setOpenMobile } = useSidebar();
 
@@ -489,23 +495,27 @@ function MobileNav({
     <SidebarMobile>
       <SidebarMobileHeader>
         <div className="flex-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">BaseClaw</p>
-          <h2 className="text-base font-semibold">MCP App Showcase</h2>
+          <h2 className="text-base font-semibold">Browse Tools</h2>
         </div>
         <SidebarMobileMenuButton />
       </SidebarMobileHeader>
+      <div className="px-3 py-2">
+        <Input
+          type="search"
+          placeholder="Search tools..."
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+      </div>
       <div
         className="flex-1 overflow-y-auto px-3 pb-4 mobile-nav-content"
         onClick={(e) => {
           // Close drawer when a menu item is tapped
-          if ((e.target as HTMLElement).closest("button")) {
+          if ((e.target as HTMLElement).closest("[data-active]") || (e.target as HTMLElement).closest("button")) {
             setTimeout(() => setOpenMobile(false), 150);
           }
         }}
       >
-        <div className="space-y-3 mb-4">
-          {sidebarHeaderContent}
-        </div>
         {sidebarMenuContent}
       </div>
     </SidebarMobile>

@@ -1,0 +1,1 @@
+import{j as e,aM as i}from"./index-6zz4ikL1.js";import{b as l}from"./recharts-DCX-9rOl.js";import{c as m,g as c,m as n}from"./utils-CTAxA7eh.js";const f={sm:"size-6",default:"size-8",lg:"size-10"},x=l.memo(function({name:s,mlbId:a,className:r,size:o="default"}){const t=a?n(a):void 0;return e.jsx(i,{src:t,initials:t?void 0:c(s),alt:s,className:m(f[o],r)})});export{x as P};
