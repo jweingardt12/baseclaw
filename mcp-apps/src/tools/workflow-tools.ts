@@ -375,13 +375,62 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
               lines.push("  " + str(name).padEnd(25) + " (intel unavailable: " + str((report as Record<string, string>)._error) + ")");
               continue;
             }
-            const sc = report.statcast || {};
-            if (sc.quality_tier) {
-              lines.push("  " + str(name).padEnd(25) + " tier=" + str(sc.quality_tier));
+            const sc = (report as Record<string, any>).statcast || {};
+            const trends = (report as Record<string, any>).trends || {};
+            const ctx = (report as Record<string, any>).context || {};
+            const disc = (report as Record<string, any>).discipline || {};
+            const arsenal = (report as Record<string, any>).arsenal_changes || {};
+
+            // Build a rich summary line
+            const parts: string[] = [];
+
+            // Batted ball quality
+            const bb = sc.batted_ball || {};
+            if (bb.barrel_tier) parts.push("barrel:" + bb.barrel_tier);
+            if (bb.ev_tier) parts.push("EV:" + bb.ev_tier);
+
+            // Expected stats
+            const exp = sc.expected || {};
+            if (exp.xwoba_tier) parts.push("xwOBA:" + exp.xwoba_tier + "(" + (exp.xwoba || "?") + ")");
+
+            // Speed
+            const spd = sc.speed || {};
+            if (spd.speed_tier) parts.push("speed:" + spd.speed_tier);
+
+            // Discipline
+            if (disc.k_rate) parts.push("K%:" + (disc.k_rate * 100).toFixed(1));
+            if (disc.bb_rate) parts.push("BB%:" + (disc.bb_rate * 100).toFixed(1));
+
+            // Arsenal (pitchers)
+            const pitches = arsenal.current || {};
+            const pitchNames = Object.keys(pitches);
+            if (pitchNames.length > 0) {
+              const best = pitchNames.reduce((a, b) =>
+                (pitches[a]?.whiff_rate || 0) > (pitches[b]?.whiff_rate || 0) ? a : b
+              );
+              const bestPitch = pitches[best];
+              if (bestPitch) {
+                parts.push("best-pitch:" + (bestPitch.pitch_name || best) + "(" + (bestPitch.whiff_rate || "?") + "% whiff)");
+              }
+            }
+
+            // Trend
+            if (trends.status && trends.status !== "neutral") {
+              parts.push("trend:" + trends.status);
+            }
+
+            // Context/sentiment
+            if (ctx.sentiment) parts.push("buzz:" + ctx.sentiment);
+
+            if (parts.length > 0) {
+              lines.push("  " + str(name));
+              // Split into two lines if too long
+              const line1 = parts.slice(0, 4).join(" | ");
+              const line2 = parts.slice(4).join(" | ");
+              lines.push("    " + line1);
+              if (line2) lines.push("    " + line2);
             } else if (sc.note) {
               lines.push("  " + str(name).padEnd(25) + " (" + str(sc.note) + ")");
-            } else if ((sc as Record<string, unknown>).error) {
-              lines.push("  " + str(name).padEnd(25) + " (statcast: " + str((sc as Record<string, unknown>).error) + ")");
             }
           }
         }

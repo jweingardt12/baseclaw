@@ -1472,15 +1472,34 @@ def cmd_trade_eval(args, as_json=False):
                 give_players.append(p)
                 break
 
-    # For get players, search the league
+    # For get players, search all league rosters to resolve name + positions
     for pid in get_ids:
         pid = pid.strip()
         player_key = GAME_KEY + ".p." + pid
-        get_players.append({
-            "player_id": pid,
-            "player_key": player_key,
-            "name": "Player " + pid,
-        })
+        found_player = None
+        try:
+            all_teams = lg.teams()
+            for team_key in all_teams:
+                try:
+                    t = lg.to_team(team_key)
+                    for p in t.roster():
+                        if str(p.get("player_id", "")) == pid:
+                            found_player = p
+                            break
+                except Exception:
+                    continue
+                if found_player:
+                    break
+        except Exception:
+            pass
+        if found_player:
+            get_players.append(found_player)
+        else:
+            get_players.append({
+                "player_id": pid,
+                "player_key": player_key,
+                "name": "Player " + pid,
+            })
 
     # Z-score valuation for all players
     from valuations import get_player_zscore, POS_BONUS
