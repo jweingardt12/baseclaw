@@ -1,6 +1,11 @@
 @import "../globals.css";
 @source "../**/*.tsx";
 
+/* Force Plex UI sidebar to use a solid background instead of transparent */
+:root {
+  --sidebar-background: var(--color-surface, var(--color-background, #0f172a));
+}
+
 .mcp-app-root {
   min-height: 320px;
 }
@@ -47,5 +52,15 @@
   /* Mobile drawer content */
   .mobile-nav-content {
     -webkit-overflow-scrolling: touch;
+  }
+
+  /* Fix transparent mobile drawer — Plex UI SidebarMobile defaults to bg:none */
+  [data-mobile-menu] [class*="MobileSidebar"] {
+    background: var(--color-background, #0f172a) !important;
+  }
+
+  /* Backdrop behind mobile drawer */
+  [data-mobile-menu] [class*="MobileBackdrop"] {
+    background: rgba(0, 0, 0, 0.6) !important;
   }
 }
