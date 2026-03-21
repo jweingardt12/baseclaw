@@ -550,6 +550,118 @@ def cmd_lineup_optimize(args, as_json=False):
         print("Use --apply to execute these changes")
 
 
+def _category_check_preseason(lg, as_json=False):
+    """Pre-season fallback: rank teams by projected z-score per category."""
+    from valuations import get_player_zscore, DEFAULT_BATTING_CATS, DEFAULT_BATTING_CATS_NEGATIVE, DEFAULT_PITCHING_CATS, DEFAULT_PITCHING_CATS_NEGATIVE
+
+    try:
+        all_cats = DEFAULT_BATTING_CATS + DEFAULT_BATTING_CATS_NEGATIVE + DEFAULT_PITCHING_CATS + DEFAULT_PITCHING_CATS_NEGATIVE
+        team_cat_zscores = {}  # team_key -> {cat: total_z}
+
+        teams = lg.teams()
+        for team_key, team_data in teams.items():
+            try:
+                tm = lg.to_team(team_key)
+                roster = tm.roster()
+            except Exception:
+                continue
+            cat_totals = {}
+            for p in roster:
+                name = p.get("name", "")
+                z_info = get_player_zscore(name)
+                if not z_info:
+                    continue
+                per_cat = z_info.get("per_category_zscores", {})
+                for cat in all_cats:
+                    if cat in per_cat:
+                        cat_totals[cat] = cat_totals.get(cat, 0) + per_cat[cat]
+            team_cat_zscores[team_key] = cat_totals
+
+        if not team_cat_zscores:
+            if as_json:
+                return {"week": 0, "categories": [], "strongest": [], "weakest": [], "source": "projected"}
+            print("No roster data available for pre-season projections")
+            return
+
+        # Find my team
+        my_key = None
+        for tk in team_cat_zscores:
+            if TEAM_ID in str(tk):
+                my_key = tk
+                break
+
+        if not my_key:
+            if as_json:
+                return {"week": 0, "categories": [], "strongest": [], "weakest": [], "source": "projected"}
+            print("Could not find your team in league data")
+            return
+
+        my_cats_z = team_cat_zscores[my_key]
+        num_teams = len(team_cat_zscores)
+        cat_ranks = {}
+        lower_is_better_cats = {"ERA", "WHIP", "K"}  # K is negative for batters
+
+        for cat in all_cats:
+            my_val = my_cats_z.get(cat, 0)
+            values = sorted(
+                [team_cat_zscores[tk].get(cat, 0) for tk in team_cat_zscores],
+                reverse=True,
+            )
+            rank = 1
+            for v in values:
+                if my_val >= v:
+                    break
+                rank += 1
+            cat_ranks[cat] = {"value": round(my_val, 2), "rank": rank, "total": num_teams}
+
+        sorted_cats = sorted(cat_ranks.items(), key=lambda x: x[1]["rank"])
+        strong = [c for c, i in sorted_cats if i["rank"] <= 3]
+        weak = [c for c, i in sorted_cats if i["rank"] >= (i["total"] - 2) and i["total"] > 3]
+
+        if as_json:
+            categories = []
+            for cat, info in sorted_cats:
+                strength = ""
+                if info["rank"] <= 3:
+                    strength = "strong"
+                elif info["rank"] >= info["total"] - 2 and info["total"] > 3:
+                    strength = "weak"
+                categories.append({
+                    "name": cat,
+                    "value": info["value"],
+                    "rank": info["rank"],
+                    "total": info["total"],
+                    "strength": strength,
+                })
+            return {
+                "week": 0,
+                "categories": categories,
+                "strongest": strong,
+                "weakest": weak,
+                "source": "projected",
+            }
+
+        print("PRE-SEASON PROJECTED CATEGORY RANKS (z-score based)")
+        print("=" * 50)
+        for cat, info in sorted_cats:
+            marker = ""
+            if info["rank"] <= 3:
+                marker = " <-- STRONG"
+            elif info["rank"] >= info["total"] - 2 and info["total"] > 3:
+                marker = " <-- WEAK"
+            print("  " + cat.ljust(12) + " z=" + str(info["value"]).ljust(8)
+                  + " rank " + str(info["rank"]) + "/" + str(info["total"]) + marker)
+        print("")
+        if strong:
+            print("Projected strengths: " + ", ".join(strong))
+        if weak:
+            print("Projected weaknesses: " + ", ".join(weak))
+    except Exception as e:
+        if as_json:
+            return {"week": 0, "categories": [], "strongest": [], "weakest": [], "error": str(e)}
+        print("Error building pre-season projections: " + str(e))
+
+
 def cmd_category_check(args, as_json=False):
     """Show where you rank in each stat category vs the league"""
     if not as_json:
@@ -567,10 +679,7 @@ def cmd_category_check(args, as_json=False):
         return
 
     if not scoreboard:
-        if as_json:
-            return {"week": 0, "categories": [], "strongest": [], "weakest": []}
-        print("No scoreboard data available (season may not have started)")
-        return
+        return _category_check_preseason(lg, as_json)
 
     # Try to extract category data from scoreboard
     my_cats = {}
@@ -602,11 +711,8 @@ def cmd_category_check(args, as_json=False):
             print("Error parsing scoreboard: " + str(e))
 
     if not my_cats:
-        if as_json:
-            return {"week": 0, "categories": [], "strongest": [], "weakest": []}
-        print("Could not parse category data. Raw scoreboard:")
-        print("  " + str(scoreboard)[:500])
-        return
+        # Pre-season fallback: use projected z-scores from roster
+        return _category_check_preseason(lg, as_json)
 
     # Calculate ranks
     cat_ranks = {}
