@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
 import { Badge } from "@plexui/ui/components/Badge";
+import { Avatar } from "@plexui/ui/components/Avatar";
 import { Button } from "@plexui/ui/components/Button";
 import { Subheading } from "../components/heading";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Legend } from "recharts";
@@ -11,9 +12,11 @@ import { IntelBadge } from "../shared/intel-badge";
 import { PlayerName } from "../shared/player-name";
 import { AiInsight } from "../shared/ai-insight";
 import { formatFixed, toFiniteNumber } from "../shared/number-format";
+import { mlbHeadshotUrl } from "../shared/mlb-images";
 
 interface ComparePlayer {
   name: string;
+  mlb_id?: number;
   z_score: number;
   categories: Record<string, number>;
   intel?: any;
@@ -141,6 +144,7 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
                         className={"w-full text-left px-2 py-1.5 rounded text-sm flex items-center gap-2 " + (isSelected ? "bg-primary text-primary-foreground" : isOther ? "opacity-40 cursor-not-allowed" : "hover:bg-muted")}
                       >
                         {isSelected && <Check size={12} />}
+                        {p.mlb_id && <Avatar imageUrl={mlbHeadshotUrl(p.mlb_id)} size={24} />}
                         <span className="font-medium">{p.name}</span>
                         {p.position && <Badge color="secondary" size="sm" className="ml-auto">{p.position}</Badge>}
                       </button>
@@ -163,6 +167,7 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
                         className={"w-full text-left px-2 py-1.5 rounded text-sm flex items-center gap-2 " + (isSelected ? "bg-primary text-primary-foreground" : isOther ? "opacity-40 cursor-not-allowed" : "hover:bg-muted")}
                       >
                         {isSelected && <Check size={12} />}
+                        {p.mlb_id && <Avatar imageUrl={mlbHeadshotUrl(p.mlb_id)} size={24} />}
                         <span className="font-medium">{p.name}</span>
                         {p.position && <Badge color="secondary" size="sm" className="ml-auto">{p.position}</Badge>}
                       </button>
@@ -198,7 +203,7 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <CardTitle className="text-base break-words"><PlayerName name={data.player1.name} app={app} navigate={navigate} context="default" /></CardTitle>
+              <CardTitle className="text-base break-words"><PlayerName name={data.player1.name} mlbId={data.player1.mlb_id} app={app} navigate={navigate} context="default" /></CardTitle>
               {data.player1.intel && <IntelBadge intel={data.player1.intel} size="sm" />}
             </div>
           </CardHeader>
@@ -209,7 +214,7 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <CardTitle className="text-base break-words"><PlayerName name={data.player2.name} app={app} navigate={navigate} context="default" /></CardTitle>
+              <CardTitle className="text-base break-words"><PlayerName name={data.player2.name} mlbId={data.player2.mlb_id} app={app} navigate={navigate} context="default" /></CardTitle>
               {data.player2.intel && <IntelBadge intel={data.player2.intel} size="sm" />}
             </div>
           </CardHeader>

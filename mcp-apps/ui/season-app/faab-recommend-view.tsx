@@ -1,10 +1,12 @@
 import { Badge } from "@plexui/ui/components/Badge";
+import { Avatar } from "@plexui/ui/components/Avatar";
 import { Card, CardContent } from "../components/card";
 import { Subheading } from "../components/heading";
 import { Text } from "../components/text";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { KpiTile } from "../shared/kpi-tile";
 import { formatFixed } from "../shared/number-format";
+import { mlbHeadshotUrl } from "../shared/mlb-images";
 
 interface PlayerInfo {
   name: string;
@@ -12,6 +14,7 @@ interface PlayerInfo {
   tier: string;
   pos: string;
   team: string;
+  mlb_id?: number;
 }
 
 interface CategoryImpact {
@@ -70,11 +73,14 @@ export function FaabRecommendView({ data }: { data: FaabRecommendData; app?: any
       <Card>
         <CardContent className="p-3">
           <div className="flex items-center justify-between">
-            <div>
-              <Subheading>{player.name}</Subheading>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge color="secondary" size="sm">{player.pos}</Badge>
-                <span className="text-sm text-muted-foreground">{player.team}</span>
+            <div className="flex items-center gap-3">
+              {player.mlb_id && <Avatar imageUrl={mlbHeadshotUrl(player.mlb_id)} size={40} />}
+              <div>
+                <Subheading>{player.name}</Subheading>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge color="secondary" size="sm">{player.pos}</Badge>
+                  <span className="text-sm text-muted-foreground">{player.team}</span>
+                </div>
               </div>
             </div>
             <div className="text-right">

@@ -4,11 +4,13 @@ import { Subheading } from "../components/heading";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 import { TeamLogo } from "../shared/team-logo";
+import { PlayerName } from "../shared/player-name";
 import { formatFixed } from "../shared/number-format";
 
 interface PitcherMatchupEntry {
   name: string;
   player_id: string;
+  mlb_id?: number;
   mlb_team: string;
   next_start_date: string;
   opponent: string;
@@ -43,7 +45,7 @@ function gradeColor(grade: string): string {
 // Sort by grade quality (A first)
 var GRADE_ORDER: Record<string, number> = { A: 0, B: 1, C: 2, D: 3, F: 4 };
 
-export function PitcherMatchupView({ data }: { data: PitcherMatchupData }) {
+export function PitcherMatchupView({ data, app }: { data: PitcherMatchupData; app?: any }) {
   var pitchers = (data.pitchers || []).slice().sort((a, b) => {
     var aOrd = GRADE_ORDER[a.matchup_grade] != null ? GRADE_ORDER[a.matchup_grade] : 5;
     var bOrd = GRADE_ORDER[b.matchup_grade] != null ? GRADE_ORDER[b.matchup_grade] : 5;
@@ -87,7 +89,7 @@ export function PitcherMatchupView({ data }: { data: PitcherMatchupData }) {
             <TableRow key={p.player_id + "-" + p.next_start_date}>
               <TableCell className="font-medium">
                 <span className="flex items-center gap-1.5">
-                  {p.name}
+                  <PlayerName name={p.name} playerId={p.player_id} mlbId={p.mlb_id} app={app} context="roster" />
                   {p.two_start && <Badge size="sm" className="bg-purple-600 text-white">2S</Badge>}
                 </span>
               </TableCell>

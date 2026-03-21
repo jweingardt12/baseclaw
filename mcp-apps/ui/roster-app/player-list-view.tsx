@@ -10,6 +10,8 @@ import { useCallTool } from "../shared/use-call-tool";
 import { PlayerRow, PlayerRowData } from "../shared/player-row";
 import { AiInsight } from "../shared/ai-insight";
 import { Search, UserPlus, Loader2, ArrowUp, TrendingDown } from "@/shared/icons";
+import { PlayerName } from "../shared/player-name";
+import { IntelBadge } from "../shared/intel-badge";
 
 var BATTER_POSITIONS = ["B", "C", "1B", "2B", "SS", "3B", "OF", "Util"];
 var PITCHER_POSITIONS = ["P", "SP", "RP"];
@@ -207,10 +209,8 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
                       <TableCell className="font-medium">
                         <span className="flex items-center gap-1 min-w-0">
                           {p.team && <img src={"https://www.mlbstatic.com/team-logos/" + getTeamId(p.team) + ".svg"} alt="" className="w-4 h-4" onError={function (e: any) { e.target.style.display = "none"; }} />}
-                          <span className="truncate text-sm">{p.name}</span>
-                          {p.intel && (p.intel as any).trends && (p.intel as any).trends.hot_cold === "hot" && (
-                            <Badge color="danger" className="text-[10px] px-1 py-0 h-4">HOT</Badge>
-                          )}
+                          <PlayerName name={p.name} playerId={p.player_id || p.pid} mlbId={p.mlb_id} app={app} navigate={navigate} context="free-agents" />
+                          {p.intel && <IntelBadge intel={p.intel} size="sm" />}
                         </span>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">

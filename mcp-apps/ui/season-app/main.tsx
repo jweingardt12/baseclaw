@@ -60,7 +60,7 @@ function SeasonApp() {
           case "trade-finder": return <TradeFinderView data={data} app={app} navigate={navigate} />;
           case "week-planner": return <WeekPlannerView data={data} />;
           case "closer-monitor": return <CloserMonitorView data={data} app={app} navigate={navigate} />;
-          case "pitcher-matchup": return <PitcherMatchupView data={data} />;
+          case "pitcher-matchup": return <PitcherMatchupView data={data} app={app} />;
           case "morning-briefing": return <MorningBriefingView data={data} app={app} navigate={navigate} />;
           case "category-trends": return <CategoryTrendView data={data} />;
           case "punt-advisor": return <PuntAdvisorView data={data} app={app} navigate={navigate} />;

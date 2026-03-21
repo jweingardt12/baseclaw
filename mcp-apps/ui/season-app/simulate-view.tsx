@@ -181,6 +181,13 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
             </CardHeader>
             <CardContent className="pt-0">
               <div className="flex items-center gap-3">
+                {data.drop_player.mlb_id && (
+                  <img
+                    src={mlbHeadshotUrl(data.drop_player.mlb_id)}
+                    alt=""
+                    className="w-10 h-10 rounded-full bg-muted object-cover flex-shrink-0"
+                  />
+                )}
                 <div>
                   <p className="font-semibold">
                     {data.drop_player.name}

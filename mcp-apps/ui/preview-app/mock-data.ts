@@ -692,11 +692,13 @@ export const MOCK_DATA: Record<string, any> = {
   compare: {
     player1: {
       name: "Aaron Judge",
+      mlb_id: 592450,
       z_score: 2.87,
       categories: { R: 2.1, H: 1.4, HR: 3.8, RBI: 2.9, K: -1.2, TB: 3.1, AVG: 0.8, OBP: 1.5, XBH: 3.2, NSB: -0.5 },
     },
     player2: {
       name: "Bobby Witt Jr.",
+      mlb_id: 677951,
       z_score: 2.18,
       categories: { R: 2.5, H: 2.2, HR: 1.6, RBI: 1.8, K: 0.3, TB: 2.0, AVG: 1.9, OBP: 1.2, XBH: 1.5, NSB: 3.1 },
     },
@@ -706,6 +708,7 @@ export const MOCK_DATA: Record<string, any> = {
   // ── Player Value ────────────────────────────────────────────────────────
   value: {
     name: "Aaron Judge",
+    mlb_id: 592450,
     team: "NYY",
     pos: "OF",
     player_type: "hitter",
@@ -755,7 +758,7 @@ export const MOCK_DATA: Record<string, any> = {
   "category-simulate": {
     type: "category-simulate",
     add_player: { name: "Jazz Chisholm Jr.", team: "NYY", positions: "2B,3B,OF", mlb_id: 665862 },
-    drop_player: { name: "Brendan Donovan", team: "STL", positions: "2B,3B,OF" },
+    drop_player: { name: "Brendan Donovan", team: "STL", positions: "2B,3B,OF", mlb_id: 680977 },
     current_ranks: [
       { name: "R", rank: 4, total: 12 },
       { name: "H", rank: 6, total: 12 },
@@ -1800,7 +1803,7 @@ export const MOCK_DATA: Record<string, any> = {
 
   // ── FAAB Recommend ────────────────────────────────────────────────────
   "faab-recommend": {
-    player: { name: "Rece Hinds", z_final: 1.2, tier: "Strong", pos: "OF", team: "CIN" },
+    player: { name: "Rece Hinds", z_final: 1.2, tier: "Strong", pos: "OF", team: "CIN", mlb_id: 700530 },
     recommended_bid: 18,
     bid_range: { low: 12, high: 24 },
     faab_remaining: 72,

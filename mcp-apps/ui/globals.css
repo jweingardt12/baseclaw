@@ -94,20 +94,21 @@ button, a, [role="button"] {
 
 .mcp-app-root {
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
   border-radius: var(--radius);
   animation: slide-up 240ms ease-out both;
   background: var(--color-card);
   box-shadow: var(--app-shadow-soft);
   border: 1px solid var(--color-border);
   padding:
-    calc(var(--app-space-1) + min(var(--safe-area-top), 4px))
-    calc(var(--app-space-1) + min(var(--safe-area-right), 4px))
-    calc(var(--app-space-1) + min(var(--safe-area-bottom), 4px))
-    calc(var(--app-space-1) + min(var(--safe-area-left), 4px));
+    calc(var(--app-space-2) + min(var(--safe-area-top), 4px))
+    calc(var(--app-space-2) + min(var(--safe-area-right), 4px))
+    calc(var(--app-space-2) + min(var(--safe-area-bottom), 4px))
+    calc(var(--app-space-2) + min(var(--safe-area-left), 4px));
 
   /* Compact table for MCP apps — override Plex UI defaults */
-  --table-cell-padding: 0.5rem 0.75rem;
+  --table-cell-padding: 0.625rem 0.875rem;
   --table-cell-font-size: var(--font-text-xs-size);
 }
 
@@ -121,11 +122,11 @@ button, a, [role="button"] {
   background: var(--color-card);
   border: 1px solid var(--color-border);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
-  padding: var(--app-space-1);
+  padding: var(--app-space-2);
 }
 
 .preview-shell .mcp-app-content {
-  gap: var(--app-space-2);
+  gap: var(--app-space-3);
 }
 
 .surface-card {
@@ -136,7 +137,7 @@ button, a, [role="button"] {
 
 .mcp-app-content {
   display: grid;
-  gap: var(--app-space-2);
+  gap: var(--app-space-3);
 }
 
 .mcp-app-shell-controls {
@@ -379,7 +380,7 @@ button, a, [role="button"] {
   }
 
   .mcp-app-root {
-    padding: 6px;
+    padding: 10px;
     border-radius: 10px;
   }
 }

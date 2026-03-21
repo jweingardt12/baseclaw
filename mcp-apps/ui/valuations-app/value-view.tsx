@@ -17,6 +17,7 @@ interface ValueCategory {
 
 interface ValueData {
   name: string;
+  mlb_id?: number;
   team?: string;
   pos?: string;
   player_type?: string;
@@ -64,7 +65,7 @@ export function ValueView({ data, app, navigate }: { data: ValueData; app?: any;
             <BarChart3 size={20} />
             <div className="flex-1 min-w-0">
               <p className="text-2xl-app font-bold truncate">
-                <PlayerName name={data.name} app={app} navigate={navigate} context="default" />
+                <PlayerName name={data.name} mlbId={data.mlb_id} app={app} navigate={navigate} context="default" />
               </p>
               <div className="flex items-center gap-2 mt-1">
                 {details.length > 0 && (

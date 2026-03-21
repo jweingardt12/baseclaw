@@ -15,6 +15,7 @@ import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Responsi
 interface PlayerReportData extends PlayerIntel {
   type: string;
   name: string;
+  mlb_id?: number;
   ai_recommendation?: string | null;
 }
 
@@ -53,7 +54,7 @@ export function PlayerReportView({ data, app, navigate }: { data: PlayerReportDa
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
               <p className="text-2xl-app font-bold truncate">
-                <PlayerName name={data.name} app={app} navigate={navigate} context="default" />
+                <PlayerName name={data.name} mlbId={data.mlb_id} app={app} navigate={navigate} context="default" />
               </p>
               <div className="flex items-center gap-2 mt-1">
                 <IntelBadge intel={data} size="md" />
