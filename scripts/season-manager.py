@@ -2916,18 +2916,36 @@ def cmd_pending_trades(args, as_json=False):
                 return {"trades": []}
             print("No pending trade proposals")
             return
+
+        # Build team name lookup from league teams
+        team_names = {}
+        try:
+            all_teams = lg.teams()
+            for tk, tinfo in all_teams.items():
+                team_names[tk] = tinfo.get("name", tk) if isinstance(tinfo, dict) else tk
+        except Exception:
+            pass
+
+        my_team_key = team.team_key
+
         trade_list = []
         for t in trades:
+            trader_key = t.get("trader_team_key", "")
+            tradee_key = t.get("tradee_team_key", "")
+            # Determine direction: did I propose or receive this trade?
+            i_proposed = (trader_key == my_team_key)
             trade_list.append({
                 "transaction_key": t.get("transaction_key", ""),
                 "status": t.get("status", ""),
-                "trader_team_key": t.get("trader_team_key", ""),
-                "trader_team_name": t.get("trader_team_name", ""),
-                "tradee_team_key": t.get("tradee_team_key", ""),
-                "tradee_team_name": t.get("tradee_team_name", ""),
+                "trader_team_key": trader_key,
+                "trader_team_name": t.get("trader_team_name", "") or team_names.get(trader_key, trader_key),
+                "tradee_team_key": tradee_key,
+                "tradee_team_name": t.get("tradee_team_name", "") or team_names.get(tradee_key, tradee_key),
                 "trader_players": t.get("trader_players", []),
                 "tradee_players": t.get("tradee_players", []),
                 "trade_note": t.get("trade_note", ""),
+                "direction": "sent" if i_proposed else "received",
+                "can_respond": not i_proposed,
             })
         if as_json:
             return {"trades": trade_list}
