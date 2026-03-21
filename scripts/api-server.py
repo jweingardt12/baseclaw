@@ -1603,8 +1603,11 @@ def _compute_positional_impact(roster_players, get_players, give_players):
             if "_error" in gp:
                 continue
             gp_name = gp.get("name", "Unknown")
-            gp_pos = str(gp.get("pos", ""))
-            gp_positions = [p.strip() for p in gp_pos.split(",") if p.strip()] if gp_pos else []
+            # Prefer eligible_positions (from Yahoo), fall back to pos string
+            gp_positions = gp.get("eligible_positions", [])
+            if not gp_positions:
+                gp_pos = str(gp.get("pos", ""))
+                gp_positions = [p.strip() for p in gp_pos.split(",") if p.strip()] if gp_pos else []
             z_scores = gp.get("z_scores", {})
             gp_z = float(z_scores.get("Final", 0))
 
@@ -1753,13 +1756,52 @@ def workflow_trade_analysis():
                 players = val.get("players", [])
                 if players:
                     p = players[0]
-                    get_players.append(p)
-                    # Try search for player ID
+                    # Try search in free agents for player ID and position data
                     search = _safe_call(yahoo_fantasy.cmd_search, [name])
+                    found_in_search = False
                     for rp in (search or {}).get("results", []):
                         if str(rp.get("name", "")).lower() == str(p.get("name", "")).lower():
                             get_ids.append(str(rp.get("player_id", "")))
+                            # Enrich with position data from Yahoo
+                            positions = rp.get("eligible_positions") or rp.get("positions")
+                            if positions:
+                                p["eligible_positions"] = positions
+                                if not p.get("pos"):
+                                    p["pos"] = ",".join(
+                                        pos for pos in positions
+                                        if pos not in ("BN", "IL", "IL+", "DL", "NA", "Util")
+                                    )
+                            found_in_search = True
                             break
+                    # If not found in free agents (player is rostered), scan all team rosters
+                    if not found_in_search:
+                        try:
+                            _sc, _gm, _lg = yahoo_fantasy.get_league()
+                            all_teams = _lg.teams()  # dict: team_key -> team_info
+                            for team_key in all_teams:
+                                try:
+                                    team_obj = _lg.to_team(team_key)
+                                    team_roster = team_obj.roster()
+                                    for tp in team_roster:
+                                        if str(tp.get("name", "")).lower() == str(p.get("name", "")).lower():
+                                            get_ids.append(str(tp.get("player_id", "")))
+                                            positions = tp.get("eligible_positions", [])
+                                            if positions:
+                                                p["eligible_positions"] = positions
+                                                if not p.get("pos"):
+                                                    p["pos"] = ",".join(
+                                                        pos for pos in positions
+                                                        if pos not in ("BN", "IL", "IL+", "DL", "NA", "Util")
+                                                    )
+                                            found_in_search = True
+                                            break
+                                except Exception:
+                                    continue
+                                if found_in_search:
+                                    break
+                        except Exception:
+                            pass
+                    get_players.append(p)
                 else:
                     get_players.append({"name": name, "_error": "Player not found in projections"})
             except Exception:
