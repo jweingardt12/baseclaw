@@ -101,6 +101,13 @@ def _parse_enriched_data(raw, stat_lookup):
     except Exception:
         return result
 
+    # Yahoo sometimes wraps players under a numeric key like {"0": {"players": {...}}}
+    if not players_raw and isinstance(roster_data, dict):
+        for key, val in roster_data.items():
+            if isinstance(val, dict) and "players" in val:
+                players_raw = val.get("players", {})
+                break
+
     if not players_raw:
         return result
 
