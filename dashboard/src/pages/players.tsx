@@ -574,7 +574,7 @@ function renderTrends(data: any) {
         {Array.isArray(trending) && trending.length > 0 ? (
           <div className="space-y-1.5">
             {trending.slice(0, 10).map((p: any, i: number) => (
-              <div key={i} className="flex items-center gap-2 text-sm rounded-md bg-zinc-50 dark:bg-zinc-800/50 px-3 py-2">
+              <div key={i} className="flex items-center gap-2 text-sm rounded-md bg-zinc-50 dark:bg-zinc-800/50 px-3 py-2 transition-colors duration-150 hover:bg-zinc-100 dark:hover:bg-zinc-800">
                 <PlayerAvatar name={p.name} mlbId={p.mlb_id} size="sm" />
                 <div className="flex-1 min-w-0">
                   <span className="text-zinc-950 dark:text-white font-medium">{p.name}</span>
@@ -597,7 +597,7 @@ function renderTrends(data: any) {
         {Array.isArray(cooling) && cooling.length > 0 ? (
           <div className="space-y-1.5">
             {cooling.slice(0, 10).map((p: any, i: number) => (
-              <div key={i} className="flex items-center gap-2 text-sm rounded-md bg-zinc-50 dark:bg-zinc-800/50 px-3 py-2">
+              <div key={i} className="flex items-center gap-2 text-sm rounded-md bg-zinc-50 dark:bg-zinc-800/50 px-3 py-2 transition-colors duration-150 hover:bg-zinc-100 dark:hover:bg-zinc-800">
                 <PlayerAvatar name={p.name} mlbId={p.mlb_id} size="sm" />
                 <div className="flex-1 min-w-0">
                   <span className="text-zinc-950 dark:text-white font-medium">{p.name}</span>

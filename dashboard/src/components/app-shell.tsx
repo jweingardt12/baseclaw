@@ -168,10 +168,10 @@ export function AppShell() {
               key={item.path}
               onClick={() => navigate(item.path)}
               onTouchStart={() => handlePrefetch(item.path)}
-              className={`flex flex-1 flex-col items-center justify-center gap-1 text-xs transition-colors ${
+              className={`flex flex-1 flex-col items-center justify-center gap-1 text-xs transition-all duration-150 active:scale-95 ${
                 isActive
                   ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-zinc-500 dark:text-zinc-400"
+                  : "text-zinc-500 dark:text-zinc-400 active:text-zinc-700 dark:active:text-zinc-300"
               }`}
             >
               <item.icon className="size-5" />

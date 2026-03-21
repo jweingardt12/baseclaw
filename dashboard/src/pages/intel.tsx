@@ -85,7 +85,7 @@ function NewsFeedPanel() {
       ) : filteredNews.length > 0 ? (
         <div className="space-y-3">
           {filteredNews.map((item, i) => (
-            <div key={i} className="rounded-lg border border-zinc-950/5 dark:border-white/10 p-4 space-y-1">
+            <div key={i} className="rounded-lg border border-zinc-950/5 dark:border-white/10 p-4 space-y-1 transition-colors duration-150 hover:bg-zinc-950/[2.5%] dark:hover:bg-white/[2.5%]">
               <div className="flex items-start justify-between gap-2">
                 <p className="text-sm font-medium text-zinc-900 dark:text-white leading-snug">{item.headline}</p>
                 {item.timestamp && (
@@ -130,7 +130,7 @@ function StreamingPanel() {
         ) : streaming.data?.recommendations && streaming.data.recommendations.length > 0 ? (
           <div className="space-y-2">
             {streaming.data.recommendations.map((rec, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-lg border border-zinc-950/5 dark:border-white/10 p-3">
+              <div key={i} className="flex items-center gap-3 rounded-lg border border-zinc-950/5 dark:border-white/10 p-3 transition-colors duration-150 hover:bg-zinc-950/[2.5%] dark:hover:bg-white/[2.5%]">
                 <PlayerAvatar name={rec.name} size="sm" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-zinc-900 dark:text-white">{rec.name}</p>
@@ -262,7 +262,7 @@ function WaiverLabPanel() {
         ) : waivers.data?.recommendations && waivers.data.recommendations.length > 0 ? (
           <div className="space-y-2">
             {waivers.data.recommendations.map((rec, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-lg border border-zinc-950/5 dark:border-white/10 p-3">
+              <div key={i} className="flex items-center gap-3 rounded-lg border border-zinc-950/5 dark:border-white/10 p-3 transition-colors duration-150 hover:bg-zinc-950/[2.5%] dark:hover:bg-white/[2.5%]">
                 <PlayerAvatar name={rec.name} size="sm" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-zinc-900 dark:text-white">{rec.name}</p>
@@ -361,7 +361,7 @@ function CloserMonitorPanel() {
       ) : Array.isArray(closers.data) && closers.data.length > 0 ? (
         <div className="space-y-2">
           {closers.data.map((entry, i) => (
-            <div key={i} className="flex items-center gap-3 rounded-lg border border-zinc-950/5 dark:border-white/10 p-3">
+            <div key={i} className="flex items-center gap-3 rounded-lg border border-zinc-950/5 dark:border-white/10 p-3 transition-colors duration-150 hover:bg-zinc-950/[2.5%] dark:hover:bg-white/[2.5%]">
               <div className="w-10 text-center">
                 <span className="text-xs font-bold text-zinc-500">{entry.team}</span>
               </div>

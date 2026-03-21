@@ -62,7 +62,7 @@ export function GamesStrip({ roster }: GamesStripProps) {
         return (
           <div
             key={player.name}
-            className="flex-none snap-start w-28 rounded-lg border border-green-500/30 dark:border-green-500/20 bg-white dark:bg-zinc-900 p-2 text-center"
+            className="flex-none snap-start w-28 rounded-lg border border-green-500/30 dark:border-green-500/20 bg-white dark:bg-zinc-900 p-2 text-center transition-shadow duration-150 hover:shadow-md hover:shadow-green-500/10"
           >
             <PlayerAvatar name={player.name} mlbId={player.mlb_id} size="sm" className="mx-auto" />
             <p className="text-xs font-medium truncate mt-1 text-zinc-950 dark:text-white">

@@ -37,8 +37,8 @@ export function PlayerRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-2.5 rounded-lg border border-zinc-950/5 dark:border-white/5 px-3 py-2.5 transition-colors",
-        "hover:bg-zinc-950/[2.5%] dark:hover:bg-white/[2.5%]"
+        "flex items-center gap-2.5 rounded-lg border border-zinc-950/5 dark:border-white/5 px-3 py-2.5 transition-all duration-150",
+        "hover:bg-zinc-950/[2.5%] dark:hover:bg-white/[2.5%] hover:shadow-sm hover:shadow-zinc-950/5 dark:hover:shadow-white/5"
       )}
     >
       {/* Slot badge */}
