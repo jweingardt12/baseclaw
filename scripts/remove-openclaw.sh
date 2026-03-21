@@ -70,22 +70,59 @@ fi
 # Remove cron jobs via openclaw CLI
 # ---------------------------------------------------------------------------
 if command -v openclaw >/dev/null 2>&1; then
-  REMOVED=0
-  for name in \
-    "Daily morning briefing + auto lineup" \
-    "Daily pre-lock lineup check" \
-    "Monday matchup plan" \
-    "Tuesday waiver deadline prep" \
-    "Thursday streaming check" \
-    "Saturday roster audit" \
-    "Sunday weekly digest" \
-    "Monthly season checkpoint"; do
-    if openclaw cron remove --name "$name" 2>/dev/null; then
-      REMOVED=$((REMOVED + 1))
-    fi
-  done
+  # List jobs, match BaseClaw names, remove by ID
+  REMOVED=$(python3 - <<'PYEOF'
+import subprocess, json, sys
 
-  if [ "$REMOVED" -gt 0 ]; then
+BASECLAW_JOBS = {
+    "Daily morning briefing + auto lineup",
+    "Daily pre-lock lineup check",
+    "Monday matchup plan",
+    "Tuesday waiver deadline prep",
+    "Thursday streaming check",
+    "Saturday roster audit",
+    "Sunday weekly digest",
+    "Monthly season checkpoint",
+}
+
+# Get current cron jobs as JSON
+try:
+    result = subprocess.run(
+        ["openclaw", "cron", "list", "--json"],
+        capture_output=True, text=True, timeout=15,
+    )
+    if result.returncode != 0:
+        print(0)
+        sys.exit(0)
+    jobs = json.loads(result.stdout)
+except Exception:
+    print(0)
+    sys.exit(0)
+
+# Handle list or dict response
+if isinstance(jobs, dict):
+    jobs = jobs.get("jobs", jobs.get("data", []))
+
+removed = 0
+for job in jobs:
+    name = job.get("name", "")
+    job_id = job.get("id", "")
+    if name in BASECLAW_JOBS and job_id:
+        try:
+            r = subprocess.run(
+                ["openclaw", "cron", "rm", str(job_id)],
+                capture_output=True, text=True, timeout=15,
+            )
+            if r.returncode == 0:
+                removed += 1
+        except Exception:
+            pass
+
+print(removed)
+PYEOF
+  )
+
+  if [ "${REMOVED:-0}" -gt 0 ]; then
     ok "$REMOVED cron jobs removed"
   else
     info "No BaseClaw cron jobs found"

@@ -6,7 +6,8 @@
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",
-      "message": "Daily routine. Call yahoo_league_context first, then yahoo_morning_briefing, then yahoo_auto_lineup. Follow your autonomy level for all action items. Report actions taken and items awaiting approval in 2-3 sentences."
+      "message": "Daily routine. Call yahoo_league_context first, then yahoo_morning_briefing, then yahoo_auto_lineup. Follow your autonomy level for all action items. Report actions taken and items awaiting approval in 2-3 sentences.",
+      "timeoutSeconds": 120
     },
     "delivery": { "mode": "announce" },
     "enabled": true
@@ -18,7 +19,8 @@
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",
-      "message": "Pre-lock check. Call yahoo_league_context first, then yahoo_game_day_manager. Follow your autonomy level for any lineup changes or streaming adds. Report findings."
+      "message": "Pre-lock check. Call yahoo_league_context first, then yahoo_game_day_manager. Follow your autonomy level for any lineup changes or streaming adds. Report findings.",
+      "timeoutSeconds": 120
     },
     "delivery": { "mode": "announce" },
     "enabled": true
@@ -30,7 +32,8 @@
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",
-      "message": "New matchup week. Call yahoo_league_context first, then yahoo_league_landscape for standings context, then yahoo_matchup_strategy for this week's opponent. Report: opponent, category targets/concedes, top recommended actions."
+      "message": "New matchup week. Call yahoo_league_context first, then yahoo_league_landscape for standings context, then yahoo_matchup_strategy for this week's opponent. Report: opponent, category targets/concedes, top recommended actions.",
+      "timeoutSeconds": 120
     },
     "delivery": { "mode": "announce" },
     "enabled": true
@@ -42,7 +45,8 @@
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",
-      "message": "Waiver deadline approaching. Call yahoo_league_context first, then yahoo_waiver_deadline_prep. Follow your autonomy level for whether to submit claims. Report recommendations and any actions taken."
+      "message": "Waiver deadline approaching. Call yahoo_league_context first, then yahoo_waiver_deadline_prep. Follow your autonomy level for whether to submit claims. Report recommendations and any actions taken.",
+      "timeoutSeconds": 120
     },
     "delivery": { "mode": "announce" },
     "enabled": true
@@ -54,7 +58,8 @@
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",
-      "message": "Midweek streaming check. Call yahoo_league_context first, then yahoo_streaming. Follow your autonomy level for whether to execute streaming adds. Report findings."
+      "message": "Midweek streaming check. Call yahoo_league_context first, then yahoo_streaming. Follow your autonomy level for whether to execute streaming adds. Report findings.",
+      "timeoutSeconds": 120
     },
     "delivery": { "mode": "announce" },
     "enabled": true
@@ -66,7 +71,8 @@
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",
-      "message": "Weekend roster audit. Call yahoo_league_context first, then yahoo_roster_health_check. Follow your autonomy level for any issues found. Report issues and actions taken."
+      "message": "Weekend roster audit. Call yahoo_league_context first, then yahoo_roster_health_check. Follow your autonomy level for any issues found. Report issues and actions taken.",
+      "timeoutSeconds": 120
     },
     "delivery": { "mode": "announce" },
     "enabled": true
@@ -78,7 +84,8 @@
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",
-      "message": "End of week. Call yahoo_league_context first, then yahoo_weekly_digest. Report the week's result, key performers, standings movement, and notable roster moves. Keep the narrative concise."
+      "message": "End of week. Call yahoo_league_context first, then yahoo_weekly_digest. Report the week's result, key performers, standings movement, and notable roster moves. Keep the narrative concise.",
+      "timeoutSeconds": 120
     },
     "delivery": { "mode": "announce" },
     "enabled": true
@@ -90,7 +97,8 @@
     "sessionTarget": "isolated",
     "payload": {
       "kind": "agentTurn",
-      "message": "Monthly check-in. Call yahoo_league_context first, then yahoo_season_checkpoint. Report: strategic assessment, category trajectory, trade recommendations, and playoff outlook. Highlight any categories trending the wrong direction."
+      "message": "Monthly check-in. Call yahoo_league_context first, then yahoo_season_checkpoint. Report: strategic assessment, category trajectory, trade recommendations, and playoff outlook. Highlight any categories trending the wrong direction.",
+      "timeoutSeconds": 180
     },
     "delivery": { "mode": "announce" },
     "enabled": true

@@ -180,6 +180,9 @@ for job in jobs:
         "--message", job.get("payload", {}).get("message", ""),
         "--announce",
     ]
+    timeout_s = job.get("payload", {}).get("timeoutSeconds")
+    if timeout_s:
+        cmd.extend(["--timeout-seconds", str(timeout_s)])
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         if result.returncode == 0:
