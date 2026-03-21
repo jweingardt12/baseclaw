@@ -6,7 +6,7 @@
 
 Your fantasy baseball team, managed by AI.
 
-BaseClaw is an MCP server that gives Claude full access to your Yahoo Fantasy Baseball league. Your roster, the waiver wire, Statcast data, trade analytics — 126 tools cover it. The important ones render interactive UI right inside Claude. The rest return text. Ask questions in plain English, or connect an agent and let it run your team on autopilot.
+BaseClaw is an MCP server that gives Claude full access to your Yahoo Fantasy Baseball league. Your roster, the waiver wire, Statcast data, trade analytics — 97 tools cover it. The important ones render interactive UI right inside Claude. The rest return text. Ask questions in plain English, or connect an agent and let it run your team on autopilot.
 
 ## Table of Contents
 
@@ -34,9 +34,8 @@ Claude calls:
   2. yahoo_category_check  → your weak/strong categories
   3. yahoo_value (X)       → Player X z-score breakdown
   4. yahoo_value (Y)       → Player Y z-score breakdown
-  5. yahoo_category_simulate → projected category rank changes
 
-Claude reads all 5 results and tells you whether the move
+Claude reads all 4 results and tells you whether the move
 actually helps, with category-level reasoning.
 ```
 
@@ -65,7 +64,7 @@ Complex questions chain 3-8 tool calls automatically. Simple lookups are one cal
 
 4. **Browser automation** — Write operations (add, drop, trade, lineup changes) use Playwright to automate the Yahoo Fantasy website directly, since Yahoo's API no longer grants write scope to new developer apps. Read operations still use the fast OAuth API.
 
-5. **Inline UI apps** — 24 tools render React UIs directly inside Claude's response. Four single-file HTML apps built with Plex UI and Recharts cover 75+ views — tables, charts, radar plots, heatmaps, dashboards. The rest return clean text to keep the chat uncluttered.
+5. **Inline UI apps** — 20 tools render React UIs directly inside Claude's response. Four single-file HTML apps built with Plex UI and Recharts cover 75+ views — tables, charts, radar plots, heatmaps, dashboards. The rest return clean text to keep the chat uncluttered.
 
 6. **Workflow tools** — Eleven aggregated tools (`yahoo_morning_briefing`, `yahoo_game_day_manager`, `yahoo_trade_pipeline`, etc.) each bundle 5-7+ API calls server-side so the agent gets everything it needs in one shot. A full daily routine takes 2-3 tool calls instead of 15+.
 
@@ -126,7 +125,7 @@ Claude Desktop config paths: **macOS** `~/Library/Application Support/Claude/cla
 
 Claude.ai needs the server reachable over HTTPS. Set `MCP_SERVER_URL` and `MCP_AUTH_PASSWORD` in `.env`, put a reverse proxy (Caddy, nginx, Cloudflare Tunnel, Tailscale Funnel, Pangolin) in front of port 4951, and rebuild with `docker compose up -d`.
 
-In Claude.ai: Settings > Integrations > Add MCP Server > enter `https://your-domain.com/mcp`. You'll be prompted for your password. The MCP server implements OAuth 2.1 — no third-party auth provider needed.
+In Claude.ai: Settings > Integrations > Add MCP Server > enter `https://your-domain.com/mcp`. You'll be prompted for your password. The MCP server implements OAuth 2.1 — no third-party auth provider needed. Auth tokens persist across container restarts (stored in the mounted `config/` volume) and access tokens last 7 days with 30-day refresh tokens, so Claude.ai stays connected through deploys and resets.
 
 </details>
 
@@ -284,10 +283,10 @@ Customize `AGENTS.md` to adjust strategy, risk tolerance, or reporting style.
 
 ## MCP Tools
 
-126 tools across 10 tool files. Core dashboards and action tools (24) render interactive UI in Claude; the rest return text.
+97 tools across 9 tool files. Core dashboards and action tools (20) render interactive UI in Claude; the rest return text.
 
 <details>
-<summary><strong>Roster Management</strong> (17 tools)</summary>
+<summary><strong>Roster Management</strong> (16 tools)</summary>
 
 | Tool | Description |
 |------|-------------|
@@ -300,30 +299,26 @@ Customize `AGENTS.md` to adjust strategy, risk tolerance, or reporting style.
 | `yahoo_add` | Add a free agent to your roster |
 | `yahoo_drop` | Drop a player from your roster |
 | `yahoo_swap` | Atomic add+drop: add one player and drop another |
-| `yahoo_waiver_claim` | Submit a waiver claim with optional FAAB bid |
-| `yahoo_waiver_claim_swap` | Submit a waiver claim + drop with optional FAAB bid |
+| `yahoo_waiver_claim` | Submit a waiver claim with optional FAAB bid and optional drop |
 | `yahoo_browser_status` | Check if the browser session for write operations is valid |
 | `yahoo_change_team_name` | Change your fantasy team name |
+| `yahoo_change_team_logo` | Change your fantasy team logo (PNG/JPG image) |
 | `yahoo_player_stats` | Player fantasy stats for any period (season, week, date, last 7/14/30 days) |
 | `yahoo_waivers` | Players currently on waivers (in claim period, not yet free agents) |
 | `yahoo_all_rostered` | All rostered players across the league with team ownership |
-| `yahoo_change_team_logo` | Change your fantasy team logo (PNG/JPG image) |
 
 </details>
 
 <details>
-<summary><strong>League & Standings</strong> (13 tools)</summary>
+<summary><strong>League & Standings</strong> (10 tools)</summary>
 
 | Tool | Description |
 |------|-------------|
-| `yahoo_league_context` | Compact league profile: waiver type, scoring format, stat categories, FAAB balance. Call once at session start |
+| `yahoo_league_context` | Compact league profile: waiver type, scoring format, stat categories, roster slots, FAAB balance. Call once at session start |
 | `yahoo_standings` | League standings with win-loss records |
 | `yahoo_matchups` | Weekly H2H matchup pairings |
-| `yahoo_scoreboard` | Live scoring overview for the current week |
 | `yahoo_my_matchup` | Detailed H2H matchup with per-category comparison |
-| `yahoo_info` | League settings, team info, waiver priority, and FAAB budget |
 | `yahoo_transactions` | Recent league transactions (add, drop, trade) |
-| `yahoo_stat_categories` | League scoring categories |
 | `yahoo_transaction_trends` | Most added and most dropped players across Yahoo |
 | `yahoo_league_pulse` | League activity — moves and trades per team |
 | `yahoo_power_rankings` | Teams ranked by estimated roster strength |
@@ -333,19 +328,15 @@ Customize `AGENTS.md` to adjust strategy, risk tolerance, or reporting style.
 </details>
 
 <details>
-<summary><strong>In-Season Management</strong> (32 tools)</summary>
+<summary><strong>In-Season Management</strong> (27 tools)</summary>
 
 | Tool | Description |
 |------|-------------|
 | `yahoo_lineup_optimize` | Optimize daily lineup (bench off-day players, start active ones) |
 | `yahoo_category_check` | Your rank in each stat category vs the league |
 | `yahoo_injury_report` | Check roster for injured players and suggest IL moves |
-| `yahoo_waiver_analyze` | Score free agents by how much they'd improve your weakest categories |
 | `yahoo_streaming` | Recommend streaming pitchers by schedule and two-start potential |
-| `yahoo_trade_eval` | Evaluate a trade with value comparison and grade |
-| `yahoo_daily_update` | Run all daily checks (lineup + injuries) |
 | `yahoo_scout_opponent` | Scout current matchup opponent — strengths, weaknesses, counter-strategies |
-| `yahoo_category_simulate` | Simulate category rank impact of adding a player |
 | `yahoo_matchup_strategy` | Category-by-category game plan to maximize matchup wins |
 | `yahoo_set_lineup` | Move specific player(s) to specific position(s) |
 | `yahoo_pending_trades` | View all pending incoming and outgoing trade proposals |
@@ -353,7 +344,6 @@ Customize `AGENTS.md` to adjust strategy, risk tolerance, or reporting style.
 | `yahoo_accept_trade` | Accept a pending trade |
 | `yahoo_reject_trade` | Reject a pending trade |
 | `yahoo_whats_new` | Digest of injuries, pending trades, league activity, trending pickups, prospect call-ups |
-| `yahoo_trade_finder` | Scan the league for complementary trade partners and suggest packages |
 | `yahoo_week_planner` | Games-per-day grid with heatmap for your roster (off-days, two-start pitchers) |
 | `yahoo_closer_monitor` | Monitor closer situations — your closers, available closers, saves leaders |
 | `yahoo_pitcher_matchup` | Pitcher matchup quality for your SPs based on opponent batting stats |
@@ -387,46 +377,28 @@ Customize `AGENTS.md` to adjust strategy, risk tolerance, or reporting style.
 </details>
 
 <details>
-<summary><strong>Draft</strong> (5 tools)</summary>
-
-| Tool | Description |
-|------|-------------|
-| `yahoo_draft_status` | Current draft status — picks made, your round, roster composition |
-| `yahoo_draft_recommend` | Draft pick recommendation with top available hitters and pitchers by z-score |
-| `yahoo_draft_cheatsheet` | Draft strategy cheat sheet with round-by-round targets |
-| `yahoo_best_available` | Best available players ranked by z-score |
-| `yahoo_draft_board` | Visual draft board tracker — grid of picks by team and round |
-
-</details>
-
-<details>
-<summary><strong>Intelligence</strong> (10 tools)</summary>
+<summary><strong>Intelligence</strong> (7 tools)</summary>
 
 | Tool | Description |
 |------|-------------|
 | `fantasy_player_report` | Deep-dive Statcast radar chart + SIERA (expected ERA) + platoon splits + arsenal + trends + Reddit buzz |
-| `fantasy_breakout_candidates` | Players whose expected stats (xwOBA) exceed actual — positive regression candidates |
-| `fantasy_bust_candidates` | Players whose actual stats exceed expected (xwOBA) — negative regression candidates |
 | `fantasy_reddit_buzz` | What r/fantasybaseball is talking about — hot posts, trending topics |
 | `fantasy_trending_players` | Players with rising buzz on Reddit |
 | `fantasy_prospect_watch` | Recent MLB prospect call-ups and roster moves |
 | `fantasy_transactions` | Recent fantasy-relevant MLB transactions (IL, call-up, DFA, trade) |
 | `yahoo_statcast_history` | Compare a player's Statcast profile now vs. 30/60 days ago |
 | `fantasy_news_feed` | Real-time news from 16 sources (ESPN, FanGraphs, CBS, Yahoo, MLB.com, RotoWire, Pitcher List, Razzball, Google News, RotoBaller, Reddit, 5 Bluesky analyst feeds) — filter by source or player |
-| `fantasy_news_sources` | List available news sources and their status |
 
 </details>
 
 <details>
-<summary><strong>Analytics & Strategy</strong> (5 tools)</summary>
+<summary><strong>Analytics & Strategy</strong> (3 tools)</summary>
 
 | Tool | Description |
 |------|-------------|
 | `fantasy_probable_pitchers` | Probable pitchers for upcoming games |
 | `fantasy_schedule_analysis` | Schedule-based analysis for streaming and lineup planning |
-| `fantasy_category_impact` | Projected category rank impact of a roster move |
 | `fantasy_regression_candidates` | Players likely to regress positively or negatively based on advanced stats |
-| `fantasy_player_tier` | Player tier classification within position group |
 
 </details>
 
@@ -448,7 +420,7 @@ Customize `AGENTS.md` to adjust strategy, risk tolerance, or reporting style.
 </details>
 
 <details>
-<summary><strong>League History</strong> (8 tools)</summary>
+<summary><strong>League History</strong> (8 tools, requires <code>ENABLE_HISTORY=true</code>)</summary>
 
 | Tool | Description |
 |------|-------------|
@@ -486,9 +458,9 @@ Aggregated tools that bundle 5-7+ API calls server-side so the agent gets a comp
 
 ### Write Operations
 
-The following 15 tools require `ENABLE_WRITE_OPS=true`. When `ENABLE_WRITE_OPS=false` (default), these tools are hidden entirely. All except `yahoo_auto_lineup` and `yahoo_optimal_moves` also require a valid browser session.
+The following 12 tools require `ENABLE_WRITE_OPS=true`. When `ENABLE_WRITE_OPS=false` (default), these tools are hidden entirely. All except `yahoo_auto_lineup` also require a valid browser session.
 
-`yahoo_add`, `yahoo_drop`, `yahoo_swap`, `yahoo_waiver_claim`, `yahoo_waiver_claim_swap`, `yahoo_set_lineup`, `yahoo_propose_trade`, `yahoo_accept_trade`, `yahoo_reject_trade`, `yahoo_browser_status`, `yahoo_change_team_name`, `yahoo_change_team_logo`, `yahoo_auto_lineup`, `yahoo_optimal_moves`, `yahoo_projections_update`
+`yahoo_add`, `yahoo_drop`, `yahoo_swap`, `yahoo_waiver_claim`, `yahoo_set_lineup`, `yahoo_propose_trade`, `yahoo_accept_trade`, `yahoo_reject_trade`, `yahoo_browser_status`, `yahoo_change_team_name`, `yahoo_change_team_logo`, `yahoo_auto_lineup`
 
 <details>
 <summary><strong>CLI Commands</strong></summary>
@@ -527,10 +499,10 @@ The `./yf` helper script provides direct CLI access to all functionality:
 │  │  (Flask :8766)    │──│  (Express :4951)    │  │
 │  │                   │  │                     │  │
 │  │  yahoo_fantasy_api│  │  MCP SDK + ext-apps │  │
-│  │  pybaseball       │  │  126 tool defs      │  │
+│  │  pybaseball       │  │  97 tool defs       │  │
 │  │  MLB-StatsAPI     │  │  4 apps / 75 views  │  │
 │  │  Playwright       │  │  11 workflow tools  │  │
-│  │  CacheManager     │  │  10 tool files      │  │
+│  │  CacheManager     │  │  9 tool files       │  │
 │  └──────────────────┘  └─────────────────────┘  │
 └─────────────────────────────────────────────────┘
          │                        │
@@ -560,6 +532,7 @@ The `./yf` helper script provides direct CLI access to all functionality:
 | `TEAM_ID` | Yes | — | Your team key (e.g., `469.l.16960.t.12`) |
 | `ENABLE_WRITE_OPS` | No | `false` | Enable write operation tools (add, drop, trade, lineup) |
 | `AGENT_AUTONOMY` | No | `semi-auto` | Agent autonomy level: `full-auto`, `semi-auto`, or `manual` |
+| `ENABLE_HISTORY` | No | `false` | Enable league history tools (8 tools, requires `config/league-history.json`) |
 | `ENABLE_PREVIEW` | No | `false` | Serve the preview dashboard at `/preview` |
 | `MCP_SERVER_URL` | For Claude.ai | — | Public HTTPS URL for remote access |
 | `MCP_AUTH_PASSWORD` | For Claude.ai | — | Password for the OAuth login page |
@@ -591,6 +564,7 @@ baseclaw/
 ├── config/
 │   ├── yahoo_oauth.json            # OAuth credentials + tokens (gitignored, auto-generated from env vars)
 │   ├── yahoo_session.json          # Browser session (gitignored, for write ops)
+│   ├── auth-state.json             # MCP OAuth tokens + client registrations (gitignored, auto-managed)
 │   ├── league-history.json         # Optional: historical league keys
 │   └── draft-cheatsheet.json       # Optional: draft strategy
 ├── data/
@@ -599,7 +573,7 @@ baseclaw/
 │   └── projections_pitchers.csv    # Auto-fetched consensus projections (gitignored)
 ├── scripts/
 │   ├── install.sh                   # One-command installer (curl | bash)
-│   ├── api-server.py               # Flask API server (~60 endpoints, workflow + strategy)
+│   ├── api-server.py               # Flask API server (~120 endpoints, workflow + strategy)
 │   ├── yahoo-fantasy.py            # League management
 │   ├── season-manager.py           # In-season management + strategy engine
 │   ├── draft-assistant.py          # Draft day tool
@@ -625,7 +599,7 @@ baseclaw/
     ├── server.ts                   # MCP server setup + tool registration
     ├── main.ts                     # Entry point (stdio + HTTP)
     ├── assets/logo-128.png         # Server icon (pixel-art baseball)
-    ├── src/tools/                  # 10 tool files, 126 MCP tools
+    ├── src/tools/                  # 9 tool files, 97 MCP tools
     ├── src/api/                    # Python API client + type definitions
     └── ui/                         # 4 inline HTML apps, 75+ views (React + Plex UI + Recharts)
 ```

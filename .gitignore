@@ -1,6 +1,7 @@
 .env
 config/yahoo_oauth.json
 config/yahoo_session.json
+config/auth-state.json
 data/player-rankings-*.json
 data/season.db
 data/generated_rankings.json
