@@ -1113,7 +1113,13 @@ def project_category_impact(add_players, drop_players, league_standings=None):
     }
 
 
-# --- Live stats blending ---
+# --- Bayesian projection blending ---
+#
+# Uses conjugate normal-normal Bayesian model (Tango/Carleton framework):
+#   projection_weight = S / (S + n)
+# where S = stabilization point (prior sample size equivalent), n = actual sample size.
+# This produces mathematically optimal shrinkage per stat per player, replacing
+# the old hardcoded date-threshold approach.
 
 def load_live_stats():
     """Load current-season live stats via pybaseball.
@@ -1138,42 +1144,81 @@ def load_live_stats():
         return None, None
 
 
+def _get_stabilization(stat_name, stat_type="bat"):
+    """Look up stabilization point for a stat (prior sample size equivalent)."""
+    lookup_key = stat_name
+    if stat_type == "pit" and stat_name in ("K", "SO"):
+        lookup_key = "K_pitch"
+    return STAT_STABILIZATION.get(lookup_key,
+           STAT_STABILIZATION.get(stat_name.upper(), DEFAULT_STABILIZATION))
+
+
+def bayesian_blend_weight(stat_name, sample_size, stat_type="bat"):
+    """Return projection weight using Bayesian conjugate model.
+
+    projection_weight = S / (S + n)
+    where S = stabilization point, n = actual sample size (PA or BF).
+
+    Returns float 0.0-1.0 where 1.0 = all projections, 0.0 = all actuals.
+    The model naturally transitions: early season trusts projections,
+    late season trusts actuals, at the mathematically optimal rate per stat.
+    """
+    S = _get_stabilization(stat_name, stat_type)
+    if S <= 0:
+        return 0.0
+    return S / (S + max(sample_size, 0))
+
+
+def get_posterior_variance(stat_name, sample_size, stat_type="bat"):
+    """Return posterior variance of a stat's true-talent estimate.
+
+    In z-score space, prior variance ~ 1.0 (z-scores have unit variance).
+    posterior_var = prior_var * S / (S + n) = projection_weight
+    Lower values = more confidence in the blended estimate.
+    """
+    return bayesian_blend_weight(stat_name, sample_size, stat_type)
+
+
+def get_bayesian_confidence(sample_size, stat_type="bat"):
+    """Return composite confidence (0-1) in a player's blended z-score.
+
+    Averages across all relevant stat stabilization points for the stat type.
+    Used by Kelly FAAB to size bids: high confidence = larger bids.
+    """
+    if stat_type == "bat":
+        stats = ["R", "H", "HR", "RBI", "SB", "AVG", "OBP", "K"]
+    else:
+        stats = ["ERA", "WHIP", "K_pitch", "W", "QS", "IP"]
+    weights = [bayesian_blend_weight(s, sample_size, stat_type) for s in stats]
+    avg_proj_weight = sum(weights) / len(weights) if weights else 1.0
+    return 1.0 - avg_proj_weight  # confidence = 1 - projection_weight
+
+
 def get_projection_weight(season_start_date=None):
-    """Return weight for preseason projections vs actual stats.
-    Date-based decay: early season trusts projections, late season trusts actuals.
+    """Return default projection weight based on estimated season PA.
+
+    Uses Bayesian model: estimates average PA at this point in season
+    (~4 PA/game-day) and returns the blend weight for an average stat.
+    Kept for backward compatibility with callers that don't have per-player data.
     """
     if season_start_date is None:
         season_start_date = date(date.today().year, 3, 27)
     today = date.today()
     days_into_season = max(0, (today - season_start_date).days)
-    if days_into_season <= 14:
-        return 0.95
-    elif days_into_season <= 42:
-        return 0.80
-    elif days_into_season <= 84:
-        return 0.55
-    elif days_into_season <= 126:
-        return 0.35
-    else:
-        return 0.20
+    if days_into_season <= 0:
+        return 1.0
+    est_pa = days_into_season * 4.0
+    return bayesian_blend_weight("H", est_pa, "bat")  # H (S=200) as representative stat
 
 
 def get_stat_blend_weight(stat_name, sample_size, stat_type="bat", date_weight=None):
-    """Return projection weight for a specific stat based on sample size.
-    Uses per-metric stabilization points. K-rate stabilizes at 60 PA,
-    BABIP/AVG needs 400+ PA. Returns projection_weight (1.0 = all projections).
-    Pass date_weight to avoid recomputing get_projection_weight() per call.
+    """Return projection weight using Bayesian conjugate model.
+
+    projection_weight = S / (S + n) where S = stabilization point.
+    The date_weight parameter is accepted for API compatibility but the
+    Bayesian model derives timing information from sample_size directly.
     """
-    lookup_key = stat_name
-    if stat_type == "pit" and stat_name in ("K", "SO"):
-        lookup_key = "K_pitch"
-    stabilization = STAT_STABILIZATION.get(lookup_key,
-                    STAT_STABILIZATION.get(stat_name.upper(), DEFAULT_STABILIZATION))
-    reliability = min(sample_size / stabilization, 1.0) if stabilization > 0 else 0
-    if date_weight is None:
-        date_weight = get_projection_weight()
-    stat_proj_weight = max(1.0 - reliability, date_weight * 0.5)
-    return stat_proj_weight
+    return bayesian_blend_weight(stat_name, sample_size, stat_type)
 
 
 def blend_projections_and_actual(proj_df, actual_df, stat_type="bat"):
@@ -2157,6 +2202,122 @@ def cmd_zscore_shifts(args, as_json=False):
         )
 
 
+def compute_projection_confidence(player_name):
+    """Compute Bayesian blend ratios and confidence for a player.
+
+    Shows per-stat projection vs actual weights, posterior variance,
+    and estimated days until actuals dominate each stat.
+    """
+    info = get_player_zscore(player_name)
+    if not info:
+        return {"error": "Player not found: " + player_name}
+
+    player_type = info.get("type", "B")
+    stat_type = "bat" if player_type == "B" else "pit"
+    name = info.get("name", player_name)
+
+    # Try to get actual sample size from live stats
+    sample_size = 0
+    try:
+        live_h, live_p = load_live_stats()
+        live_df = live_h if stat_type == "bat" else live_p
+        if live_df is not None:
+            for _, row in live_df.iterrows():
+                live_name = str(row.get("Name", "")).strip()
+                if live_name.lower() == name.lower():
+                    if stat_type == "bat":
+                        sample_size = int(float(row.get("PA", 0)))
+                    else:
+                        sample_size = int(float(row.get("IP", 0)) * 3)
+                    break
+    except Exception:
+        pass
+
+    # Compute per-stat blend info
+    if stat_type == "bat":
+        stats = ["R", "H", "HR", "RBI", "SB", "K", "AVG", "OBP", "BB"]
+    else:
+        stats = ["W", "L", "K", "ERA", "WHIP", "QS", "SV", "HLD", "IP"]
+
+    stat_details = []
+    for stat in stats:
+        proj_w = bayesian_blend_weight(stat, sample_size, stat_type)
+        actual_w = 1.0 - proj_w
+        post_var = get_posterior_variance(stat, sample_size, stat_type)
+        S = _get_stabilization(stat, stat_type)
+
+        # Days until actuals reach 50% weight: solve S/(S+n)=0.5 -> n=S
+        # At ~4 PA/day (bat) or ~5 BF/day (pit), days_to_50 = S / rate
+        rate_per_day = 4.0 if stat_type == "bat" else 5.0
+        remaining_to_50 = max(0, S - sample_size)
+        days_to_50 = int(remaining_to_50 / rate_per_day) if rate_per_day > 0 else 999
+
+        stat_details.append({
+            "stat": stat,
+            "projection_weight": round(proj_w, 3),
+            "actual_weight": round(actual_w, 3),
+            "posterior_variance": round(post_var, 3),
+            "stabilization_point": S,
+            "current_sample": sample_size,
+            "days_until_50_50": days_to_50,
+        })
+
+    composite_confidence = get_bayesian_confidence(sample_size, stat_type)
+
+    return {
+        "name": name,
+        "type": player_type,
+        "stat_type": stat_type,
+        "sample_size": sample_size,
+        "sample_label": "PA" if stat_type == "bat" else "BF (est.)",
+        "composite_confidence": round(composite_confidence, 3),
+        "z_score": info.get("z_final", 0),
+        "tier": info.get("tier", ""),
+        "stats": stat_details,
+    }
+
+
+def cmd_projection_confidence(args, as_json=False):
+    """Show Bayesian blend ratios and confidence for a player's projections"""
+    if not args:
+        if as_json:
+            return {"error": "Usage: projection-confidence <player_name>"}
+        print("Usage: projection-confidence <player_name>")
+        return
+
+    player_name = " ".join(args)
+    result = compute_projection_confidence(player_name)
+
+    if as_json:
+        return result
+
+    if result.get("error"):
+        print(result.get("error"))
+        return
+
+    print("Projection Confidence: " + result.get("name", ""))
+    print("=" * 70)
+    print("  Type: " + result.get("stat_type", "") + " | Sample: "
+          + str(result.get("sample_size", 0)) + " " + result.get("sample_label", "")
+          + " | Z-Score: " + str(result.get("z_score", 0))
+          + " (" + result.get("tier", "") + ")")
+    print("  Composite Confidence: " + str(round(result.get("composite_confidence", 0) * 100, 1)) + "%")
+    print("")
+    print("  " + "Stat".ljust(8) + "Proj%".rjust(8) + "Actual%".rjust(8)
+          + "PostVar".rjust(8) + "  Stab Pt".rjust(9) + "  Days to 50/50")
+    print("  " + "-" * 55)
+
+    for s in result.get("stats", []):
+        d50 = s.get("days_until_50_50", 0)
+        d50_str = str(d50) + "d" if d50 > 0 else "reached"
+        print("  " + str(s.get("stat", "")).ljust(8)
+              + "{:.1f}%".format(s.get("projection_weight", 0) * 100).rjust(8)
+              + "{:.1f}%".format(s.get("actual_weight", 0) * 100).rjust(8)
+              + "{:.3f}".format(s.get("posterior_variance", 0)).rjust(8)
+              + str(s.get("stabilization_point", 0)).rjust(9)
+              + "  " + d50_str)
+
+
 COMMANDS = {
     "rankings": cmd_rankings,
     "compare": cmd_compare,
@@ -2164,6 +2325,7 @@ COMMANDS = {
     "import-csv": cmd_import_csv,
     "generate": cmd_generate,
     "zscore-shifts": cmd_zscore_shifts,
+    "projection-confidence": cmd_projection_confidence,
 }
 
 if __name__ == "__main__":

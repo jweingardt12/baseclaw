@@ -263,4 +263,39 @@ export function registerValuationsTools(server: McpServer, enabledTools?: Set<st
     },
   );
   }
+
+  // fantasy_projection_confidence
+  if (shouldRegister("fantasy_projection_confidence")) {
+  registerAppTool(
+    server,
+    "fantasy_projection_confidence",
+    {
+      description: "Use this to see how much to trust a player's current projections vs actual stats using Bayesian analysis. Shows per-stat blend ratios (projection% vs actual%), posterior variance, confidence level, and how many days until actuals dominate each stat. Helps assess projection reliability for trade decisions, waiver adds, and lineup choices.",
+      inputSchema: { player_name: z.string().describe("Player name to analyze") },
+      annotations: { readOnlyHint: true },
+      _meta: {},
+    },
+    async ({ player_name }) => {
+      try {
+        const data = await apiGet<any>("/api/valuations/projection-confidence", { name: player_name });
+        if (data.error) return { content: [{ type: "text" as const, text: "Error: " + data.error }] };
+        const lines = ["Projection Confidence: " + str(data.name)];
+        lines.push("  Type: " + str(data.stat_type) + " | Sample: " + data.sample_size + " " + str(data.sample_label));
+        lines.push("  Z-Score: " + data.z_score + " (" + str(data.tier) + ")");
+        lines.push("  Composite Confidence: " + (data.composite_confidence * 100).toFixed(1) + "%");
+        lines.push("");
+        lines.push("  " + "Stat".padEnd(8) + "Proj%".padStart(8) + "Act%".padStart(8) + "PostVar".padStart(8) + "  Days to 50/50");
+        lines.push("  " + "-".repeat(48));
+        for (const s of (data.stats || [])) {
+          const d50 = s.days_until_50_50 > 0 ? s.days_until_50_50 + "d" : "reached";
+          lines.push("  " + str(s.stat).padEnd(8) + (s.projection_weight * 100).toFixed(1).padStart(7) + "%" + (s.actual_weight * 100).toFixed(1).padStart(7) + "%" + s.posterior_variance.toFixed(3).padStart(8) + "  " + d50);
+        }
+        return {
+          content: [{ type: "text" as const, text: lines.join("\n") }],
+          structuredContent: { type: "projection-confidence", ...data },
+        };
+      } catch (e) { return toolError(e); }
+    },
+  );
+  }
 }

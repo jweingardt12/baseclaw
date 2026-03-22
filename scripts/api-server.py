@@ -1458,6 +1458,51 @@ def api_intel_statcast_history():
         return safe_jsonify({"error": str(e)}, 500)
 
 
+# --- Next-Gen Analytics ---
+
+@app.route("/api/valuations/projection-confidence")
+def api_projection_confidence():
+    try:
+        name = request.args.get("name", "")
+        if not name:
+            return safe_jsonify({"error": "Missing name parameter"}, 400)
+        result = valuations.compute_projection_confidence(name)
+        return safe_jsonify(result)
+    except Exception as e:
+        return safe_jsonify({"error": str(e)}, 500)
+
+
+@app.route("/api/intel/bat-tracking-breakouts")
+def api_bat_tracking_breakouts():
+    try:
+        count = request.args.get("count", "20")
+        result = intel.cmd_bat_tracking_breakouts([count], as_json=True)
+        return safe_jsonify(result)
+    except Exception as e:
+        return safe_jsonify({"error": str(e)}, 500)
+
+
+@app.route("/api/intel/pitch-mix-breakouts")
+def api_pitch_mix_breakouts():
+    try:
+        count = request.args.get("count", "20")
+        result = intel.cmd_pitch_mix_breakouts([count], as_json=True)
+        return safe_jsonify(result)
+    except Exception as e:
+        return safe_jsonify({"error": str(e)}, 500)
+
+
+@app.route("/api/travel-fatigue")
+def api_travel_fatigue():
+    try:
+        game_date = request.args.get("date", "")
+        args = [game_date] if game_date else []
+        result = season_manager.cmd_travel_fatigue(args, as_json=True)
+        return safe_jsonify(result)
+    except Exception as e:
+        return safe_jsonify({"error": str(e)}, 500)
+
+
 # --- Prospect Intelligence ---
 
 @app.route("/api/prospects/report")

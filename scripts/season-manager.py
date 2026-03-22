@@ -97,6 +97,17 @@ _YAHOO_STAT_ID_FALLBACK = {
 # Stats where lower values are better (sort_order = 0 in Yahoo API)
 _LOWER_IS_BETTER_STATS = {"ERA", "WHIP", "ER", "L", "ER_negative", "L_negative"}
 
+# Team timezone offsets (UTC) for travel fatigue scoring (PNAS study, 46k games)
+# Keyed by abbreviation; full names resolved via TEAM_ALIASES in _get_team_tz()
+TEAM_TIMEZONE = {
+    "ARI": -7, "ATL": -5, "BAL": -5, "BOS": -5, "CHC": -6,
+    "CWS": -6, "CIN": -5, "CLE": -5, "COL": -7, "DET": -5,
+    "HOU": -6, "KC": -6, "LAA": -8, "LAD": -8, "MIA": -5,
+    "MIL": -6, "MIN": -6, "NYM": -5, "NYY": -5, "OAK": -8,
+    "PHI": -5, "PIT": -5, "SD": -8, "SF": -8, "SEA": -8,
+    "STL": -6, "TB": -5, "TEX": -6, "TOR": -5, "WSH": -5,
+}
+
 
 _stat_id_cache = {}
 
@@ -229,6 +240,214 @@ def _get_park_factor(team_name):
         return get_park_factor(team_name)
     except Exception:
         return 1.0
+
+
+def _get_team_tz(team_name):
+    """Look up UTC offset for a team, trying direct match then aliases."""
+    if not team_name:
+        return None
+    # Direct lookup
+    tz = TEAM_TIMEZONE.get(team_name)
+    if tz is not None:
+        return tz
+    # Try full name via aliases
+    full = TEAM_ALIASES.get(team_name, team_name)
+    tz = TEAM_TIMEZONE.get(full)
+    if tz is not None:
+        return tz
+    # Try normalized matching against all keys
+    norm = normalize_team_name(team_name)
+    for key, val in TEAM_TIMEZONE.items():
+        if normalize_team_name(key) == norm:
+            return val
+    return None
+
+
+def get_travel_fatigue_score(team_name, game_date=None, schedule=None):
+    """Compute travel fatigue score for a team based on recent schedule.
+
+    Uses trailing 7-day schedule to detect timezone changes, schedule density,
+    and day/night game patterns. Based on Northwestern PNAS study (46,535 games).
+
+    Pass schedule= to avoid redundant API calls when scoring multiple teams.
+    Returns dict with fatigue_score (0-10), details, games_7d, tz_changes.
+    """
+    try:
+        if game_date is None:
+            game_date = date.today()
+        elif isinstance(game_date, str):
+            game_date = datetime.strptime(game_date, "%Y-%m-%d").date()
+
+        if schedule is None:
+            start = game_date - timedelta(days=7)
+            schedule = get_schedule_for_range(start.isoformat(), game_date.isoformat())
+        if not schedule:
+            return {
+                "team": team_name,
+                "fatigue_score": 0,
+                "details": {"note": "No schedule data available"},
+                "games_7d": 0,
+                "tz_changes": [],
+            }
+
+        norm = normalize_team_name(team_name)
+        full = TEAM_ALIASES.get(team_name, team_name)
+        norm_full = normalize_team_name(full)
+
+        # Collect games for this team in last 7 days, ordered by date
+        team_games = []
+        for game in schedule:
+            away = game.get("away_name", "")
+            home = game.get("home_name", "")
+            away_norm = normalize_team_name(away)
+            home_norm = normalize_team_name(home)
+
+            is_away = (norm in away_norm or norm_full in away_norm)
+            is_home = (norm in home_norm or norm_full in home_norm)
+
+            if not is_away and not is_home:
+                continue
+
+            gd = game.get("game_date", "")
+            game_dt = game.get("game_datetime", "")
+
+            # Determine the city (home team location)
+            if is_home:
+                city_team = home
+            else:
+                city_team = home  # away team travels to home city
+
+            team_games.append({
+                "date": gd,
+                "city_team": city_team,
+                "is_home": is_home,
+                "game_datetime": game_dt,
+            })
+
+        # Sort by date
+        team_games.sort(key=lambda x: x.get("date", ""))
+
+        games_7d = len(team_games)
+
+        # Reconstruct timezone changes from city-to-city travel
+        tz_changes = []
+        prev_tz = None
+        prev_city = None
+        for g in team_games:
+            city = g.get("city_team", "")
+            tz = _get_team_tz(city)
+            if tz is not None and prev_tz is not None and tz != prev_tz:
+                tz_changes.append({
+                    "from_city": prev_city,
+                    "to_city": city,
+                    "from_tz": prev_tz,
+                    "to_tz": tz,
+                    "zones_crossed": abs(tz - prev_tz),
+                    "direction": "east" if tz > prev_tz else "west",
+                    "date": g.get("date", ""),
+                })
+            if tz is not None:
+                prev_tz = tz
+                prev_city = city
+
+        # --- Timezone penalty (changes in last 3 days) ---
+        recent_cutoff = (game_date - timedelta(days=3)).isoformat()
+        recent_changes = [c for c in tz_changes if c.get("date", "") >= recent_cutoff]
+
+        timezone_penalty = 0
+        direction_multiplier = 1.0
+        for change in recent_changes:
+            zones = change.get("zones_crossed", 0)
+            if zones == 1:
+                timezone_penalty += 0.5
+            elif zones == 2:
+                timezone_penalty += 1.5
+            elif zones >= 3:
+                timezone_penalty += 3.0
+            # Eastward travel is harder (PNAS finding)
+            if change.get("direction") == "east":
+                direction_multiplier = max(direction_multiplier, 1.5)
+
+        tz_score = timezone_penalty * direction_multiplier
+
+        # --- Day-after-night penalty ---
+        day_after_night_penalty = 0
+        if len(team_games) >= 2:
+            yesterday_games = [g for g in team_games
+                               if g.get("date", "") == (game_date - timedelta(days=1)).isoformat()]
+            today_games = [g for g in team_games
+                           if g.get("date", "") == game_date.isoformat()]
+
+            yesterday_late = False
+            for g in yesterday_games:
+                gdt = g.get("game_datetime", "")
+                if gdt:
+                    try:
+                        # game_datetime is UTC ISO format from statsapi
+                        dt = datetime.fromisoformat(gdt.replace("Z", "+00:00"))
+                        city_tz = _get_team_tz(g.get("city_team", ""))
+                        if city_tz is not None:
+                            local_hour = dt.hour + city_tz  # approximate local hour
+                            if local_hour < 0:
+                                local_hour += 24
+                            if local_hour >= 19:  # 7pm or later local
+                                yesterday_late = True
+                    except (ValueError, TypeError):
+                        pass
+                else:
+                    # No time data — assume night game if not a weekend matinee
+                    yesterday_late = True
+
+            today_early = False
+            for g in today_games:
+                gdt = g.get("game_datetime", "")
+                if gdt:
+                    try:
+                        dt = datetime.fromisoformat(gdt.replace("Z", "+00:00"))
+                        city_tz = _get_team_tz(g.get("city_team", ""))
+                        if city_tz is not None:
+                            local_hour = dt.hour + city_tz
+                            if local_hour < 0:
+                                local_hour += 24
+                            if local_hour < 16:  # before 4pm local
+                                today_early = True
+                    except (ValueError, TypeError):
+                        pass
+
+            if yesterday_late and today_early:
+                day_after_night_penalty = 2.0
+
+        # --- Density penalty ---
+        # 0.5 per game above 6 in trailing 7 days
+        density_penalty = max(0, (games_7d - 6) * 0.5)
+
+        # --- Final score ---
+        fatigue_score = tz_score + day_after_night_penalty + density_penalty
+        fatigue_score = min(fatigue_score, 10.0)
+        fatigue_score = round(fatigue_score, 1)
+
+        return {
+            "team": team_name,
+            "fatigue_score": fatigue_score,
+            "details": {
+                "tz_score": round(tz_score, 1),
+                "day_after_night_penalty": day_after_night_penalty,
+                "density_penalty": round(density_penalty, 1),
+                "direction_multiplier": direction_multiplier,
+                "recent_tz_changes": len(recent_changes),
+            },
+            "games_7d": games_7d,
+            "tz_changes": tz_changes,
+        }
+    except Exception as e:
+        print("Warning: travel fatigue calculation failed for " + str(team_name) + ": " + str(e))
+        return {
+            "team": team_name,
+            "fatigue_score": 0,
+            "details": {"error": str(e)},
+            "games_7d": 0,
+            "tz_changes": [],
+        }
 
 
 def get_db():
@@ -1780,6 +1999,16 @@ def cmd_streaming(args, as_json=False):
     except Exception as e:
         print("Warning: Could not fetch FG pitching data for streaming: " + str(e))
 
+    # Pre-compute opponent fatigue scores (fetch schedule once, cache per team)
+    _fatigue_cache = {}
+    _fatigue_schedule = None
+    try:
+        _fs_start = (date.today() - timedelta(days=7)).isoformat()
+        _fs_end = date.today().isoformat()
+        _fatigue_schedule = get_schedule_for_range(_fs_start, _fs_end)
+    except Exception:
+        pass
+
     scored = []
     for p in fa_pitchers:
         name = p.get("name", "Unknown")
@@ -1871,6 +2100,36 @@ def cmd_streaming(args, as_json=False):
                     except (ValueError, TypeError):
                         pass
 
+        # Factor 6: Opponent travel fatigue (5% weight)
+        # Fatigued OPPONENT = better matchup for the streamer
+        _opp_fatigue_out = None
+        try:
+            norm_pitcher_team = normalize_team_name(team_name)
+            full_pitcher_team = normalize_team_name(TEAM_ALIASES.get(team_name, team_name))
+            opp_team = None
+            for game in schedule:
+                away = game.get("away_name", "")
+                home = game.get("home_name", "")
+                away_norm = normalize_team_name(away)
+                home_norm = normalize_team_name(home)
+                if norm_pitcher_team in away_norm or full_pitcher_team in away_norm:
+                    opp_team = home
+                    break
+                if norm_pitcher_team in home_norm or full_pitcher_team in home_norm:
+                    opp_team = away
+                    break
+            if opp_team:
+                if opp_team not in _fatigue_cache:
+                    _fatigue_cache[opp_team] = get_travel_fatigue_score(opp_team, schedule=_fatigue_schedule)
+                opp_fatigue = _fatigue_cache[opp_team]
+                opp_score = opp_fatigue.get("fatigue_score", 0)
+                _opp_fatigue_out = round(opp_score, 1)
+                # Higher opponent fatigue -> bonus (scale: 0-10 fatigue -> 0-5 bonus)
+                fatigue_bonus = opp_score * 0.5
+                stream_score += fatigue_bonus * 0.05
+        except Exception:
+            pass
+
         score = stream_score
 
         # Format adjustment: conservative streaming in roto
@@ -1890,6 +2149,7 @@ def cmd_streaming(args, as_json=False):
             "z_score": round(z_final, 2),
             "tier": tier,
             "stuff_plus": _stuff_plus_out,
+            "opp_fatigue": _opp_fatigue_out,
         })
 
     scored.sort(key=lambda x: -x["score"])
@@ -1942,6 +2202,7 @@ def cmd_streaming(args, as_json=False):
                 "z_score": p.get("z_score", 0),
                 "tier": p.get("tier", "Unknown"),
                 "stuff_plus": p.get("stuff_plus"),
+                "opp_fatigue": p.get("opp_fatigue"),
                 "intel": p.get("intel"),
                 "trend": p.get("trend"),
                 "mlb_id": get_mlb_id(p.get("name", "")),
@@ -5714,7 +5975,7 @@ def cmd_faab_recommend(args, as_json=False):
         print("Warning: could not fetch FAAB balance: " + str(e))
 
     # Get player z-score and value
-    from valuations import get_player_zscore, project_category_impact
+    from valuations import get_player_zscore, project_category_impact, get_bayesian_confidence, get_posterior_variance
     player_info = get_player_zscore(player_name)
     if not player_info:
         if as_json:
@@ -5773,7 +6034,16 @@ def cmd_faab_recommend(args, as_json=False):
 
     # Player tier classification
     positions = player_info.get("pos", "")
-    pct_owned = float(player_info.get("pct_owned", 0)) if player_info.get("pct_owned") else 0
+    pct_owned = 0
+    try:
+        player_type_fa = "P" if ("SP" in str(positions) or "RP" in str(positions)) else "B"
+        fa_list = lg.free_agents(player_type_fa)
+        for fa_p in fa_list:
+            if player_name.lower() in fa_p.get("name", "").lower():
+                pct_owned = float(fa_p.get("percent_owned", 0) or 0)
+                break
+    except Exception:
+        pass
     if "RP" in str(positions) and z_final >= 2.0:
         player_tier = "new_closer_contender"
     elif z_final >= 3.0:
@@ -5787,25 +6057,73 @@ def cmd_faab_recommend(args, as_json=False):
     else:
         player_tier = "replacement_level"
 
-    # Compute bid from tier ranges
-    bid_range = FAAB_BID_RANGES.get(player_tier, (0.01, 0.05))
-    base_bid = (bid_range[0] + bid_range[1]) / 2.0 * faab_remaining
-    zscore_multiplier = min(max(z_final / 5.0, 0.2), 1.5)
-    recommended_bid = max(1, int(base_bid * phase_multiplier * zscore_multiplier))
+    # Get category impact (needed for scarcity bonus below)
+    impact = project_category_impact([player_name], [])
+    improving = impact.get("improving_categories", [])
+
+    # Detect bottom-3 categories for scarcity bonus
+    bottom_3_cats = []
+    try:
+        my_team_key = TEAM_ID
+        cat_info, weak_cats, _ = _get_team_category_ranks(lg, my_team_key)
+        bottom_3_cats = [c[0] if isinstance(c, (list, tuple)) else str(c) for c in (weak_cats or [])[:3]]
+    except Exception:
+        pass
+
+    # --- Kelly Criterion bid calculation ---
+    replacement_z = 0.0
+    kelly_edge = z_final - replacement_z
+
+    # Category scarcity bonus: if player fills a bottom-3 category, boost edge 1.5x
+    scarcity_applied = False
+    if bottom_3_cats:
+        per_cat_z = player_info.get("per_category_zscores", {})
+        for cat in bottom_3_cats:
+            if per_cat_z.get(cat, 0) > 0.5:
+                kelly_edge = kelly_edge * 1.5
+                scarcity_applied = True
+                break
+
+    # Posterior variance from Bayesian confidence model
+    # Estimate sample size from season progress (~4 PA/day for batters, ~5 BF/day for pitchers)
+    player_type_stat = "bat" if ("SP" not in str(positions) and "RP" not in str(positions)) else "pitch"
+    try:
+        season_start = date(date.today().year, 3, 27)
+        days_in = max(0, (date.today() - season_start).days)
+        est_sample = int(days_in * (4.0 if player_type_stat == "bat" else 5.0))
+        confidence = get_bayesian_confidence(est_sample, player_type_stat)
+        kelly_variance = 1.0 - confidence
+    except Exception:
+        kelly_variance = 0.5
+
+    kelly_variance = max(kelly_variance, 0.1)
+
+    # Half-Kelly for safety
+    kelly_fraction = 0.5
+    half_kelly_raw = kelly_fraction * (kelly_edge / kelly_variance) * faab_remaining / 100.0
+
+    # Competition shading: higher ownership = more bidders
+    competition_shade = 0.7 + 0.3 * (pct_owned / 100.0)
+
+    # Apply phase multiplier, competition shading
+    recommended_bid = max(1, int(half_kelly_raw * phase_multiplier * competition_shade))
+    # Ceiling: 50% of remaining FAAB; floor: $1
     recommended_bid = min(recommended_bid, int(faab_remaining * 0.50))
     bid_low = max(1, int(recommended_bid * 0.7))
     bid_high = min(faab_remaining, int(recommended_bid * 1.4))
-
-    # Get category impact
-    impact = project_category_impact([player_name], [])
-    improving = impact.get("improving_categories", [])
 
     # Build reasoning
     reasons = []
     reasons.append("Player value: " + tier + " tier (z=" + str(round(z_final, 2)) + ")")
     reasons.append("FAAB remaining: $" + str(faab_remaining))
+    reasons.append("Kelly edge: " + str(round(kelly_edge, 2)) + " (z_final - replacement)")
+    reasons.append("Kelly variance: " + str(round(kelly_variance, 3)))
+    reasons.append("Half-Kelly raw: $" + str(round(half_kelly_raw, 2)))
+    reasons.append("Competition shade: " + str(round(competition_shade, 2)) + " (owned " + str(round(pct_owned, 1)) + "%)")
     reasons.append("Player tier: " + player_tier)
     reasons.append("Phase multiplier: " + str(round(phase_multiplier, 2)) + " (weeks remaining: " + str(weeks_remaining) + ")")
+    if scarcity_applied:
+        reasons.append("Category scarcity bonus: 1.5x edge (fills bottom-3 category)")
     if not is_contender:
         reasons.append("Non-contender discount applied")
     if improving:
@@ -5825,6 +6143,10 @@ def cmd_faab_recommend(args, as_json=False):
         "faab_after": faab_remaining - recommended_bid,
         "pct_of_budget": round(recommended_bid / max(faab_remaining, 1) * 100, 1),
         "player_tier": player_tier,
+        "kelly_edge": round(kelly_edge, 2),
+        "kelly_variance": round(kelly_variance, 3),
+        "competition_shade": round(competition_shade, 2),
+        "half_kelly_raw": round(half_kelly_raw, 2),
         "phase_multiplier": round(phase_multiplier, 2),
         "weeks_remaining": weeks_remaining,
         "is_contender": is_contender,
@@ -5843,7 +6165,11 @@ def cmd_faab_recommend(args, as_json=False):
     print("  FAAB Remaining: $" + str(faab_remaining) + " -> $" + str(faab_remaining - recommended_bid))
     print("  Budget %: " + str(round(recommended_bid / max(faab_remaining, 1) * 100, 1)) + "%")
     print("  Player Tier: " + player_tier)
+    print("  Kelly Edge: " + str(round(kelly_edge, 2)) + "  Variance: " + str(round(kelly_variance, 3)) + "  Half-Kelly Raw: $" + str(round(half_kelly_raw, 2)))
+    print("  Competition Shade: " + str(round(competition_shade, 2)) + " (owned " + str(round(pct_owned, 1)) + "%)")
     print("  Phase: " + str(round(phase_multiplier, 2)) + "x (" + str(weeks_remaining) + " weeks left)")
+    if scarcity_applied:
+        print("  Category scarcity bonus applied (1.5x edge)")
     if not is_contender:
         print("  Non-contender discount applied")
     for r in reasons:
@@ -9508,6 +9834,120 @@ def cmd_season_checkpoint(args, as_json=False):
     print(json.dumps(result, indent=2))
 
 
+def cmd_travel_fatigue(args, as_json=False):
+    """Score MLB teams by travel fatigue — timezone changes, schedule density, day/night patterns.
+
+    Based on Northwestern PNAS study analyzing 46,535 MLB games.
+    Score range: 0 (fully rested) to 10 (severe fatigue).
+    """
+    try:
+        target_date = None
+        if args:
+            try:
+                target_date = datetime.strptime(args[0], "%Y-%m-%d").date()
+            except (ValueError, TypeError):
+                if not as_json:
+                    print("Invalid date format. Use YYYY-MM-DD.")
+                    return
+                return {"error": "Invalid date format. Use YYYY-MM-DD."}
+        else:
+            target_date = date.today()
+
+        if not as_json:
+            print("Travel Fatigue Report — " + target_date.isoformat())
+            print("=" * 60)
+            print("Based on Northwestern PNAS study (46,535 MLB games)")
+            print("")
+
+        # Get today's schedule to find teams playing
+        schedule = get_schedule_for_range(target_date.isoformat(), target_date.isoformat())
+        if not schedule:
+            if as_json:
+                return {"date": target_date.isoformat(), "teams": [], "note": "No games scheduled"}
+            print("No games scheduled for " + target_date.isoformat())
+            return
+
+        # Collect unique teams playing today
+        teams_today = set()
+        for game in schedule:
+            away = game.get("away_name", "")
+            home = game.get("home_name", "")
+            if away:
+                teams_today.add(away)
+            if home:
+                teams_today.add(home)
+
+        # Fetch trailing 7-day schedule once for all teams
+        trailing_start = (target_date - timedelta(days=7)).isoformat()
+        trailing_schedule = get_schedule_for_range(trailing_start, target_date.isoformat())
+
+        # Compute fatigue for each team (pass shared schedule to avoid N API calls)
+        results = []
+        for team in sorted(teams_today):
+            fatigue = get_travel_fatigue_score(team, target_date, schedule=trailing_schedule)
+            results.append(fatigue)
+
+        # Sort by fatigue (highest first)
+        results.sort(key=lambda x: -x.get("fatigue_score", 0))
+
+        if as_json:
+            return {
+                "date": target_date.isoformat(),
+                "teams": results,
+                "note": "0 = fully rested, 5+ = significant fatigue, 10 = max",
+            }
+
+        # Display table
+        print("  " + "Team".ljust(28) + "Fatigue".ljust(10) + "Games/7d".ljust(10)
+              + "TZ".ljust(8) + "Details")
+        print("  " + "-" * 75)
+
+        for r in results:
+            team = r.get("team", "?")
+            score = r.get("fatigue_score", 0)
+            games = r.get("games_7d", 0)
+            details = r.get("details", {})
+            tz_changes = r.get("tz_changes", [])
+
+            # Build severity indicator
+            if score >= 5:
+                severity = " *** HIGH"
+            elif score >= 3:
+                severity = " ** MODERATE"
+            elif score >= 1:
+                severity = " * MILD"
+            else:
+                severity = ""
+
+            # Build detail string
+            detail_parts = []
+            tz_score = details.get("tz_score", 0)
+            if tz_score > 0:
+                detail_parts.append("tz=" + str(tz_score))
+            night_pen = details.get("day_after_night_penalty", 0)
+            if night_pen > 0:
+                detail_parts.append("night->day=" + str(night_pen))
+            density_pen = details.get("density_penalty", 0)
+            if density_pen > 0:
+                detail_parts.append("density=" + str(density_pen))
+            if details.get("direction_multiplier", 1.0) > 1.0:
+                detail_parts.append("eastward")
+
+            detail_str = ", ".join(detail_parts) if detail_parts else "rested"
+
+            print("  " + team.ljust(28) + str(score).ljust(10) + str(games).ljust(10)
+                  + str(len(tz_changes)).ljust(8) + detail_str + severity)
+
+        print("")
+        print("Legend: 0=rested, 1-2=mild, 3-4=moderate, 5+=high fatigue")
+        print("Factors: timezone changes (3d), eastward travel 1.5x, night->day games, schedule density")
+
+    except Exception as e:
+        if as_json:
+            return {"error": "Travel fatigue failed: " + str(e)}
+        print("Error computing travel fatigue: " + str(e))
+
+
 COMMANDS = {
     "lineup-optimize": cmd_lineup_optimize,
     "category-check": cmd_category_check,
@@ -9548,6 +9988,7 @@ COMMANDS = {
     "trade-pipeline": cmd_trade_pipeline,
     "weekly-digest": cmd_weekly_digest,
     "season-checkpoint": cmd_season_checkpoint,
+    "travel-fatigue": cmd_travel_fatigue,
 }
 
 if __name__ == "__main__":

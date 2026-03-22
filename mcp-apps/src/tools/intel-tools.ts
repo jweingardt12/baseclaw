@@ -446,4 +446,70 @@ export function registerIntelTools(server: McpServer, distDir: string, enabledTo
   );
   }
 
+  // fantasy_bat_tracking_breakouts
+  if (shouldRegister("fantasy_bat_tracking_breakouts")) {
+  registerAppTool(
+    server,
+    "fantasy_bat_tracking_breakouts",
+    {
+      description: "Use this to find hitters with improving bat speed, swing quality, and power metrics from Baseball Savant bat tracking data. Detects bat speed gains, fast-swing rate improvements, and squared-up rate increases that predict power breakouts weeks before traditional stats reflect it. Cross-references with z-scores to find low-owned breakout candidates.",
+      inputSchema: { count: z.number().describe("Number of results to return").default(20) },
+      annotations: { readOnlyHint: true },
+      _meta: {},
+    },
+    async ({ count }) => {
+      try {
+        const data = await apiGet<any>("/api/intel/bat-tracking-breakouts", { count: String(count) });
+        if (data.error) return { content: [{ type: "text" as const, text: "Error: " + data.error }] };
+        const breakouts = data.breakouts || [];
+        const lines = ["Bat Tracking Breakouts (" + breakouts.length + " found, " + (data.total_hitters_scanned || 0) + " scanned)"];
+        lines.push("  " + "#".padStart(3) + " " + "Name".padEnd(22) + "Score".padStart(6) + "  Z".padStart(6) + "  Signals");
+        lines.push("  " + "-".repeat(60));
+        for (var i = 0; i < breakouts.length; i++) {
+          const b = breakouts[i];
+          const signals = (b.signals || []).map(function(s: any) { return str(s.metric) + " " + str(s.detail); }).join("; ");
+          lines.push("  " + String(i + 1).padStart(3) + " " + str(b.name).padEnd(22) + (b.breakout_score || 0).toFixed(1).padStart(6) + (b.z_score != null ? b.z_score.toFixed(1) : "n/a").padStart(6) + "  " + signals);
+        }
+        return {
+          content: [{ type: "text" as const, text: lines.join("\n") }],
+          structuredContent: { type: "bat-tracking-breakouts", ...data },
+        };
+      } catch (e) { return toolError(e); }
+    },
+  );
+  }
+
+  // fantasy_pitch_mix_breakouts
+  if (shouldRegister("fantasy_pitch_mix_breakouts")) {
+  registerAppTool(
+    server,
+    "fantasy_pitch_mix_breakouts",
+    {
+      description: "Use this to find pitchers making significant pitch arsenal changes that signal breakouts. Detects usage shifts >= 10%, velocity changes >= 1.5 mph, and new pitches added. Cross-references with effectiveness metrics (whiff rate, run value) and z-scores to rank by breakout signal strength. Surfaces candidates like Nick Lodolo's 2025 breakout weeks before stats catch up.",
+      inputSchema: { count: z.number().describe("Number of results to return").default(20) },
+      annotations: { readOnlyHint: true },
+      _meta: {},
+    },
+    async ({ count }) => {
+      try {
+        const data = await apiGet<any>("/api/intel/pitch-mix-breakouts", { count: String(count) });
+        if (data.error) return { content: [{ type: "text" as const, text: "Error: " + data.error }] };
+        const breakouts = data.breakouts || [];
+        const lines = ["Pitch Mix Breakouts (" + breakouts.length + " found, " + (data.total_pitchers_scanned || 0) + " scanned)"];
+        lines.push("  " + "#".padStart(3) + " " + "Name".padEnd(22) + "Score".padStart(6) + "  Z".padStart(6) + "  Changes");
+        lines.push("  " + "-".repeat(65));
+        for (var i = 0; i < breakouts.length; i++) {
+          const b = breakouts[i];
+          const changes = (b.changes || []).map(function(c: any) { return str(c.pitch_name || c.pitch_type) + ": " + str(c.detail); }).join("; ");
+          lines.push("  " + String(i + 1).padStart(3) + " " + str(b.name).padEnd(22) + (b.signal_score || 0).toFixed(1).padStart(6) + (b.z_score != null ? b.z_score.toFixed(1) : "n/a").padStart(6) + "  " + changes);
+        }
+        return {
+          content: [{ type: "text" as const, text: lines.join("\n") }],
+          structuredContent: { type: "pitch-mix-breakouts", ...data },
+        };
+      } catch (e) { return toolError(e); }
+    },
+  );
+  }
+
 }

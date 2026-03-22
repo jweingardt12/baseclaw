@@ -148,4 +148,42 @@ export function registerStrategyTools(server: McpServer, enabledTools?: Set<stri
   );
   }
 
+  // fantasy_travel_fatigue
+  if (shouldRegister("fantasy_travel_fatigue")) {
+  registerAppTool(
+    server,
+    "fantasy_travel_fatigue",
+    {
+      description: "Use this to see travel fatigue scores for MLB teams playing today (or a specific date). Based on peer-reviewed PNAS research: eastward travel eliminates home-field advantage, jet-lagged pitchers allow more home runs. Shows timezone changes, schedule density, and fatigue severity. Use for streaming decisions (target fatigued opponents) and lineup optimization (bench players on high-fatigue teams).",
+      inputSchema: { date: z.string().describe("Game date (YYYY-MM-DD). Defaults to today.").default("") },
+      annotations: { readOnlyHint: true },
+      _meta: {},
+    },
+    async ({ date }) => {
+      try {
+        const params: Record<string, string> = {};
+        if (date) params.date = date;
+        const data = await apiGet<any>("/api/travel-fatigue", params);
+        if (data.error) return { content: [{ type: "text" as const, text: "Error: " + data.error }] };
+        const teams = data.teams || [];
+        const lines = ["Travel Fatigue Report (" + str(data.date || "today") + ") - " + teams.length + " teams"];
+        lines.push("  " + "Team".padEnd(25) + "Score".padStart(6) + "  Severity".padEnd(12) + "  Details");
+        lines.push("  " + "-".repeat(65));
+        for (const t of teams) {
+          const severity = t.fatigue_score >= 5 ? "HIGH" : t.fatigue_score >= 3 ? "MODERATE" : t.fatigue_score >= 1 ? "MILD" : "RESTED";
+          const details = t.details || {};
+          const detailParts: string[] = [];
+          if (details.tz_changes && details.tz_changes.length > 0) detailParts.push("TZ: " + details.tz_changes.join(", "));
+          if (details.games_7d) detailParts.push(details.games_7d + " games/7d");
+          lines.push("  " + str(t.team).padEnd(25) + (t.fatigue_score || 0).toFixed(1).padStart(6) + "  " + severity.padEnd(10) + "  " + detailParts.join(" | "));
+        }
+        return {
+          content: [{ type: "text" as const, text: lines.join("\n") }],
+          structuredContent: { type: "travel-fatigue", ...data },
+        };
+      } catch (e) { return toolError(e); }
+    },
+  );
+  }
+
 }

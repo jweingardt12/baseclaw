@@ -10,7 +10,7 @@ Ask Claude about your Yahoo Fantasy Baseball league in plain English. Get instan
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-1.0-green.svg)](https://modelcontextprotocol.io)
-[![Tools](https://img.shields.io/badge/tools-125-orange.svg)](#all-tools-reference)
+[![Tools](https://img.shields.io/badge/tools-129-orange.svg)](#all-tools-reference)
 [![Docker](https://img.shields.io/badge/docker-required-blue.svg)](https://www.docker.com/products/docker-desktop/)
 [![Yahoo Fantasy](https://img.shields.io/badge/Yahoo-Fantasy%20Baseball-7B0099.svg)](https://baseball.fantasysports.yahoo.com)
 
@@ -58,6 +58,13 @@ Ask Claude about your Yahoo Fantasy Baseball league in plain English. Get instan
 - "What's my playoff probability right now?"
 - "Give me a category-by-category game plan for this week's matchup"
 - "Am I on pace to make the playoffs?"
+
+**Advanced analytics**
+- "Which hitters are gaining bat speed this season? Show me bat tracking breakouts"
+- "Any pitchers making significant pitch mix changes?"
+- "Which teams are dealing with travel fatigue today?"
+- "How confident should I be in this player's projections right now?"
+- "How much FAAB should I bid on this player?" *(now uses Kelly criterion math)*
 
 **Prospect & intel**
 - "Top 20 prospects closest to a call-up"
@@ -319,7 +326,7 @@ The `AGENTS.md` file defines the agent's identity and behavior:
 - **Statcast decision rules** — Research-backed thresholds for barrel rate, exit velocity, sprint speed, xwOBA gaps, ERA vs SIERA, Stuff+, velocity changes
 - **Season phases** — Early (build depth, stream aggressively), mid (trade for balance, buy low), late (playoff positioning)
 - **Decision trees** — Injury response pipelines, trade search with surplus value evaluation, waiver deadline claim chains
-- **FAAB management** — Tool-driven budget pacing with season phase multipliers, contender detection, tier-based bid ranges
+- **FAAB management** — Kelly criterion bid sizing with posterior variance from Bayesian model, competition shading, category scarcity bonus, season phase multipliers, contender detection
 - **Competitive intelligence** — Track rival activity, react to opponent moves, standings-aware trade blocking
 - **Token efficiency** — Workflow tools over individual tools, concise reports
 
@@ -329,9 +336,9 @@ Customize `AGENTS.md` to adjust strategy, risk tolerance, or reporting style.
 
 ## How it works
 
-BaseClaw pulls data from three sources: **Yahoo Fantasy API** (your roster, standings, matchups, free agents, transactions), **FanGraphs** (consensus projections from Steamer + ZiPS + Depth Charts), and **Baseball Savant** (Statcast metrics, Stuff+, pitch arsenal data). Prospect intelligence comes from MLB Stats API plus 16 news sources with Bayesian signal classification.
+BaseClaw pulls data from three sources: **Yahoo Fantasy API** (your roster, standings, matchups, free agents, transactions), **FanGraphs** (consensus projections from Steamer + ZiPS + Depth Charts), and **Baseball Savant** (Statcast metrics, Stuff+, pitch arsenal data, bat tracking). Prospect intelligence comes from MLB Stats API plus 16 news sources with Bayesian signal classification.
 
-Player valuations use **FVARz z-scores** — volume-weighted rate stats so part-timers don't inflate rankings. Projections are park-factor adjusted and blended with live stats via a date-based decay curve (projections dominate early season, actuals take over mid-season). The z-score engine powers rankings, trade analysis, waiver recommendations, and lineup optimization.
+Player valuations use **FVARz z-scores** — volume-weighted rate stats so part-timers don't inflate rankings. Projections are park-factor adjusted and blended with live stats via **Bayesian conjugate updating** — each stat uses its own stabilization point (K-rate stabilizes at 60 PA, batting average at 400 PA), producing mathematically optimal shrinkage rates per player per stat instead of one-size-fits-all date thresholds. FAAB bidding uses **Kelly criterion** math for optimal bid sizing. Breakout detection uses **bat tracking** (bat speed, fast-swing rate, squared-up rate) and **pitch mix screening** (arsenal changes cross-referenced with effectiveness metrics). **Travel fatigue scoring** based on a peer-reviewed PNAS study of 46,535 games feeds into streaming and lineup decisions.
 
 <details>
 <summary><strong>Architecture</strong></summary>
@@ -345,7 +352,7 @@ Player valuations use **FVARz z-scores** — volume-weighted rate stats so part-
 │  │  (Flask :8766)    │──│  (Express :4951)    │  │
 │  │                   │  │                     │  │
 │  │  yahoo_fantasy_api│  │  MCP SDK + ext-apps │  │
-│  │  pybaseball       │  │  123 tool defs      │  │
+│  │  pybaseball       │  │  129 tool defs      │  │
 │  │  MLB-StatsAPI     │  │  4 apps / 75 views  │  │
 │  │  Playwright       │  │  11 workflow tools  │  │
 │  │  CacheManager     │  │  11 tool files      │  │
@@ -361,8 +368,8 @@ Player valuations use **FVARz z-scores** — volume-weighted rate stats so part-
 
 - **Read operations**: Yahoo Fantasy OAuth API (fast, reliable)
 - **Write operations**: Playwright browser automation against Yahoo Fantasy website (Yahoo's API no longer grants write scope to new developer apps)
-- **Valuations**: FVARz z-scores with per-category projection blending (Steamer + ZiPS + Depth Charts), park-factor adjusted, date-based decay curve for in-season blending, conditional catcher premium. ILP lineup optimizer (scipy) with greedy fallback. Surplus value trade analysis, budget-paced FAAB, multi-factor streaming with Stuff+, research-backed punt viability
-- **Intelligence**: Statcast data, SIERA, Stuff+/Location+/Pitching+, platoon splits, arsenal changes, batted ball profiles, historical comparisons, research-calibrated regression scoring (-100 to +100) with 14 signals across hitters and pitchers. Qualitative intelligence layer enriches every recommendation with injury severity, dealbreaker filtering, and context lines. Prospect news sentiment layer blends qualitative signals from 16 news sources with stat-based call-up probabilities using Bayesian updating. Cached with configurable TTL
+- **Valuations**: FVARz z-scores with per-category projection blending (Steamer + ZiPS + Depth Charts), park-factor adjusted, Bayesian conjugate updating for in-season blending (per-stat stabilization points replace date-based decay), conditional catcher premium. ILP lineup optimizer (scipy) with greedy fallback. Surplus value trade analysis, Kelly criterion FAAB bidding, multi-factor streaming with Stuff+ and travel fatigue, research-backed punt viability
+- **Intelligence**: Statcast data, SIERA, Stuff+/Location+/Pitching+, platoon splits, arsenal changes, bat tracking (bat speed, fast-swing rate, squared-up rate, blasts), batted ball profiles, historical comparisons, research-calibrated regression scoring (-100 to +100) with 14 signals across hitters and pitchers. Bat tracking breakout detector flags hitters gaining bat speed before stats reflect it. League-wide pitch mix screener surfaces pitchers making significant arsenal changes cross-referenced with effectiveness metrics. Travel fatigue scoring (PNAS-backed) factors timezone changes, schedule density, and eastward travel penalties into streaming and lineup decisions. Qualitative intelligence layer enriches every recommendation with injury severity, dealbreaker filtering, and context lines. Prospect news sentiment layer blends qualitative signals from 16 news sources with stat-based call-up probabilities using Bayesian updating. Cached with configurable TTL
 - **MCP Apps**: Inline HTML UIs (React + Plex UI + Recharts) rendered directly in Claude via `@modelcontextprotocol/ext-apps`
 - **Workflow tools**: 11 aggregated endpoints that bundle 5-7+ API calls server-side to keep tool call counts low
 
@@ -370,7 +377,7 @@ Player valuations use **FVARz z-scores** — volume-weighted rate stats so part-
 
 1. **Yahoo Fantasy API** — Your roster, standings, matchups, free agents, transactions, and league settings come from Yahoo's OAuth API in real time. Every tool call fetches current data, not cached snapshots.
 
-2. **Analytics engine** — Z-score valuations using the FVARz method (volume-weighted rate stats so part-timers don't inflate rankings). Projections are consensus blends (Steamer + ZiPS + Depth Charts) with per-category weighting, park-factor adjusted, and blended with live stats via a date-based decay curve (projections dominate early, actuals take over mid-season). Conditional catcher premium (2.0 for 2C leagues, 1.0 for 1C, auto-detected from league settings). ILP lineup optimizer (scipy) finds globally optimal player-to-slot assignments with greedy fallback. The engine also runs category gap analysis, research-backed punt strategy with viability ratings, matchup classification with category-specific volatility thresholds, trade evaluation with surplus value analysis (roster spot tax, category fit, consolidation premium, catcher scarcity, rival warnings), FAAB bid recommendations with budget pacing and contender detection, multi-factor streaming pitcher scoring (pitcher quality + park factor + opponent quality + Stuff+), and a trade finder that scans every team for complementary deals.
+2. **Analytics engine** — Z-score valuations using the FVARz method (volume-weighted rate stats so part-timers don't inflate rankings). Projections are consensus blends (Steamer + ZiPS + Depth Charts) with per-category weighting, park-factor adjusted, and blended with live stats via **Bayesian conjugate updating** — each stat uses its own research-backed stabilization point (K-rate stabilizes at 60 PA, batting average at 400 PA, ERA at 600 BF) to produce mathematically optimal shrinkage rates per player per stat. Conditional catcher premium (2.0 for 2C leagues, 1.0 for 1C, auto-detected from league settings). ILP lineup optimizer (scipy) finds globally optimal player-to-slot assignments with greedy fallback. The engine also runs category gap analysis, research-backed punt strategy with viability ratings, matchup classification with category-specific volatility thresholds, trade evaluation with surplus value analysis (roster spot tax, category fit, consolidation premium, catcher scarcity, rival warnings), **Kelly criterion FAAB bidding** (half-Kelly with competition shading from ownership%, category scarcity bonus, posterior variance from Bayesian model), multi-factor streaming pitcher scoring (pitcher quality + park factor + opponent quality + Stuff+ + **opponent travel fatigue**), and a trade finder that scans every team for complementary deals.
 
 3. **Player intelligence** — Every player surface pulls Statcast data (xwOBA, xERA, exit velocity, barrel rate, percentile rankings, pitch arsenal), Stuff+/Location+/Pitching+ metrics, platoon splits, historical comparisons, arsenal change detection, 7/14/30-day trend splits, FanGraphs plate discipline (SIERA, K-BB%, HR/FB%), Reddit sentiment from r/fantasybaseball, and MLB transaction alerts. A research-calibrated regression engine scores every qualified player from -100 (strong sell-high) to +100 (strong buy-low) using 6 hitter signals (xwOBA gap, career-regressed BABIP, HR/FB vs barrels, plate discipline via O-Swing%, hard-hit divergence, sprint speed) and 8 pitcher signals (ERA vs SIERA, K-BB% vs ERA, ERA vs xERA, K-rate adjusted BABIP, LOB%, HR/FB%, velocity trend, Stuff+ confidence modifier) — each with individual contribution breakdowns and confidence levels. A qualitative intelligence layer enriches every recommendation with real-world context: injury severity classification (MINOR/MODERATE/SEVERE), dealbreaker detection (DFA'd, released, suspended, or retired players auto-filtered from recommendations), and one-line context summaries attached to every player surface. API calls are cached with configurable TTL. Before the season starts, Savant data falls back to the prior year so intel surfaces stay populated during spring training.
 
@@ -453,7 +460,7 @@ baseclaw/
     ├── server.ts                   # MCP server setup + tool registration
     ├── main.ts                     # Entry point (stdio + HTTP)
     ├── assets/logo-128.png         # Server icon (pixel-art baseball)
-    ├── src/tools/                  # 11 tool files, 123 MCP tools
+    ├── src/tools/                  # 12 tool files, 129 MCP tools
     ├── src/api/                    # Python API client + type definitions
     └── ui/                         # 4 inline HTML apps, 75+ views (React + Plex UI + Recharts)
 ```
@@ -487,7 +494,7 @@ The `./yf` helper script provides direct CLI access to all functionality:
 <details>
 <summary><strong>All tools reference</strong></summary>
 
-125 tools across 12 tool files. Default profile loads ~26 tools; set `MCP_TOOLSET` to load more (see env vars). Core dashboards and action tools (20) render interactive UI in Claude; the rest return text.
+129 tools across 12 tool files. Default profile loads ~26 tools; set `MCP_TOOLSET` to load more (see env vars). Core dashboards and action tools (20) render interactive UI in Claude; the rest return text.
 
 **Roster Management** (16 tools)
 
@@ -532,7 +539,7 @@ The `./yf` helper script provides direct CLI access to all functionality:
 | `yahoo_lineup_optimize` | Optimize daily lineup via ILP solver (globally optimal player-to-slot assignment with greedy fallback) |
 | `yahoo_category_check` | Your rank in each stat category vs the league |
 | `yahoo_injury_report` | Check roster for injured players and suggest IL moves |
-| `yahoo_streaming` | Multi-factor streaming pitcher scoring: pitcher quality (SIERA, K-BB%), park factor, opponent quality, two-start bonus, Stuff+ quality. Format-aware (conservative in roto) |
+| `yahoo_streaming` | Multi-factor streaming pitcher scoring: pitcher quality (SIERA, K-BB%), park factor, opponent quality, two-start bonus, Stuff+ quality, opponent travel fatigue. Format-aware (conservative in roto) |
 | `yahoo_scout_opponent` | Scout current matchup opponent — strengths, weaknesses, counter-strategies |
 | `yahoo_matchup_strategy` | Volatility-based category classification (WIN/LOSE/TOSS-UP) with per-category action recommendations |
 | `yahoo_set_lineup` | Move specific player(s) to specific position(s) |
@@ -545,7 +552,7 @@ The `./yf` helper script provides direct CLI access to all functionality:
 | `yahoo_closer_monitor` | Monitor closer situations — your closers, available closers, saves leaders |
 | `yahoo_pitcher_matchup` | Pitcher matchup quality for your SPs based on opponent batting stats |
 | `yahoo_roster_stats` | Per-player stat breakdown for your roster (season totals or specific week) |
-| `yahoo_faab_recommend` | FAAB bid with budget pacing: season phase multiplier, contender detection, player tier classification (closer/breakout/streaming/speculative) |
+| `yahoo_faab_recommend` | Kelly criterion FAAB bidding: half-Kelly with posterior variance from Bayesian model, competition shading from ownership%, category scarcity bonus, season phase multiplier, contender detection |
 | `yahoo_ownership_trends` | Ownership trend data from season.db — accumulates as you use waiver/trending tools |
 | `yahoo_category_trends` | Category rank trends over time with Recharts line chart visualization |
 | `yahoo_punt_advisor` | Research-backed punt viability ratings (puntable/not, risk level, reasoning) with category correlation warnings. Format-aware (punting disabled in roto) |
@@ -557,7 +564,7 @@ The `./yf` helper script provides direct CLI access to all functionality:
 | `yahoo_achievements` | Track milestones — best ERA week, longest win streak, most moves |
 | `yahoo_weekly_narrative` | Auto-generated weekly recap with category analysis and season story arc |
 
-**Valuations** (6 tools)
+**Valuations** (7 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -567,12 +574,13 @@ The `./yf` helper script provides direct CLI access to all functionality:
 | `yahoo_projections_update` | Force-refresh projections from FanGraphs (consensus, steamer, zips, or fangraphsdc) |
 | `yahoo_zscore_shifts` | Players whose z-score value has shifted most since draft day (rising/falling) |
 | `yahoo_projection_disagreements` | Players where projection systems disagree most — draft sleeper/bust signals |
+| `fantasy_projection_confidence` | Bayesian blend ratios per stat — shows projection% vs actual% weight, posterior variance, confidence level, and days until actuals dominate. Helps assess how much to trust current projections for trades, waivers, and lineup decisions |
 
-**Intelligence** (8 tools)
+**Intelligence** (10 tools)
 
 | Tool | Description |
 |------|-------------|
-| `fantasy_player_report` | Deep-dive Statcast radar chart + SIERA (expected ERA) + platoon splits + arsenal + trends + Reddit buzz |
+| `fantasy_player_report` | Deep-dive Statcast radar chart + SIERA (expected ERA) + platoon splits + arsenal + bat tracking + trends + Reddit buzz |
 | `fantasy_reddit_buzz` | What r/fantasybaseball is talking about — hot posts, trending topics |
 | `fantasy_trending_players` | Players with rising buzz on Reddit |
 | `fantasy_prospect_watch` | Recent MLB prospect call-ups and roster moves |
@@ -580,6 +588,8 @@ The `./yf` helper script provides direct CLI access to all functionality:
 | `yahoo_statcast_history` | Compare a player's Statcast profile now vs. 30/60 days ago |
 | `yahoo_player_intel` | Comprehensive qualitative intelligence briefing — news, injury severity, hot/cold streaks, role changes, Reddit buzz, ownership trends, and Statcast quality tier in one formatted report |
 | `fantasy_news_feed` | Real-time news from 16 sources (ESPN, FanGraphs, CBS, Yahoo, MLB.com, RotoWire, Pitcher List, Razzball, Google News, RotoBaller, Reddit, 5 Bluesky analyst feeds) — filter by source or player |
+| `fantasy_bat_tracking_breakouts` | Hitters with improving bat speed, fast-swing rate, and squared-up rate from Baseball Savant bat tracking data. Cross-references with z-scores to find buy-low breakout candidates weeks before traditional stats reflect improvement |
+| `fantasy_pitch_mix_breakouts` | Pitchers making significant arsenal changes — usage shifts >= 10%, velocity changes >= 1.5 mph, new pitches added. Cross-referenced with effectiveness metrics (whiff rate, run value) and z-scores to rank by breakout signal strength |
 
 **Prospect Intelligence** (11 tools)
 
@@ -596,13 +606,14 @@ The `./yf` helper script provides direct CLI access to all functionality:
 | `fantasy_prospect_watch_add` | Add or remove a prospect from your ETA watchlist for tracking call-up probability changes |
 | `fantasy_prospect_news` | Qualitative news intelligence for a prospect — aggregates front office quotes, beat reporter intel, roster decisions from 16 sources. Signal classification with Bayesian probability updating |
 
-**Analytics & Strategy** (3 tools)
+**Analytics & Strategy** (4 tools)
 
 | Tool | Description |
 |------|-------------|
 | `fantasy_probable_pitchers` | Probable pitchers for upcoming games |
 | `fantasy_schedule_analysis` | Schedule-based analysis for streaming and lineup planning |
 | `fantasy_regression_candidates` | Research-calibrated regression scoring (-100 to +100): 6 hitter signals (xwOBA, BABIP, HR/FB vs barrels, plate discipline, hard-hit divergence, sprint speed) and 8 pitcher signals (ERA vs SIERA, K-BB% vs ERA, xERA, K-rate adjusted BABIP, LOB%, HR/FB%, velocity trend, Stuff+ confidence modifier). Each player gets a composite score, direction, confidence level, and per-signal breakdowns |
+| `fantasy_travel_fatigue` | Travel fatigue scores for MLB teams based on timezone changes, schedule density, and day/night patterns. Built on peer-reviewed PNAS research (46,535 games). Use for streaming decisions (target fatigued opponents) and lineup optimization |
 
 **MLB Data** (9 tools)
 
@@ -667,9 +678,9 @@ Aggregated tools that bundle 5-7+ API calls server-side so the agent gets a comp
 
 | | **BaseClaw** | **Flaim** | **yahoo-fantasy-baseball-mcp** | **Manual** |
 |---|---|---|---|---|
-| Tools | 123 | ~30 | ~15 | 0 |
+| Tools | 129 | ~30 | ~15 | 0 |
 | Yahoo Fantasy API | Full read + browser write | Read only | Read only | Website |
-| Statcast / Savant | Built-in (xwOBA, Stuff+, barrel rate, percentiles) | No | No | Separate lookup |
+| Statcast / Savant | Built-in (xwOBA, Stuff+, barrel rate, bat tracking, percentiles) | No | No | Separate lookup |
 | Z-score valuations | FVARz with consensus projections, park factors, decay curve | Basic rankings | No | Spreadsheet |
 | Trade analysis | Surplus value, category fit, rival blocking, letter grades | Basic comparison | No | Gut feel |
 | Prospect intelligence | MiLB stats + scouting + Bayesian call-up probability from 16 news sources | No | No | Manual research |

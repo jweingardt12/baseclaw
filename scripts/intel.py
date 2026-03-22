@@ -132,6 +132,12 @@ def _get_intel_db():
         "(player_name TEXT, date TEXT, metric TEXT, value REAL, "
         "PRIMARY KEY (player_name, date, metric))"
     )
+    _intel_db.execute(
+        "CREATE TABLE IF NOT EXISTS bat_tracking_snapshots "
+        "(player_name TEXT, date TEXT, bat_speed REAL, swing_length REAL, "
+        "fast_swing_rate REAL, squared_up_rate REAL, blast_pct REAL, "
+        "PRIMARY KEY (player_name, date))"
+    )
     _intel_db.commit()
     return _intel_db
 
@@ -316,6 +322,29 @@ def _fetch_savant_sprint_speed(player_type):
         + "&position=&team=&min=10&csv=true"
     )
     return _savant_with_fallback(url_template, "savant_sprint", player_type)
+
+
+def _fetch_savant_bat_tracking():
+    """Fetch Baseball Savant bat tracking leaderboard."""
+    url_template = (
+        "https://baseballsavant.mlb.com/leaderboard/bat-tracking"
+        "?attackZone=&batSide=&contactType=&count=&dateStart=&dateEnd="
+        "&gameType=&isHardHit=&minSwings=100&minGroupSwings=1"
+        "&pitchHand=&pitchType=&playerType=Batter&season={YEAR}"
+        "&team=&trimmedSeason=false&csv=true"
+    )
+    return _savant_with_fallback(url_template, "savant_bat_tracking", "batter")
+
+
+def _extract_bat_tracking_metrics(row):
+    """Extract bat tracking metrics from a Savant CSV row, handling column name variants."""
+    return {
+        "bat_speed": _safe_float(row.get("avg_bat_speed", row.get("bat_speed_avg"))),
+        "swing_length": _safe_float(row.get("swing_length", row.get("swing_length_avg"))),
+        "fast_swing_rate": _safe_float(row.get("hard_swing_rate", row.get("fast_swing_rate"))),
+        "squared_up_rate": _safe_float(row.get("squared_up_per_swing", row.get("squared_up_rate"))),
+        "blast_pct": _safe_float(row.get("blast_per_swing", row.get("blast_pct"))),
+    }
 
 
 def _fetch_savant_pitch_arsenal(player_type="pitcher"):
@@ -2629,6 +2658,35 @@ def _build_statcast(name, mlb_id):
                 "speed_tier": _quality_tier(sprint_pct),
             }
 
+        # Bat tracking (batters only)
+        if player_type == "batter":
+            try:
+                bt_data = _fetch_savant_bat_tracking()
+                bt_row = _find_in_savant(name, bt_data)
+                if bt_row:
+                    bt_metrics = _extract_bat_tracking_metrics(bt_row)
+
+                    all_bat_speed = (
+                        _collect_column_values(bt_data, "avg_bat_speed")
+                        or _collect_column_values(bt_data, "bat_speed_avg")
+                    )
+                    all_fast_swing = (
+                        _collect_column_values(bt_data, "hard_swing_rate")
+                        or _collect_column_values(bt_data, "fast_swing_rate")
+                    )
+                    all_squared_up = (
+                        _collect_column_values(bt_data, "squared_up_per_swing")
+                        or _collect_column_values(bt_data, "squared_up_rate")
+                    )
+
+                    result["bat_tracking"] = dict(bt_metrics)
+                    result["bat_tracking"]["bat_speed_pct"] = _percentile_rank(bt_metrics.get("bat_speed"), all_bat_speed)
+                    result["bat_tracking"]["bat_speed_tier"] = _quality_tier(result["bat_tracking"]["bat_speed_pct"])
+                    result["bat_tracking"]["fast_swing_pct"] = _percentile_rank(bt_metrics.get("fast_swing_rate"), all_fast_swing)
+                    result["bat_tracking"]["squared_up_pct"] = _percentile_rank(bt_metrics.get("squared_up_rate"), all_squared_up)
+            except Exception as e:
+                print("Warning: bat tracking failed for " + str(name) + ": " + str(e))
+
         # Pitch arsenal (pitchers only)
         if player_type == "pitcher":
             try:
@@ -3794,6 +3852,577 @@ def cmd_statcast_compare(args, as_json=False):
         print("Error: " + str(e))
 
 
+def _save_bat_tracking_snapshot(name, bt_metrics):
+    """Save bat tracking metrics as a daily snapshot for historical comparison."""
+    if not bt_metrics:
+        return
+    try:
+        db = _get_intel_db()
+        today_str = date.today().isoformat()
+        norm = _normalize_name(name)
+        db.execute(
+            "INSERT OR REPLACE INTO bat_tracking_snapshots "
+            "(player_name, date, bat_speed, swing_length, "
+            "fast_swing_rate, squared_up_rate, blast_pct) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (norm, today_str,
+             bt_metrics.get("bat_speed"),
+             bt_metrics.get("swing_length"),
+             bt_metrics.get("fast_swing_rate"),
+             bt_metrics.get("squared_up_rate"),
+             bt_metrics.get("blast_pct"))
+        )
+    except Exception as e:
+        print("Warning: _save_bat_tracking_snapshot failed for " + str(name) + ": " + str(e))
+
+
+def cmd_bat_tracking_breakouts(args, as_json=False):
+    """Hitters with improving bat speed / swing quality (bat tracking breakout detector)"""
+    count = 20
+    if args:
+        try:
+            count = int(args[0])
+        except (ValueError, TypeError):
+            pass
+
+    # Fetch bat tracking data
+    bt_data = _fetch_savant_bat_tracking()
+    if not bt_data:
+        if as_json:
+            return {"error": "Could not fetch bat tracking data"}
+        print("Could not fetch bat tracking data")
+        return
+
+    # Collect league-wide fast_swing_rate values for top-15% threshold
+    all_fast_swing = (
+        _collect_column_values(bt_data, "hard_swing_rate")
+        or _collect_column_values(bt_data, "fast_swing_rate")
+    )
+    fast_swing_p85 = None
+    if all_fast_swing:
+        sorted_fs = sorted(all_fast_swing)
+        p85_idx = int(len(sorted_fs) * 0.85)
+        if p85_idx < len(sorted_fs):
+            fast_swing_p85 = sorted_fs[p85_idx]
+
+    today_str = date.today().isoformat()
+    cutoff = (date.today() - timedelta(days=30)).isoformat()
+    db = _get_intel_db()
+
+    candidates = []
+    for key, row in bt_data.items():
+        if _is_savant_meta_key(key):
+            continue
+        try:
+            player_name = row.get("name", row.get("player_name", row.get("last_name, first_name", key)))
+            bt_metrics = _extract_bat_tracking_metrics(row)
+            bat_speed = bt_metrics.get("bat_speed")
+            fast_swing = bt_metrics.get("fast_swing_rate")
+            squared_up = bt_metrics.get("squared_up_rate")
+            blast_pct = bt_metrics.get("blast_pct")
+
+            # Save snapshot
+            _save_bat_tracking_snapshot(player_name, bt_metrics)
+
+            # Query historical snapshot (30+ days ago)
+            norm = _normalize_name(player_name)
+            try:
+                cursor = db.execute(
+                    "SELECT date, bat_speed, swing_length, fast_swing_rate, "
+                    "squared_up_rate, blast_pct FROM bat_tracking_snapshots "
+                    "WHERE player_name = ? AND date <= ? "
+                    "ORDER BY date DESC LIMIT 1",
+                    (norm, cutoff)
+                )
+                hist_row = cursor.fetchone()
+            except Exception:
+                hist_row = None
+
+            # Compute deltas vs historical
+            bat_speed_gain = None
+            squared_up_gain = None
+            blast_pct_gain = None
+            hist_date = None
+            if hist_row:
+                hist_date = hist_row[0]
+                hist_bat_speed = hist_row[1]
+                hist_squared_up = hist_row[3]
+                hist_blast = hist_row[4]
+                if bat_speed is not None and hist_bat_speed is not None:
+                    bat_speed_gain = round(bat_speed - hist_bat_speed, 1)
+                if squared_up is not None and hist_squared_up is not None:
+                    squared_up_gain = round(squared_up - hist_squared_up, 1)
+                if blast_pct is not None and hist_blast is not None:
+                    blast_pct_gain = round(blast_pct - hist_blast, 1)
+
+            # Check breakout signals
+            signals = []
+            breakout_score = 0.0
+
+            # Signal 1: bat speed gain >= 1.5 mph
+            if bat_speed_gain is not None and bat_speed_gain >= 1.5:
+                signals.append({"metric": "bat_speed", "detail": "+" + str(bat_speed_gain) + " mph"})
+                breakout_score += bat_speed_gain * 2.0
+
+            # Signal 2: fast-swing rate in top 15% of league
+            if fast_swing is not None and fast_swing_p85 is not None and fast_swing >= fast_swing_p85:
+                fs_display = round(fast_swing * 100, 1) if fast_swing < 1 else round(fast_swing, 1)
+                signals.append({"metric": "fast_swing", "detail": str(fs_display) + "% (top 15%)"})
+                breakout_score += 3.0
+
+            # Signal 3: squared-up rate gain >= 3%
+            if squared_up_gain is not None and squared_up_gain >= 3.0:
+                signals.append({"metric": "squared_up", "detail": "+" + str(squared_up_gain) + "%"})
+                breakout_score += squared_up_gain * 1.5
+
+            # Signal 4: blast_pct gain >= 2%
+            if blast_pct_gain is not None and blast_pct_gain >= 2.0:
+                signals.append({"metric": "blast_pct", "detail": "+" + str(blast_pct_gain) + "%"})
+                breakout_score += blast_pct_gain * 1.5
+
+            if not signals:
+                continue
+
+            # Cross-reference with z-scores for buy-low signal
+            z_score = None
+            z_tier = None
+            try:
+                from valuations import get_player_zscore
+                z_info = get_player_zscore(player_name)
+                if z_info:
+                    z_score = z_info.get("z_final")
+                    z_tier = z_info.get("tier")
+                    # Low z-score + improving bat tracking = strongest signal
+                    if z_score is not None and z_score < 0:
+                        breakout_score += abs(z_score) * 1.5
+            except Exception:
+                pass
+
+            candidates.append({
+                "name": player_name,
+                "bat_speed": bat_speed,
+                "swing_length": bt_metrics.get("swing_length"),
+                "fast_swing_rate": fast_swing,
+                "squared_up_rate": squared_up,
+                "blast_pct": blast_pct,
+                "bat_speed_gain": bat_speed_gain,
+                "squared_up_gain": squared_up_gain,
+                "blast_pct_gain": blast_pct_gain,
+                "hist_date": hist_date,
+                "signals": signals,
+                "breakout_score": round(breakout_score, 1),
+                "z_score": round(z_score, 2) if z_score is not None else None,
+                "z_tier": z_tier,
+            })
+        except (ValueError, TypeError):
+            continue
+
+    # Batch commit all snapshots saved during the loop
+    try:
+        db.commit()
+    except Exception:
+        pass
+
+    # Sort by composite breakout score descending
+    candidates.sort(key=lambda x: -x.get("breakout_score", 0))
+    candidates = candidates[:count]
+
+    if as_json:
+        total_scanned = sum(1 for k in bt_data if not _is_savant_meta_key(k))
+        return {
+            "breakouts": candidates,
+            "total_hitters_scanned": total_scanned,
+            "count": len(candidates),
+            "fast_swing_p85_threshold": round(fast_swing_p85, 1) if fast_swing_p85 is not None else None,
+            "snapshot_date": today_str,
+        }
+
+    # Pretty print
+    print("Bat Tracking Breakout Detector")
+    print("=" * 80)
+    print("  " + "Name".ljust(22) + "BatSpd".rjust(7) + "SwLen".rjust(6)
+          + "Fast%".rjust(6) + "SqUp%".rjust(6) + "Blast%".rjust(7)
+          + "Score".rjust(6) + "  Flags")
+    print("  " + "-" * 76)
+    for c in candidates:
+        bat_spd_str = str(c.get("bat_speed", "")) if c.get("bat_speed") is not None else "-"
+        sw_len_str = str(c.get("swing_length", "")) if c.get("swing_length") is not None else "-"
+        fast_str = str(round(c.get("fast_swing_rate", 0), 1)) if c.get("fast_swing_rate") is not None else "-"
+        squp_str = str(round(c.get("squared_up_rate", 0), 1)) if c.get("squared_up_rate") is not None else "-"
+        blast_str = str(round(c.get("blast_pct", 0), 1)) if c.get("blast_pct") is not None else "-"
+        score_str = str(c.get("breakout_score", 0))
+        flag_str = ", ".join(s.get("metric", "") + " " + s.get("detail", "") for s in c.get("signals", []))
+        z_note = ""
+        if c.get("z_score") is not None:
+            z_note = " [z=" + str(c.get("z_score")) + "]"
+        print("  " + str(c.get("name", "")).ljust(22) + bat_spd_str.rjust(7)
+              + sw_len_str.rjust(6) + fast_str.rjust(6) + squp_str.rjust(6)
+              + blast_str.rjust(7) + score_str.rjust(6) + "  " + flag_str + z_note)
+
+
+# ============================================================
+# 11c. League-Wide Pitch Mix Breakout Screener
+# ============================================================
+
+def _extract_player_display_name(row):
+    """Extract a display-friendly player name from an arsenal CSV row."""
+    raw = (
+        row.get("last_name, first_name", "")
+        or row.get("player_name", "")
+        or ""
+    )
+    if not raw:
+        return ""
+    # Convert "Last, First" -> "First Last"
+    if ", " in raw:
+        parts = raw.split(", ", 1)
+        return parts[1].strip() + " " + parts[0].strip()
+    return raw.strip()
+
+
+def _group_arsenal_rows_by_player(rows):
+    """Group pitch arsenal rows by normalized player name.
+    Returns dict of normalized_name -> {"display_name": str, "rows": [row, ...]}
+    """
+    grouped = {}
+    for row in rows:
+        raw_name = (
+            row.get("last_name, first_name", "")
+            or row.get("player_name", "")
+            or ""
+        )
+        if not raw_name:
+            continue
+        norm = _normalize_name(raw_name)
+        if norm not in grouped:
+            grouped[norm] = {
+                "display_name": _extract_player_display_name(row),
+                "rows": [],
+            }
+        grouped[norm]["rows"].append(row)
+    return grouped
+
+
+def _score_breakout_signal(changes, current_arsenal):
+    """Score a pitcher's breakout signal strength from their arsenal changes.
+
+    Scoring:
+    - Usage shift: abs(diff) / 10 points per change (e.g. 15% shift = 1.5 pts)
+    - Velocity change: abs(diff) points per change (e.g. 2.1 mph = 2.1 pts)
+    - New pitch added: 3.0 points flat
+    - Dropped pitch: 1.0 point flat
+    - Effectiveness bonus: +1.5 if whiff_rate improved on changed pitch
+    - Run value bonus: +1.0 if run_value decreased (improved) on changed pitch
+    """
+    score = 0.0
+    for chg in changes:
+        change_type = chg.get("change_type", "")
+        pt = chg.get("pitch_type", "")
+
+        if change_type == "new_pitch":
+            score += 3.0
+        elif change_type == "dropped_pitch":
+            score += 1.0
+        elif change_type == "usage_increase" or change_type == "usage_decrease":
+            diff = abs(_safe_float(chg.get("diff"), 0))
+            score += diff / 10.0
+        elif change_type == "velocity":
+            diff = abs(_safe_float(chg.get("diff"), 0))
+            score += diff
+
+        # Effectiveness bonus: check whiff_rate improvement on this pitch
+        cur_pitch = current_arsenal.get(pt, {})
+        whiff_cur = cur_pitch.get("whiff_rate")
+        whiff_hist = _safe_float(chg.get("old_whiff"))
+        if whiff_cur is not None and whiff_hist is not None:
+            if whiff_cur > whiff_hist:
+                score += 1.5
+
+        # Run value bonus (lower = better for pitchers)
+        run_val = cur_pitch.get("run_value")
+        run_val_hist = _safe_float(chg.get("old_run_value"))
+        if run_val is not None and run_val_hist is not None:
+            if run_val < run_val_hist:
+                score += 1.0
+
+    return round(score, 1)
+
+
+def cmd_pitch_mix_breakouts(args, as_json=False):
+    """League-wide pitch mix breakout screener -- find pitchers with significant arsenal changes"""
+    try:
+        # Parse args: optional count (default 20)
+        count = 20
+        if args:
+            try:
+                count = int(args[0])
+            except (ValueError, TypeError):
+                pass
+
+        # 1. Fetch all arsenal rows
+        rows = _fetch_pitch_arsenal_rows()
+        if not rows:
+            if as_json:
+                return {"error": "No pitch arsenal data available"}
+            print("No pitch arsenal data available")
+            return
+
+        # 2. Group rows by player
+        grouped = _group_arsenal_rows_by_player(rows)
+        total_pitchers = len(grouped)
+
+        # 3. Get SQLite DB
+        db = _get_intel_db()
+        today_str = date.today().isoformat()
+        cutoff = (date.today() - timedelta(days=30)).isoformat()
+
+        # 4. Scan each pitcher for changes
+        breakout_list = []
+
+        for norm_name, player_info in grouped.items():
+            try:
+                display_name = player_info.get("display_name", norm_name)
+                player_rows = player_info.get("rows", [])
+
+                # 4a. Build current arsenal and save snapshots
+                current = {}
+                for row in player_rows:
+                    pitch_type = row.get("pitch_type", "")
+                    if not pitch_type:
+                        continue
+                    usage = _safe_float(row.get("pitch_usage"))
+                    velo = _safe_float(row.get("pitch_velocity", row.get("velocity")))
+                    spin = _safe_float(row.get("spin_rate"))
+                    whiff = _safe_float(row.get("whiff_percent", row.get("whiff_pct")))
+                    run_val = _safe_float(row.get("run_value"))
+
+                    current[pitch_type] = {
+                        "pitch_name": row.get("pitch_name", pitch_type),
+                        "usage_pct": usage,
+                        "velocity": velo,
+                        "spin_rate": spin,
+                        "whiff_rate": whiff,
+                        "run_value": run_val,
+                    }
+
+                    # Save snapshot
+                    try:
+                        db.execute(
+                            "INSERT OR REPLACE INTO arsenal_snapshots "
+                            "(player_name, date, pitch_type, usage_pct, velocity, "
+                            "spin_rate, whiff_rate) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                            (norm_name, today_str, pitch_type,
+                             usage, velo, spin, whiff)
+                        )
+                    except Exception as e:
+                        print("Warning: arsenal snapshot save failed: " + str(e))
+
+                # 4b. Query historical snapshots (30+ days ago)
+                try:
+                    cursor = db.execute(
+                        "SELECT date, pitch_type, usage_pct, velocity, spin_rate, "
+                        "whiff_rate FROM arsenal_snapshots "
+                        "WHERE player_name = ? AND date <= ? "
+                        "ORDER BY date DESC",
+                        (norm_name, cutoff)
+                    )
+                    hist_rows = cursor.fetchall()
+                except Exception:
+                    hist_rows = []
+
+                # 4c. If no history, skip
+                if not hist_rows:
+                    continue
+
+                # 4d. Build historical arsenal from the most recent old snapshot date
+                hist_date = hist_rows[0][0]
+                historical = {}
+                for h_row in hist_rows:
+                    if h_row[0] != hist_date:
+                        break
+                    h_pitch_type = h_row[1]
+                    historical[h_pitch_type] = {
+                        "usage_pct": h_row[2],
+                        "velocity": h_row[3],
+                        "spin_rate": h_row[4],
+                        "whiff_rate": h_row[5],
+                    }
+
+                # 4e. Compare current vs historical -- stricter thresholds for league scan
+                changes = []
+                all_pitch_types = set(list(current.keys()) + list(historical.keys()))
+
+                for pt in sorted(all_pitch_types):
+                    cur = current.get(pt)
+                    hist = historical.get(pt)
+
+                    if cur and not hist:
+                        changes.append({
+                            "pitch_type": pt,
+                            "pitch_name": cur.get("pitch_name", pt),
+                            "change_type": "new_pitch",
+                            "detail": "New pitch added to arsenal",
+                        })
+                        continue
+
+                    if hist and not cur:
+                        changes.append({
+                            "pitch_type": pt,
+                            "change_type": "dropped_pitch",
+                            "detail": "Pitch dropped from arsenal",
+                        })
+                        continue
+
+                    # Both exist -- check for significant changes
+                    pitch_name = cur.get("pitch_name", pt)
+
+                    # Velocity change >= 1.5 mph (stricter for league scan)
+                    cur_velo = cur.get("velocity")
+                    hist_velo = hist.get("velocity")
+                    if cur_velo is not None and hist_velo is not None:
+                        velo_diff = round(cur_velo - hist_velo, 1)
+                        if abs(velo_diff) >= 1.5:
+                            direction = "gained" if velo_diff > 0 else "lost"
+                            changes.append({
+                                "pitch_type": pt,
+                                "pitch_name": pitch_name,
+                                "change_type": "velocity",
+                                "detail": (direction + " " + str(abs(velo_diff))
+                                           + " mph (" + str(hist_velo) + " -> "
+                                           + str(cur_velo) + ")"),
+                                "old_value": hist_velo,
+                                "new_value": cur_velo,
+                                "diff": velo_diff,
+                                "old_whiff": hist.get("whiff_rate"),
+                                "old_run_value": None,
+                            })
+
+                    # Usage shift >= 10% (stricter for league scan)
+                    cur_usage = cur.get("usage_pct")
+                    hist_usage = hist.get("usage_pct")
+                    if cur_usage is not None and hist_usage is not None:
+                        usage_diff = round(cur_usage - hist_usage, 1)
+                        if abs(usage_diff) >= 10.0:
+                            if usage_diff > 0:
+                                change_type = "usage_increase"
+                                direction = "increased"
+                            else:
+                                change_type = "usage_decrease"
+                                direction = "decreased"
+                            changes.append({
+                                "pitch_type": pt,
+                                "pitch_name": pitch_name,
+                                "change_type": change_type,
+                                "detail": ("usage " + direction + " "
+                                           + str(abs(usage_diff)) + "% ("
+                                           + str(hist_usage) + "% -> "
+                                           + str(cur_usage) + "%)"),
+                                "old_value": hist_usage,
+                                "new_value": cur_usage,
+                                "diff": usage_diff,
+                                "old_whiff": hist.get("whiff_rate"),
+                                "old_run_value": None,
+                            })
+
+                if not changes:
+                    continue
+
+                # 5. Score breakout signal strength
+                signal_score = _score_breakout_signal(changes, current)
+
+                # 6. Cross-reference with z-scores
+                z_score_val = None
+                try:
+                    from valuations import get_player_zscore
+                    z_info = get_player_zscore(display_name)
+                    if z_info:
+                        z_score_val = z_info.get("z_final")
+                except Exception:
+                    pass
+
+                breakout_list.append({
+                    "name": display_name,
+                    "changes": changes,
+                    "signal_score": signal_score,
+                    "z_score": z_score_val,
+                    "historical_date": hist_date,
+                })
+
+            except Exception as e:
+                print("Warning: pitch mix scan failed for " + str(norm_name) + ": " + str(e))
+                continue
+
+        # Commit all snapshots
+        try:
+            db.commit()
+        except Exception as e:
+            print("Warning: snapshot commit failed: " + str(e))
+
+        # 7. Sort by signal score descending, return top N
+        breakout_list.sort(key=lambda x: -(x.get("signal_score", 0)))
+        top_breakouts = breakout_list[:count]
+
+        result = {
+            "breakouts": top_breakouts,
+            "total_pitchers_scanned": total_pitchers,
+            "pitchers_with_changes": len(breakout_list),
+        }
+
+        if as_json:
+            return result
+
+        # CLI output: pretty table
+        print("Pitch Mix Breakout Screener")
+        print("=" * 80)
+        print("Scanned " + str(total_pitchers) + " pitchers, "
+              + str(len(breakout_list)) + " with significant changes")
+        print("")
+        print("  " + "Name".ljust(22) + "Score".rjust(6) + "  "
+              + "Z".rjust(6) + "  " + "Changes")
+        print("  " + "-" * 74)
+
+        for entry in top_breakouts:
+            name_str = str(entry.get("name", ""))[:21]
+            score_str = str(entry.get("signal_score", 0))
+            z_val = entry.get("z_score")
+            if z_val is not None:
+                z_str = str(round(z_val, 1))
+            else:
+                z_str = "N/A"
+
+            # Build compact changes summary
+            change_parts = []
+            for chg in entry.get("changes", []):
+                pt = chg.get("pitch_type", "")
+                ct = chg.get("change_type", "")
+                if ct == "new_pitch":
+                    change_parts.append(pt + ":NEW")
+                elif ct == "dropped_pitch":
+                    change_parts.append(pt + ":DROP")
+                elif ct == "velocity":
+                    diff = chg.get("diff", 0)
+                    sign = "+" if diff > 0 else ""
+                    change_parts.append(pt + ":" + sign + str(diff) + "mph")
+                elif ct in ("usage_increase", "usage_decrease"):
+                    diff = chg.get("diff", 0)
+                    sign = "+" if diff > 0 else ""
+                    change_parts.append(pt + ":" + sign + str(diff) + "%")
+            changes_str = ", ".join(change_parts)
+
+            print("  " + name_str.ljust(22) + score_str.rjust(6) + "  "
+                  + z_str.rjust(6) + "  " + changes_str)
+
+        if top_breakouts:
+            hist_date_show = top_breakouts[0].get("historical_date", "N/A")
+            print("")
+            print("  Compared vs snapshots from: " + str(hist_date_show))
+
+    except Exception as e:
+        if as_json:
+            return {"error": "Pitch mix breakout scan failed: " + str(e)}
+        print("Error: Pitch mix breakout scan failed: " + str(e))
+
+
 # ============================================================
 # 12. COMMANDS dict + CLI dispatch
 # ============================================================
@@ -3807,6 +4436,8 @@ COMMANDS = {
     "prospects": cmd_prospect_watch,
     "transactions": cmd_transactions,
     "statcast-compare": cmd_statcast_compare,
+    "bat-tracking-breakouts": cmd_bat_tracking_breakouts,
+    "pitch-mix-breakouts": cmd_pitch_mix_breakouts,
 }
 
 if __name__ == "__main__":
