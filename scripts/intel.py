@@ -242,8 +242,20 @@ def _savant_with_fallback(url_template, cache_prefix, player_type):
     rows = _fetch_csv(url)
     result = _index_savant_rows(rows)
 
-    # Pre-season fallback: if empty and before May, try last year
-    if not result and date.today().month < 5:
+    # Pre-season fallback: if empty/hollow and before May, try last year.
+    # Savant may return rows with player names but all-None stat values preseason.
+    _has_data = False
+    if result:
+        for _k, _v in result.items():
+            if _k.startswith("__") or _k.startswith("id:"):
+                continue
+            if isinstance(_v, dict) and (_v.get("est_woba") is not None
+                                         or _v.get("xwoba") is not None
+                                         or _v.get("barrel_batted_rate") is not None
+                                         or _v.get("sprint_speed") is not None):
+                _has_data = True
+                break
+    if (not result or not _has_data) and date.today().month < 5:
         year = YEAR - 1
         fallback_key = (cache_prefix, player_type, year)
         cached_fb = _cache_get(fallback_key, TTL_SAVANT)
@@ -778,7 +790,11 @@ def _fetch_fangraphs_regression_batting():
     try:
         from pybaseball import batting_stats
         year = YEAR
-        df = batting_stats(year, qual=25)
+        df = None
+        try:
+            df = batting_stats(year, qual=25)
+        except Exception:
+            pass
         if (df is None or len(df) == 0) and date.today().month < 5:
             year = YEAR - 1
             df = batting_stats(year, qual=25)
@@ -905,7 +921,11 @@ def _fetch_fangraphs_regression_pitching():
     try:
         from pybaseball import pitching_stats
         year = YEAR
-        df = pitching_stats(year, qual=25)
+        df = None
+        try:
+            df = pitching_stats(year, qual=25)
+        except Exception:
+            pass
         if (df is None or len(df) == 0) and date.today().month < 5:
             year = YEAR - 1
             df = pitching_stats(year, qual=25)
