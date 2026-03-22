@@ -337,6 +337,9 @@ PARK_FACTORS = {
     "CLE": 0.99, "WSH": 0.99, "STL": 0.98, "LAA": 0.98, "MIL": 0.98,
     "PIT": 0.97, "CHW": 0.97, "KC": 0.97, "NYM": 0.96, "OAK": 0.96,
     "SEA": 0.95, "TB": 0.94, "SD": 0.93, "SF": 0.93, "MIA": 0.92,
+    # Alternate abbreviations used by projections/FanGraphs
+    "KCR": 0.97, "TBR": 0.94, "SDP": 0.93, "SFG": 0.93,
+    "WSN": 0.99, "ATH": 0.96, "CWS": 0.97,
 }
 
 # Map full team names to 3-letter abbreviations for park factor lookup

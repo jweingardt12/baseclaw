@@ -1699,7 +1699,21 @@ def cmd_streaming(args, as_json=False):
         return
 
     # Score pitchers using z-scores + matchup quality
-    from valuations import get_player_zscore
+    from valuations import get_player_zscore, load_pitchers_csv
+
+    # Build name -> team lookup from projections for FA players (Yahoo FA data lacks team)
+    _proj_team_lookup = {}
+    try:
+        _pdf = load_pitchers_csv()
+        if _pdf is not None:
+            import pandas as pd
+            for _, _row in _pdf.iterrows():
+                _pname = _row.get("Name", "")
+                _pteam = _row.get("Team", "")
+                if _pname and _pteam and not pd.isna(_pteam):
+                    _proj_team_lookup[_pname.lower()] = str(_pteam).strip()
+    except Exception:
+        pass
 
     # Fetch FanGraphs pitching data for Stuff+ scoring
     fg_pitch_data = None
@@ -1716,6 +1730,8 @@ def cmd_streaming(args, as_json=False):
         pct = p.get("percent_owned", 0)
         positions = ",".join(p.get("eligible_positions", ["?"]))
         team_name = get_player_team(p)
+        if not team_name:
+            team_name = _proj_team_lookup.get(name.lower(), "")
         status = p.get("status", "")
 
         # Skip injured pitchers
