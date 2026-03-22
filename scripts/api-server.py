@@ -1893,6 +1893,18 @@ def workflow_trade_analysis():
             except Exception:
                 intel_data[name] = {"_error": "unavailable"}
 
+        # Get news context for each player
+        news_context = {}
+        try:
+            from news import get_player_context
+            for name in all_names:
+                try:
+                    news_context[name] = get_player_context(name)
+                except Exception:
+                    news_context[name] = {"headlines": [], "transactions": [], "flags": []}
+        except Exception:
+            pass
+
         return safe_jsonify({
             "give_players": give_players,
             "get_players": get_players,
@@ -1900,6 +1912,7 @@ def workflow_trade_analysis():
             "get_ids": get_ids,
             "trade_eval": trade_eval,
             "intel": intel_data,
+            "news_context": news_context,
             "positional_impact": positional_impact,
             "category_impact": category_impact,
         })

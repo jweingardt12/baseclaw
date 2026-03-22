@@ -25,8 +25,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from mlb_id_cache import get_mlb_id
 import sqlite3
-from shared import MLB_API, mlb_fetch as _mlb_fetch, USER_AGENT, DATA_DIR, reddit_get
+from shared import MLB_API, mlb_fetch as _mlb_fetch, USER_AGENT, DATA_DIR, reddit_get, TEAM_ALIASES
 from shared import normalize_player_name as _normalize_name
+
+# Set of 30 MLB team full names for filtering minor-league noise
+_MLB_TEAMS = set(TEAM_ALIASES.values())
 
 # Current year for all API calls
 YEAR = date.today().year
@@ -3559,11 +3562,17 @@ def cmd_prospect_watch(args, as_json=False):
 def cmd_transactions(args, as_json=False):
     """Recent fantasy-relevant MLB transactions"""
     days = 7
-    if args:
-        try:
-            days = int(args[0])
-        except (ValueError, TypeError):
-            pass
+    player_filter = None
+    for arg in (args or []):
+        if str(arg).startswith("--player="):
+            player_filter = str(arg).split("=", 1)[1]
+        else:
+            try:
+                days = int(arg)
+            except (ValueError, TypeError):
+                # Treat non-numeric non-flag args as player filter
+                if not player_filter:
+                    player_filter = str(arg)
 
     transactions = _fetch_mlb_transactions(days=days)
     if not transactions:
@@ -3572,6 +3581,17 @@ def cmd_transactions(args, as_json=False):
         print("No transactions found in last " + str(days) + " days")
         return
 
+    # Filter to MLB-level teams only (exclude DSL/FCL/minor league noise)
+    mlb_level = []
+    for tx in transactions:
+        team = tx.get("team", "")
+        # Exact match only — "Boston Red Sox Prospects" is NOT "Boston Red Sox"
+        if team in _MLB_TEAMS:
+            mlb_level.append(tx)
+    # Fallback if filter removed everything (API may use short names)
+    if not mlb_level:
+        mlb_level = transactions
+
     # Filter for fantasy-relevant transactions
     relevant_keywords = [
         "injured list", "disabled list", "recalled", "optioned",
@@ -3579,14 +3599,21 @@ def cmd_transactions(args, as_json=False):
         "selected", "contract purchased", "activated", "transferred",
     ]
     relevant = []
-    for tx in transactions:
+    for tx in mlb_level:
         desc_lower = tx.get("description", "").lower()
         tx_type_lower = tx.get("type", "").lower()
         if any(kw in desc_lower or kw in tx_type_lower for kw in relevant_keywords):
             relevant.append(tx)
 
     if not relevant:
-        relevant = transactions  # Show all if filter is too restrictive
+        relevant = mlb_level  # Show all if keyword filter is too restrictive
+
+    # Filter by player name if specified
+    if player_filter:
+        pf_lower = player_filter.lower()
+        relevant = [tx for tx in relevant
+                    if pf_lower in tx.get("player_name", "").lower()
+                    or pf_lower in tx.get("description", "").lower()]
 
     if as_json:
         return {"transactions": relevant, "days": days}

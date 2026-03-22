@@ -506,6 +506,38 @@ def enrich_with_trends(players, count=None):
         pass
 
 
+def enrich_with_context(players, count=None):
+    """Add news context (warnings, headlines, flags) to a list of player dicts.
+
+    Calls get_player_context for each player and attaches:
+        warning: str (first dealbreaker message, if any)
+        news: list (top 2 headlines)
+        context_flags: list (all flags)
+    """
+    try:
+        from news import get_player_context
+        subset = players[:count] if count else players
+        for p in subset:
+            ctx = get_player_context(p.get("name", ""))
+            if ctx.get("flags"):
+                p["context_flags"] = ctx["flags"]
+                dealbreakers = [f for f in ctx["flags"] if f.get("type") == "DEALBREAKER"]
+                if dealbreakers:
+                    p["warning"] = dealbreakers[0].get("message", "")
+            if ctx.get("headlines"):
+                p["news"] = ctx["headlines"][:2]
+    except Exception:
+        pass
+
+
+def _attach_context_fields(rec, player):
+    """Copy optional context fields from enriched player dict to a rec output dict."""
+    for key in ("warning", "news", "context_flags"):
+        val = player.get(key)
+        if val:
+            rec[key] = val
+
+
 # ---------------------------------------------------------------------------
 # Player news search (lightweight web search for trade context)
 # ---------------------------------------------------------------------------

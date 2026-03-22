@@ -330,6 +330,9 @@ export interface WaiverRecommendation {
   mlb_id?: number;
   intel?: PlayerIntel;
   trend?: TrendInfo;
+  warning?: string;
+  news?: NewsHeadline[];
+  context_flags?: ContextFlag[];
 }
 
 export interface WeakCategory {
@@ -342,6 +345,26 @@ export interface WaiverAnalyzeResponse {
   pos_type: string;
   weak_categories: WeakCategory[];
   recommendations: WaiverRecommendation[];
+}
+
+export interface ContextFlag {
+  type: "DEALBREAKER" | "WARNING" | "INFO";
+  message: string;
+  detail: string;
+}
+
+export interface NewsHeadline {
+  source: string;
+  title: string;
+  date: string;
+  injury_flag: boolean;
+}
+
+export interface PlayerNewsContext {
+  headlines: NewsHeadline[];
+  transactions: Array<{ type: string; date: string; description: string; team: string }>;
+  flags: ContextFlag[];
+  injury_severity?: string;
 }
 
 // Python streaming returns "recommendations" not "pitchers", pid/pct not player_id/percent_owned
@@ -358,6 +381,9 @@ export interface StreamingRecommendation {
   mlb_id?: number;
   intel?: PlayerIntel;
   trend?: TrendInfo;
+  warning?: string;
+  news?: NewsHeadline[];
+  context_flags?: ContextFlag[];
 }
 
 export interface StreamingResponse {
@@ -1518,6 +1544,7 @@ export interface TradeAnalysisResponse {
   get_ids: string[];
   trade_eval: TradeEvalResponse | null;
   intel: Record<string, PlayerIntel>;
+  news_context?: Record<string, PlayerNewsContext>;
   positional_impact?: PositionalImpactResponse;
   category_impact?: CategoryImpactResponse;
 }
@@ -1622,6 +1649,9 @@ export interface OptimalMovePlayer {
   z_score: number;
   tier?: string;
   percent_owned?: string;
+  warning?: string;
+  news?: NewsHeadline[];
+  context_flags?: ContextFlag[];
 }
 
 export interface OptimalMove {

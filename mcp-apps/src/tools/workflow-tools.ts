@@ -475,6 +475,26 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
           }
         }
 
+        // News context warnings
+        const newsCtx = data.news_context;
+        if (newsCtx && Object.keys(newsCtx).length > 0) {
+          const contextLines: string[] = [];
+          for (const [name, ctx] of Object.entries(newsCtx)) {
+            if (ctx.flags && ctx.flags.length > 0) {
+              for (const flag of ctx.flags) {
+                const prefix = flag.type === "DEALBREAKER" ? "!!!" : flag.type === "WARNING" ? "!!" : "i";
+                contextLines.push("  [" + prefix + "] " + str(flag.message));
+                if (flag.detail) contextLines.push("      " + str(flag.detail).substring(0, 80));
+              }
+            }
+          }
+          if (contextLines.length > 0) {
+            lines.push("");
+            lines.push("NEWS CONTEXT:");
+            lines.push(...contextLines);
+          }
+        }
+
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
           structuredContent: { type: "trade-analysis", ...data },

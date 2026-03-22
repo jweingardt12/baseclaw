@@ -478,10 +478,19 @@ def fetch_aggregated_news(sources=None, player=None, limit=50):
 
     # Filter by player if specified
     if player:
+        player_lower = player.lower()
+        # Extract last name for partial matching (guard short names like "Lee")
+        parts = player_lower.split()
+        last_name = parts[-1] if len(parts) >= 2 else ""
         unique = [
             e for e in unique
             if _names_match(player, e.get("player", ""))
-            or player.lower() in (e.get("headline", "") + " " + e.get("summary", "")).lower()
+            or player_lower in (
+                e.get("headline", "") + " " + e.get("summary", "") + " " + e.get("raw_title", "")
+            ).lower()
+            or (last_name and len(last_name) > 3 and last_name in (
+                e.get("headline", "") + " " + e.get("summary", "") + " " + e.get("raw_title", "")
+            ).lower())
         ]
 
     return unique[:limit]
@@ -497,7 +506,142 @@ def get_player_news(player_name, limit=5):
 
 
 # ============================================================
-# 8. CLI Commands
+# 8. Player Context Lookup (for decision tools)
+# ============================================================
+
+# Context cache: 5-min TTL per player
+_context_cache = {}
+_CONTEXT_TTL = 300
+
+# Dealbreaker/warning/info keywords for transaction scanning
+_DEALBREAKER_KEYWORDS = [
+    "released", "dfa", "designated for assignment", "optioned", "sent to minors",
+    "outrighted",
+]
+_WARNING_KEYWORDS = [
+    "placed on", "injured list", "day-to-day", "moved to bullpen", "may skip start",
+    "scratched", "not in lineup",
+]
+_INFO_KEYWORDS = [
+    "called up", "activated", "signed", "selected", "recalled", "contract purchased",
+]
+
+# Injury severity keywords
+SEVERITY_KEYWORDS = {
+    "day-to-day": "MINOR", "not serious": "MINOR", "precautionary": "MINOR",
+    "minor": "MINOR", "bruise": "MINOR", "soreness": "MINOR",
+    "tightness": "MODERATE", "strain": "MODERATE", "sprain": "MODERATE",
+    "surgery": "SEVERE", "torn": "SEVERE", "fracture": "SEVERE",
+    "broken": "SEVERE", "out for season": "SEVERE", "tommy john": "SEVERE", "ucl": "SEVERE",
+}
+
+
+def get_player_context(player_name, days=14):
+    """Get recent news and transaction context for a player.
+
+    Returns dict:
+        headlines: list of {source, title, date, injury_flag}
+        transactions: list of {type, date, description, team}
+        flags: list of {type: DEALBREAKER|WARNING|INFO, message, detail}
+        injury_severity: str or None (MINOR/MODERATE/SEVERE)
+    """
+    if not player_name:
+        return {"headlines": [], "transactions": [], "flags": []}
+
+    cache_key = player_name.lower().strip()
+    cached = cache_get(_context_cache, cache_key, _CONTEXT_TTL)
+    if cached is not None:
+        return cached
+
+    # 1. News headlines
+    headlines = []
+    try:
+        entries = get_player_news(player_name, limit=3)
+        for e in entries:
+            headlines.append({
+                "source": e.get("source", ""),
+                "title": e.get("raw_title", e.get("headline", "")),
+                "date": e.get("timestamp", ""),
+                "injury_flag": e.get("injury_flag", False),
+            })
+    except Exception:
+        pass
+
+    # 2. Transaction history
+    transactions = []
+    try:
+        from intel import _fetch_mlb_transactions
+        all_tx = _fetch_mlb_transactions(days=days)
+        pname_lower = player_name.lower()
+        for tx in all_tx:
+            if (pname_lower in tx.get("player_name", "").lower()
+                    or pname_lower in tx.get("description", "").lower()):
+                transactions.append({
+                    "type": tx.get("type", ""),
+                    "date": tx.get("date", ""),
+                    "description": tx.get("description", ""),
+                    "team": tx.get("team", ""),
+                })
+    except Exception:
+        pass
+
+    # 3. Build flags from transactions and headlines
+    flags = []
+    all_text = ""
+    for tx in transactions:
+        all_text = all_text + " " + tx.get("description", "").lower() + " " + tx.get("type", "").lower()
+    for h in headlines:
+        all_text = all_text + " " + h.get("title", "").lower()
+
+    def _find_detail(kw):
+        for tx in transactions:
+            if kw in (tx.get("description", "") + " " + tx.get("type", "")).lower():
+                return tx.get("description", "")
+        for h in headlines:
+            if kw in h.get("title", "").lower():
+                return h.get("title", "")
+        return ""
+
+    # Scan keywords by priority: dealbreaker blocks warning, info always checked
+    def _scan_first(keywords, flag_type):
+        for kw in keywords:
+            if kw in all_text:
+                flags.append({
+                    "type": flag_type,
+                    "message": player_name + " " + kw,
+                    "detail": _find_detail(kw),
+                })
+                return True
+        return False
+
+    found_dealbreaker = _scan_first(_DEALBREAKER_KEYWORDS, "DEALBREAKER")
+    if not found_dealbreaker:
+        _scan_first(_WARNING_KEYWORDS, "WARNING")
+    _scan_first(_INFO_KEYWORDS, "INFO")
+
+    # 4. Injury severity from headlines
+    injury_severity = None
+    for h in headlines:
+        title_lower = h.get("title", "").lower()
+        for kw, sev in SEVERITY_KEYWORDS.items():
+            if kw in title_lower:
+                injury_severity = sev
+                break
+        if injury_severity:
+            break
+
+    result = {
+        "headlines": headlines,
+        "transactions": transactions,
+        "flags": flags,
+        "injury_severity": injury_severity,
+    }
+    cache_set(_context_cache, cache_key, result)
+    return result
+
+
+# ============================================================
+# 9. CLI Commands
 # ============================================================
 
 def cmd_news(args, as_json=False):

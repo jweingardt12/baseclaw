@@ -234,9 +234,10 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
           const tier = (p.intel && p.intel.statcast && p.intel.statcast.quality_tier) ? " {" + p.intel.statcast.quality_tier + "}" : "";
           const streamScore = p.stream_score ? " stream=" + String(p.stream_score) : "";
           const parkFactor = p.park_factor ? " pf=" + String(p.park_factor) : "";
+          const warning = p.warning ? " !! " + p.warning : "";
           lines.push("  " + str(p.name).padEnd(25) + str(p.team).padEnd(15) + str(p.games).padStart(5)
             + str(p.pct).padStart(6) + "  " + str(p.score.toFixed(1)).padStart(5)
-            + twoStart + tier + streamScore + parkFactor + "  (id:" + p.pid + ")");
+            + twoStart + tier + streamScore + parkFactor + warning + "  (id:" + p.pid + ")");
         }
         const ai_recommendation = generateStreamingInsight(data);
         return {
@@ -941,7 +942,8 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
           for (var move of data.moves) {
             var d = move.drop;
             var a = move.add;
-            lines.push("  " + str(move.rank).padStart(3) + "  " + str(d.name).padEnd(22) + pid(d.player_id) + str(d.z_score).padStart(6) + "  ->  " + str(a.name).padEnd(22) + pid(a.player_id) + str(a.z_score).padStart(6) + "  +" + str(move.z_improvement).padStart(5));
+            const addWarning = a.warning ? " !! " + a.warning : "";
+            lines.push("  " + str(move.rank).padStart(3) + "  " + str(d.name).padEnd(22) + pid(d.player_id) + str(d.z_score).padStart(6) + "  ->  " + str(a.name).padEnd(22) + pid(a.player_id) + str(a.z_score).padStart(6) + "  +" + str(move.z_improvement).padStart(5) + addWarning);
             var details: string[] = [];
             if (move.categories_gained.length > 0) details.push("Gains: " + move.categories_gained.join(", "));
             if (move.categories_lost.length > 0) details.push("Loses: " + move.categories_lost.join(", "));

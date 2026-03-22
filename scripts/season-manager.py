@@ -22,8 +22,8 @@ from shared import (
     get_league_settings, get_regression_adjusted_z,
     LEAGUE_ID, TEAM_ID, GAME_KEY, DATA_DIR,
     MLB_API, mlb_fetch, TEAM_ALIASES, normalize_team_name,
-    get_trend_lookup, enrich_with_intel, enrich_with_trends,
-    batch_player_news,
+    get_trend_lookup, enrich_with_intel, enrich_with_trends, enrich_with_context,
+    _attach_context_fields, batch_player_news,
 )
 
 from yahoo_browser import is_scope_error as _is_scope_error, write_method as _write_method
@@ -1275,6 +1275,29 @@ def cmd_injury_report(args, as_json=False):
         il_proper_info = [injury_info(p) for p in il_proper]
         all_players = injured_active_info + healthy_il_info + injured_bench_info + il_proper_info
         enrich_with_intel(all_players)
+
+        # Enrich with injury severity from news context
+        try:
+            from news import get_player_context, SEVERITY_KEYWORDS
+            for p in all_players:
+                name = p.get("name", "")
+                if not name:
+                    continue
+                ctx = get_player_context(name)
+                if ctx.get("injury_severity"):
+                    p["injury_severity"] = ctx["injury_severity"]
+                # Fallback: check injury_description against severity keywords
+                if not p.get("injury_severity"):
+                    desc_lower = p.get("injury_description", "").lower()
+                    for kw, sev in SEVERITY_KEYWORDS.items():
+                        if kw in desc_lower:
+                            p["injury_severity"] = sev
+                            break
+                if ctx.get("headlines"):
+                    p["injury_detail"] = ctx["headlines"][0].get("title", "")
+        except Exception:
+            pass
+
         return {
             "injured_active": injured_active_info,
             "healthy_il": healthy_il_info,
@@ -1561,12 +1584,15 @@ def cmd_waiver_analyze(args, as_json=False):
         enrich_with_intel(scored, count, boost_scores=True)
         enrich_with_trends(scored, count)
         scored.sort(key=lambda x: -x.get("score", 0))
+
+        enrich_with_context(scored, count)
+
         weak_list = []
         for cat, rank, total in weak_cats:
             weak_list.append({"name": cat, "rank": rank, "total": total})
         recs = []
         for p in scored[:count]:
-            recs.append({
+            rec = {
                 "name": p["name"],
                 "pid": p["pid"],
                 "pct": p["pct"],
@@ -1579,7 +1605,9 @@ def cmd_waiver_analyze(args, as_json=False):
                 "intel": p.get("intel"),
                 "trend": p.get("trend"),
                 "mlb_id": get_mlb_id(p.get("name", "")),
-            })
+            }
+            _attach_context_fields(rec, p)
+            recs.append(rec)
         return {
             "pos_type": pos_type,
             "weak_categories": weak_list,
@@ -1841,13 +1869,16 @@ def cmd_streaming(args, as_json=False):
         enrich_with_intel(scored, 15, boost_scores=True)
         enrich_with_trends(scored, 15)
         scored.sort(key=lambda x: -x.get("score", 0))
+
+        enrich_with_context(scored, 15)
+
         tg_list = []
         sorted_teams = sorted(team_games.items(), key=lambda x: -x[1])
         for tn, gc in sorted_teams[:10]:
             tg_list.append({"team": tn, "games": gc})
         recs = []
         for p in scored[:15]:
-            recs.append({
+            rec = {
                 "name": p["name"],
                 "player_id": p["pid"],
                 "pid": p["pid"],
@@ -1863,7 +1894,9 @@ def cmd_streaming(args, as_json=False):
                 "intel": p.get("intel"),
                 "trend": p.get("trend"),
                 "mlb_id": get_mlb_id(p.get("name", "")),
-            })
+            }
+            _attach_context_fields(rec, p)
+            recs.append(rec)
         return {
             "week": target_week,
             "team_games": tg_list,
@@ -6833,7 +6866,11 @@ def cmd_optimal_moves(args, as_json=False):
         if len(chain) >= count:
             break
 
-    # 7. Calculate totals
+    # 7. Player context: news + transaction flags for ADD players
+    add_players = [m.get("add", {}) for m in chain if m.get("add", {}).get("name")]
+    enrich_with_context(add_players)
+
+    # 8. Calculate totals
     total_improvement = round(sum(m.get("z_improvement", 0) for m in chain), 2)
     projected_z_after = round(roster_z_total + total_improvement, 2)
 
