@@ -81,6 +81,82 @@ PUNT_VIABILITY = {
     "H":   {"puntable": False, "risk": "high",   "reason": "H correlates with AVG and R"},
 }
 
+# Hardcoded Yahoo stat_id -> display_name for this league's categories.
+# Used as fallback when raw settings API fails to return stat IDs.
+_YAHOO_STAT_ID_FALLBACK = {
+    "7": "R", "8": "H", "12": "HR", "13": "RBI", "16": "SB",
+    "3": "AVG", "55": "OBP", "23": "TB", "57": "XBH", "60": "NSB",
+    "50": "IP", "28": "W", "29": "L", "37": "ER", "42": "K",
+    "48": "HLD", "26": "ERA", "27": "WHIP", "63": "QS", "32": "SV",
+    "85": "NSV", "83": "NSV",
+}
+
+# Stats where lower values are better (sort_order = 0 in Yahoo API)
+_LOWER_IS_BETTER_STATS = {"ERA", "WHIP", "ER", "L", "ER_negative", "L_negative"}
+
+
+_stat_id_cache = {}
+
+
+def _build_stat_id_to_name(lg):
+    """Build stat_id -> display_name mapping from raw league settings.
+
+    Parses the raw Yahoo API settings response to extract stat IDs and
+    display names. Falls back to _YAHOO_STAT_ID_FALLBACK if the raw
+    API call fails or returns no data. Cached per league_id.
+    """
+    league_key = lg.league_id
+    if league_key in _stat_id_cache:
+        return _stat_id_cache[league_key]
+    stat_lookup = {}
+    try:
+        handler = lg.yhandler
+        raw = handler.get("/league/" + league_key + "/settings")
+        fc = raw.get("fantasy_content", raw)
+        league_data = fc.get("league", {})
+        settings_items = []
+        if isinstance(league_data, list):
+            for item in league_data:
+                if isinstance(item, dict) and "settings" in item:
+                    settings_items = item.get("settings", [])
+                    break
+        elif isinstance(league_data, dict) and "settings" in league_data:
+            settings_items = league_data.get("settings", [])
+        if isinstance(settings_items, list):
+            for s in settings_items:
+                if isinstance(s, dict) and "stat_categories" in s:
+                    cats = s.get("stat_categories", {})
+                    stats_list = cats.get("stats", []) if isinstance(cats, dict) else cats
+                    if isinstance(stats_list, list):
+                        for entry in stats_list:
+                            stat = entry.get("stat", entry) if isinstance(entry, dict) else entry
+                            if isinstance(stat, dict):
+                                sid = str(stat.get("stat_id", ""))
+                                name = stat.get("display_name", stat.get("abbr", ""))
+                                if sid and name:
+                                    stat_lookup[sid] = name
+    except Exception:
+        pass
+    # Fall back to hardcoded mapping if raw parse returned nothing
+    if not stat_lookup:
+        stat_lookup = dict(_YAHOO_STAT_ID_FALLBACK)
+    _stat_id_cache[league_key] = stat_lookup
+    return stat_lookup
+
+
+def _build_lower_is_better_sids(stat_id_to_name):
+    """Return set of stat IDs where lower values are better.
+
+    Uses the stat name to determine sort order since the Yahoo
+    stat_categories() API does not reliably return sort_order.
+    """
+    lower_sids = set()
+    for sid, name in stat_id_to_name.items():
+        if name in _LOWER_IS_BETTER_STATS:
+            lower_sids.add(sid)
+    return lower_sids
+
+
 FAAB_BID_RANGES = {
     "new_closer_contender": (0.20, 0.50),
     "breakout_bat":         (0.10, 0.25),
@@ -2521,18 +2597,7 @@ def cmd_scout_opponent(args, as_json=False):
     sc, gm, lg = get_league()
 
     # Get stat categories for category names
-    try:
-        stat_cats = lg.stat_categories()
-        stat_id_to_name = {}
-        for cat in stat_cats:
-            sid = str(cat.get("stat_id", ""))
-            display = cat.get("display_name", cat.get("name", "Stat " + sid))
-            stat_id_to_name[sid] = display
-    except Exception as e:
-        stat_cats = []
-        stat_id_to_name = {}
-        if not as_json:
-            print("  Warning: could not fetch stat categories: " + str(e))
+    stat_id_to_name = _build_stat_id_to_name(lg)
 
     # Get raw matchup data (same approach as yahoo-fantasy.py's matchup detail)
     try:
@@ -2647,15 +2712,10 @@ def cmd_scout_opponent(args, as_json=False):
             ties = 0
 
             # Determine which categories have lower-is-better sort order
-            lower_is_better_sids = set()
-            for cat in stat_cats:
-                sid = str(cat.get("stat_id", ""))
-                sort_order = cat.get("sort_order", "1")
-                if str(sort_order) == "0":
-                    lower_is_better_sids.add(sid)
+            lower_is_better_sids = _build_lower_is_better_sids(stat_id_to_name)
 
             for sid in sorted(cat_results.keys(), key=lambda x: int(x) if x.isdigit() else 0):
-                cat_name = stat_id_to_name.get(sid, "Stat " + sid)
+                cat_name = stat_id_to_name.get(sid, _YAHOO_STAT_ID_FALLBACK.get(sid, "Stat " + sid))
                 my_val = my_stats.get(sid, "-")
                 opp_val = opp_stats.get(sid, "-")
                 result = cat_results.get(sid, "tie")
@@ -2882,26 +2942,8 @@ def cmd_matchup_strategy(args, as_json=False):
     sc, gm, lg = get_league()
 
     # ── 1. Matchup + category comparison (reuse scout-opponent parsing) ──
-    try:
-        stat_cats = lg.stat_categories()
-        stat_id_to_name = {}
-        for cat in stat_cats:
-            sid = str(cat.get("stat_id", ""))
-            display = cat.get("display_name", cat.get("name", "Stat " + sid))
-            stat_id_to_name[sid] = display
-    except Exception as e:
-        stat_cats = []
-        stat_id_to_name = {}
-        if not as_json:
-            print("  Warning: could not fetch stat categories: " + str(e))
-
-    # Determine lower-is-better stat IDs
-    lower_is_better_sids = set()
-    for cat in stat_cats:
-        sid = str(cat.get("stat_id", ""))
-        sort_order = cat.get("sort_order", "1")
-        if str(sort_order) == "0":
-            lower_is_better_sids.add(sid)
+    stat_id_to_name = _build_stat_id_to_name(lg)
+    lower_is_better_sids = _build_lower_is_better_sids(stat_id_to_name)
 
     # Rate stat names (margin matters more than volume for these)
     RATE_STATS = {"AVG", "OBP", "ERA", "WHIP"}
@@ -3020,7 +3062,7 @@ def cmd_matchup_strategy(args, as_json=False):
 
             # Build categories with margin
             for sid in sorted(cat_results.keys(), key=lambda x: int(x) if x.isdigit() else 0):
-                cat_name = stat_id_to_name.get(sid, "Stat " + sid)
+                cat_name = stat_id_to_name.get(sid, _YAHOO_STAT_ID_FALLBACK.get(sid, "Stat " + sid))
                 my_val = my_stats.get(sid, "-")
                 opp_val = opp_stats.get(sid, "-")
                 result = cat_results.get(sid, "tie")
@@ -3170,13 +3212,19 @@ def cmd_matchup_strategy(args, as_json=False):
         bat_edge = schedule_data.get("my_batter_games", 0) - schedule_data.get("opp_batter_games", 0)
         pitch_edge = schedule_data.get("my_pitcher_games", 0) - schedule_data.get("opp_pitcher_games", 0)
 
-        # Determine batting vs pitching categories by stat_id position type
+        # Determine batting vs pitching categories by stat name
+        # Use stat_categories() position_type when available, otherwise known pitching stats
         pitching_cat_names = set()
-        for cat in stat_cats:
-            if cat.get("position_type", "") == "P":
-                display = cat.get("display_name", cat.get("name", ""))
-                if display:
-                    pitching_cat_names.add(display)
+        try:
+            for cat in lg.stat_categories():
+                if cat.get("position_type", "") == "P":
+                    display = cat.get("display_name", cat.get("name", ""))
+                    if display:
+                        pitching_cat_names.add(display)
+        except Exception:
+            pass
+        if not pitching_cat_names:
+            pitching_cat_names = {"IP", "W", "L", "ER", "K", "HLD", "ERA", "WHIP", "QS", "SV", "NSV"}
 
         for c in categories:
             name = c.get("name", "")
@@ -5791,22 +5839,13 @@ def cmd_punt_advisor(args, as_json=False):
         format_strategy = get_format_strategy("head")
 
     # ── 1. Get stat categories for names and sort orders ──
-    try:
-        stat_cats = lg.stat_categories()
-        stat_id_to_name = {}
-        lower_is_better_sids = set()
-        for cat in stat_cats:
-            sid = str(cat.get("stat_id", ""))
-            display = cat.get("display_name", cat.get("name", "Stat " + sid))
-            stat_id_to_name[sid] = display
-            sort_order = cat.get("sort_order", "1")
-            if str(sort_order) == "0":
-                lower_is_better_sids.add(sid)
-    except Exception as e:
+    stat_id_to_name = _build_stat_id_to_name(lg)
+    if not stat_id_to_name:
         if as_json:
-            return {"error": "Error fetching stat categories: " + str(e)}
-        print("Error fetching stat categories: " + str(e))
+            return {"error": "Error fetching stat categories"}
+        print("Error fetching stat categories")
         return
+    lower_is_better_sids = _build_lower_is_better_sids(stat_id_to_name)
 
     # ── 2. Get raw matchup data for all teams' stats ──
     try:
@@ -7282,18 +7321,7 @@ def cmd_trash_talk(args, as_json=False):
     sc, gm, lg = get_league()
 
     # ── 1. Get matchup data ──
-    try:
-        stat_cats = lg.stat_categories()
-        stat_id_to_name = {}
-        for cat in stat_cats:
-            sid = str(cat.get("stat_id", ""))
-            display = cat.get("display_name", cat.get("name", "Stat " + sid))
-            stat_id_to_name[sid] = display
-    except Exception as e:
-        stat_cats = []
-        stat_id_to_name = {}
-        if not as_json:
-            print("  Warning: could not fetch stat categories: " + str(e))
+    stat_id_to_name = _build_stat_id_to_name(lg)
 
     try:
         raw = lg.matchups()
@@ -7414,7 +7442,7 @@ def cmd_trash_talk(args, as_json=False):
             best_margin = 0
             worst_margin = 0
             for sid in cat_results:
-                cat_name = stat_id_to_name.get(sid, "Stat " + sid)
+                cat_name = stat_id_to_name.get(sid, _YAHOO_STAT_ID_FALLBACK.get(sid, "Stat " + sid))
                 result = cat_results.get(sid, "tie")
                 if result == "win":
                     wins += 1
@@ -7615,16 +7643,7 @@ def cmd_rival_history(args, as_json=False):
         opponent_filter = " ".join(args).strip().lower()
 
     # Get stat categories for names
-    try:
-        stat_cats = lg.stat_categories()
-        stat_id_to_name = {}
-        for cat in stat_cats:
-            sid = str(cat.get("stat_id", ""))
-            display = cat.get("display_name", cat.get("name", "Stat " + sid))
-            stat_id_to_name[sid] = display
-    except Exception:
-        stat_cats = []
-        stat_id_to_name = {}
+    stat_id_to_name = _build_stat_id_to_name(lg)
 
     # Get our team name and manager GUID for cross-season matching
     my_team_name = ""
@@ -7734,7 +7753,7 @@ def cmd_rival_history(args, as_json=False):
                     for sw in stat_winners:
                         w = sw.get("stat_winner", {})
                         sid = str(w.get("stat_id", ""))
-                        cat_name = stat_id_to_name.get(sid, "Stat " + sid)
+                        cat_name = stat_id_to_name.get(sid, _YAHOO_STAT_ID_FALLBACK.get(sid, "Stat " + sid))
                         if w.get("is_tied"):
                             ties += 1
                             cat_detail.append({"category": cat_name, "result": "tie", "my_value": str(my_stats.get(sid, "-")), "opp_value": str(opp_stats.get(sid, "-"))})
@@ -8447,26 +8466,8 @@ def cmd_weekly_narrative(args, as_json=False):
     sc, gm, lg = get_league()
 
     # ── 1. Stat categories ──
-    try:
-        stat_cats = lg.stat_categories()
-        stat_id_to_name = {}
-        for cat in stat_cats:
-            sid = str(cat.get("stat_id", ""))
-            display = cat.get("display_name", cat.get("name", "Stat " + sid))
-            stat_id_to_name[sid] = display
-    except Exception as e:
-        stat_cats = []
-        stat_id_to_name = {}
-        if not as_json:
-            print("  Warning: could not fetch stat categories: " + str(e))
-
-    # Determine lower-is-better stat IDs
-    lower_is_better_sids = set()
-    for cat in stat_cats:
-        sid = str(cat.get("stat_id", ""))
-        sort_order = cat.get("sort_order", "1")
-        if str(sort_order) == "0":
-            lower_is_better_sids.add(sid)
+    stat_id_to_name = _build_stat_id_to_name(lg)
+    lower_is_better_sids = _build_lower_is_better_sids(stat_id_to_name)
 
     # ── 2. Get matchup data ──
     try:
@@ -8591,7 +8592,7 @@ def cmd_weekly_narrative(args, as_json=False):
             worst_loss_margin = -999
 
             for sid in sorted(cat_results.keys(), key=lambda x: int(x) if x.isdigit() else 0):
-                cat_name = stat_id_to_name.get(sid, "Stat " + sid)
+                cat_name = stat_id_to_name.get(sid, _YAHOO_STAT_ID_FALLBACK.get(sid, "Stat " + sid))
                 my_val = my_stats.get(sid, "-")
                 opp_val = opp_stats.get(sid, "-")
                 cat_result = cat_results.get(sid, "tie")

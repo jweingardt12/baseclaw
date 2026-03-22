@@ -337,6 +337,26 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
           if (rivalWarn && rivalWarn.is_rival) {
             lines.push("  WARNING: " + str(rivalWarn.warning));
           }
+          // SGP standings impact
+          if (te.sgp_give !== undefined || te.sgp_get !== undefined || te.sgp_net !== undefined) {
+            lines.push("");
+            lines.push("SGP (Standings Points):");
+            lines.push("  Give: " + str(te.sgp_give) + " | Get: " + str(te.sgp_get) + " | Net: " + str(te.sgp_net));
+          }
+          // Recommendation (driven by grade — the authoritative source from the backend)
+          const grade = str(te.grade);
+          let recommendation = "";
+          if (grade.startsWith("A")) {
+            recommendation = "ACCEPT — clear improvement";
+          } else if (grade === "B+") {
+            recommendation = "LEAN ACCEPT — moderate improvement";
+          } else if (grade === "B" || grade === "C") {
+            recommendation = "CLOSE — marginal difference";
+          } else {
+            recommendation = "REJECT — net loss of value";
+          }
+          lines.push("");
+          lines.push("RECOMMENDATION: " + recommendation);
         }
 
         // Positional impact (Fix #6)

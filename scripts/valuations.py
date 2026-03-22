@@ -339,6 +339,40 @@ PARK_FACTORS = {
     "SEA": 0.95, "TB": 0.94, "SD": 0.93, "SF": 0.93, "MIA": 0.92,
 }
 
+# Map full team names to 3-letter abbreviations for park factor lookup
+_TEAM_NAME_TO_ABBR = {
+    "arizona diamondbacks": "ARI",
+    "atlanta braves": "ATL",
+    "baltimore orioles": "BAL",
+    "boston red sox": "BOS",
+    "chicago cubs": "CHC",
+    "chicago white sox": "CHW",
+    "cincinnati reds": "CIN",
+    "cleveland guardians": "CLE",
+    "colorado rockies": "COL",
+    "detroit tigers": "DET",
+    "houston astros": "HOU",
+    "kansas city royals": "KC",
+    "los angeles angels": "LAA",
+    "los angeles dodgers": "LAD",
+    "miami marlins": "MIA",
+    "milwaukee brewers": "MIL",
+    "minnesota twins": "MIN",
+    "new york mets": "NYM",
+    "new york yankees": "NYY",
+    "oakland athletics": "OAK",
+    "philadelphia phillies": "PHI",
+    "pittsburgh pirates": "PIT",
+    "san diego padres": "SD",
+    "san francisco giants": "SF",
+    "seattle mariners": "SEA",
+    "st. louis cardinals": "STL",
+    "tampa bay rays": "TB",
+    "texas rangers": "TEX",
+    "toronto blue jays": "TOR",
+    "washington nationals": "WSH",
+}
+
 # PA/IP needed for a stat to become more predictive than projections
 # Research-backed stabilization points (Russell Carleton / Tom Tango)
 STAT_STABILIZATION = {
@@ -451,10 +485,19 @@ def load_pitchers_csv():
 
 
 def get_park_factor(team):
-    """Look up park factor for a team abbreviation. Returns 1.0 if unknown."""
+    """Look up park factor for a team name or abbreviation. Returns 1.0 if unknown."""
     if not team or pd.isna(team):
         return 1.0
-    return PARK_FACTORS.get(str(team).strip().upper(), 1.0)
+    cleaned = str(team).strip()
+    # Try abbreviation lookup first (e.g. "COL", "BOS")
+    abbr_result = PARK_FACTORS.get(cleaned.upper())
+    if abbr_result is not None:
+        return abbr_result
+    # Try full team name lookup (e.g. "Colorado Rockies")
+    mapped_abbr = _TEAM_NAME_TO_ABBR.get(cleaned.lower())
+    if mapped_abbr is not None:
+        return PARK_FACTORS.get(mapped_abbr, 1.0)
+    return 1.0
 
 
 def apply_park_factors(df, stats_type):

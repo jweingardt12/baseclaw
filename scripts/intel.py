@@ -803,6 +803,97 @@ def _fetch_fangraphs_regression_batting():
         return {}
 
 
+def _fetch_fangraphs_career_batting():
+    """Fetch FanGraphs batting stats for 3 prior seasons and compute career
+    BABIP, BIP, and O-Swing% per player.  Used by regression engine for
+    Bayesian shrinkage targets.
+
+    Returns dict keyed by normalized name:
+        { "career_babip": float, "career_bip": int, "career_o_swing_pct": float }
+    """
+    cache_key = ("fangraphs_career_batting", YEAR)
+    cached = _cache_get(cache_key, TTL_FANGRAPHS)
+    if cached is not None:
+        return cached
+    try:
+        from pybaseball import batting_stats
+        # Collect up to 3 prior seasons (e.g. 2023-2025 when YEAR=2026)
+        end_year = YEAR - 1 if date.today().month < 5 else YEAR
+        start_year = end_year - 2
+        accumulated = {}  # name -> {"h_bip": total, "bip": total, "o_swing_sum": total, "seasons": n}
+        for yr in range(start_year, end_year + 1):
+            try:
+                df = batting_stats(yr, qual=25)
+                if df is None or len(df) == 0:
+                    continue
+                for _, row in df.iterrows():
+                    name = row.get("Name", "")
+                    if not name:
+                        continue
+                    norm = name.lower()
+                    babip_val = row.get("BABIP", None)
+                    hr_val = row.get("HR", None)
+                    ab_val = row.get("AB", None)
+                    sf_val = row.get("SF", None)
+                    k_val = row.get("SO", None)
+                    o_swing_val = row.get("O-Swing%", None)
+                    # Calculate BIP = AB - SO - HR + SF  (balls in play)
+                    bip = None
+                    try:
+                        if ab_val is not None and k_val is not None and hr_val is not None:
+                            sf = float(sf_val) if sf_val is not None else 0
+                            bip = int(float(ab_val) - float(k_val) - float(hr_val) + sf)
+                    except (ValueError, TypeError):
+                        pass
+                    if norm not in accumulated:
+                        accumulated[norm] = {
+                            "h_bip": 0,
+                            "bip": 0,
+                            "o_swing_total": 0.0,
+                            "o_swing_seasons": 0,
+                        }
+                    entry = accumulated[norm]
+                    if bip is not None and bip > 0 and babip_val is not None:
+                        try:
+                            hits_on_bip = float(babip_val) * bip
+                            entry["h_bip"] += hits_on_bip
+                            entry["bip"] += bip
+                        except (ValueError, TypeError):
+                            pass
+                    if o_swing_val is not None:
+                        try:
+                            entry["o_swing_total"] += float(o_swing_val)
+                            entry["o_swing_seasons"] += 1
+                        except (ValueError, TypeError):
+                            pass
+            except Exception as e:
+                print("Warning: FanGraphs career batting fetch for "
+                      + str(yr) + " failed: " + str(e))
+                continue
+
+        # Build result dict with career aggregates
+        result = {}
+        for norm, entry in accumulated.items():
+            career = {}
+            if entry.get("bip", 0) > 0:
+                career["career_babip"] = round(
+                    entry.get("h_bip", 0) / entry.get("bip", 1), 3
+                )
+                career["career_bip"] = entry.get("bip", 0)
+            if entry.get("o_swing_seasons", 0) > 0:
+                career["career_o_swing_pct"] = round(
+                    entry.get("o_swing_total", 0) / entry.get("o_swing_seasons", 1), 3
+                )
+            if career:
+                result[norm] = career
+
+        _cache_set(cache_key, result)
+        return result
+    except Exception as e:
+        print("Warning: FanGraphs career batting fetch failed: " + str(e))
+        return {}
+
+
 def _fetch_fangraphs_regression_pitching():
     """Fetch FanGraphs pitching stats needed for regression detection.
     Extracts ERA, FIP, xFIP, BABIP, LOB%, SIERA for luck-based signals.
@@ -1309,12 +1400,17 @@ def detect_regression_candidates():
         # Fetch barrel and sprint speed data for composite scoring
         statcast_bat = {}
         sprint_bat = {}
+        career_bat = {}
         try:
             statcast_bat = _fetch_savant_statcast("batter") or {}
         except Exception:
             pass
         try:
             sprint_bat = _fetch_savant_sprint_speed("batter") or {}
+        except Exception:
+            pass
+        try:
+            career_bat = _fetch_fangraphs_career_batting() or {}
         except Exception:
             pass
 
@@ -1382,6 +1478,25 @@ def detect_regression_candidates():
                         except (ValueError, TypeError):
                             hard_hit_pct = None
 
+                # Look up career BABIP, BIP, O-Swing% for Bayesian targets
+                career_babip = None
+                career_bip = None
+                career_o_swing_pct = None
+                career_row = _find_in_fangraphs(name, career_bat)
+                if career_row:
+                    career_babip = career_row.get("career_babip")
+                    career_bip = career_row.get("career_bip")
+                    career_o_swing_pct = career_row.get("career_o_swing_pct")
+
+                # xSLG from Savant expected stats (est_slg field)
+                xslg = None
+                xslg_raw = row.get("est_slg")
+                if xslg_raw is not None:
+                    try:
+                        xslg = float(xslg_raw)
+                    except (ValueError, TypeError):
+                        xslg = None
+
                 # Build player_stats dict for composite scoring
                 hitter_stats = {
                     "xwoba": xwoba,
@@ -1395,6 +1510,10 @@ def detect_regression_candidates():
                     "hard_hit_pct": hard_hit_pct,
                     "avg": row.get("ba"),
                     "slg": row.get("slg"),
+                    "xslg": xslg,
+                    "career_babip": career_babip,
+                    "career_bip": career_bip,
+                    "career_o_swing_pct": career_o_swing_pct,
                 }
                 reg_result = compute_hitter_regression_score(hitter_stats)
 
