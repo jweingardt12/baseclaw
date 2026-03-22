@@ -3593,16 +3593,28 @@ def cmd_transactions(args, as_json=False):
         mlb_level = transactions
 
     # Filter for fantasy-relevant transactions
+    # Exclude noise transaction types first (spring training roster shuffles)
+    _NOISE_TYPES = {"assigned", "reassigned", "roster move"}
     relevant_keywords = [
         "injured list", "disabled list", "recalled", "optioned",
-        "designated for assignment", "released", "traded", "signed",
-        "selected", "contract purchased", "activated", "transferred",
+        "designated for assignment", "released", "traded",
+        "contract purchased", "activated", "transferred",
     ]
+    # "signed" removed from keywords — it's a substring of "assigned"
+    # Instead check for it with a word-boundary guard
+    import re
+    _signed_re = re.compile(r"\bsigned\b")
+    _selected_re = re.compile(r"\bselected\b")
     relevant = []
     for tx in mlb_level:
-        desc_lower = tx.get("description", "").lower()
         tx_type_lower = tx.get("type", "").lower()
-        if any(kw in desc_lower or kw in tx_type_lower for kw in relevant_keywords):
+        if tx_type_lower in _NOISE_TYPES:
+            continue
+        desc_lower = tx.get("description", "").lower()
+        text = desc_lower + " " + tx_type_lower
+        if (any(kw in text for kw in relevant_keywords)
+                or _signed_re.search(text)
+                or _selected_re.search(text)):
             relevant.append(tx)
 
     if not relevant:

@@ -1286,13 +1286,21 @@ def cmd_injury_report(args, as_json=False):
                 ctx = get_player_context(name)
                 if ctx.get("injury_severity"):
                     p["injury_severity"] = ctx["injury_severity"]
-                # Fallback: check injury_description against severity keywords
+                # Fallback 1: check injury_description against severity keywords
                 if not p.get("injury_severity"):
                     desc_lower = p.get("injury_description", "").lower()
-                    for kw, sev in SEVERITY_KEYWORDS.items():
-                        if kw in desc_lower:
-                            p["injury_severity"] = sev
-                            break
+                    if desc_lower:
+                        for kw, sev in SEVERITY_KEYWORDS.items():
+                            if kw in desc_lower:
+                                p["injury_severity"] = sev
+                                break
+                # Fallback 2: map Yahoo status directly (DTD → MINOR, IL → MODERATE)
+                if not p.get("injury_severity"):
+                    status = p.get("status", "")
+                    if status in ("DTD", "DTD-B"):
+                        p["injury_severity"] = "MINOR"
+                    elif status in ("IL", "IL10", "IL15", "IL60"):
+                        p["injury_severity"] = "MODERATE"
                 if ctx.get("headlines"):
                     p["injury_detail"] = ctx["headlines"][0].get("title", "")
         except Exception:

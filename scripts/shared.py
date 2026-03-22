@@ -521,9 +521,11 @@ def enrich_with_context(players, count=None):
             ctx = get_player_context(p.get("name", ""))
             if ctx.get("flags"):
                 p["context_flags"] = ctx["flags"]
-                dealbreakers = [f for f in ctx["flags"] if f.get("type") == "DEALBREAKER"]
-                if dealbreakers:
-                    p["warning"] = dealbreakers[0].get("message", "")
+                # Promote dealbreakers and warnings to the warning field
+                for f in ctx["flags"]:
+                    if f.get("type") in ("DEALBREAKER", "WARNING"):
+                        p["warning"] = f.get("message", "")
+                        break
             if ctx.get("headlines"):
                 p["news"] = ctx["headlines"][:2]
     except Exception:

@@ -516,23 +516,32 @@ _CONTEXT_TTL = 300
 # Dealbreaker/warning/info keywords for transaction scanning
 _DEALBREAKER_KEYWORDS = [
     "released", "dfa", "designated for assignment", "optioned", "sent to minors",
-    "outrighted",
+    "outrighted", "non-tendered", "unconditional release",
 ]
 _WARNING_KEYWORDS = [
-    "placed on", "injured list", "day-to-day", "moved to bullpen", "may skip start",
-    "scratched", "not in lineup",
+    "placed on", "injured list", "day-to-day",
+    "bullpen", "reliever", "moved to bullpen", "begin in bullpen",
+    "may skip start", "skip start", "scratched", "not in lineup",
+    "demoted", "lost job", "loses closer", "loses role",
 ]
 _INFO_KEYWORDS = [
     "called up", "activated", "signed", "selected", "recalled", "contract purchased",
+    "named closer", "closing", "promoted", "return from",
 ]
 
 # Injury severity keywords
 SEVERITY_KEYWORDS = {
-    "day-to-day": "MINOR", "not serious": "MINOR", "precautionary": "MINOR",
-    "minor": "MINOR", "bruise": "MINOR", "soreness": "MINOR",
+    "day-to-day": "MINOR", "dtd": "MINOR", "not serious": "MINOR",
+    "precautionary": "MINOR", "minor": "MINOR", "bruise": "MINOR",
+    "soreness": "MINOR", "cramp": "MINOR", "fatigue": "MINOR",
     "tightness": "MODERATE", "strain": "MODERATE", "sprain": "MODERATE",
+    "hamstring": "MODERATE", "oblique": "MODERATE", "shoulder": "MODERATE",
+    "back": "MODERATE", "groin": "MODERATE", "calf": "MODERATE",
+    "knee": "MODERATE", "ankle": "MODERATE", "wrist": "MODERATE",
+    "elbow": "MODERATE", "inflammation": "MODERATE", "contusion": "MODERATE",
     "surgery": "SEVERE", "torn": "SEVERE", "fracture": "SEVERE",
-    "broken": "SEVERE", "out for season": "SEVERE", "tommy john": "SEVERE", "ucl": "SEVERE",
+    "broken": "SEVERE", "out for season": "SEVERE", "tommy john": "SEVERE",
+    "ucl": "SEVERE", "acl": "SEVERE", "labrum": "SEVERE", "rotator cuff": "SEVERE",
 }
 
 
