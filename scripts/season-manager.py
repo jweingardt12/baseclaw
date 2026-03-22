@@ -439,6 +439,163 @@ def analyze_schedule_density(team_name, days=14):
 
 # ---------- Commands ----------
 
+# Position slot names that are not active lineup slots
+_INACTIVE_SLOTS = {"bn", "il", "il+", "na", "dl"}
+
+# Yahoo injury designation statuses
+_IL_STATUSES = ("IL", "IL+", "IL10", "IL15", "IL60", "DL", "NA")
+
+# Position types eligible for Util slot
+_UTIL_POSITIONS = {"c", "1b", "2b", "3b", "ss", "of", "util", "lf", "cf", "rf", "dh"}
+
+
+def _is_eligible_for_slot(eligible_positions, slot):
+    """Check if a player's eligible positions allow them to fill a given slot."""
+    slot_lower = slot.lower()
+    if slot_lower in _INACTIVE_SLOTS:
+        return False
+    elig = [ep.lower() for ep in eligible_positions]
+    if slot_lower == "util":
+        return any(p in elig for p in _UTIL_POSITIONS)
+    return slot_lower in elig
+
+
+def _optimize_lineup_ilp(roster, active_slots, day_scores):
+    """ILP-based lineup optimizer using scipy.optimize.milp.
+
+    Finds globally optimal player-to-slot assignment maximizing total day score.
+    Returns {lineup: {slot_idx: player}, bench: [...], total_ev: float, method: "ilp"}
+    """
+    try:
+        from scipy.optimize import milp, LinearConstraint, Bounds
+        import numpy as np
+    except ImportError:
+        return None  # Fall back to greedy
+
+    n_players = len(roster)
+    n_slots = len(active_slots)
+    if n_players == 0 or n_slots == 0:
+        return None
+
+    # Build cost matrix (negative because milp minimizes)
+    # Variable x[i*n_slots + j] = 1 if player i is in slot j
+    n_vars = n_players * n_slots
+    costs = np.zeros(n_vars)
+
+    for i, player in enumerate(roster):
+        pid = player.get("player_id", "") or player.get("name", "")
+        player_score = day_scores.get(pid, 0)
+        player_elig = player.get("eligible_positions", [])
+        is_il_player = player.get("status", "") in _IL_STATUSES
+
+        for j, slot in enumerate(active_slots):
+            idx = i * n_slots + j
+            eligible = (not is_il_player) and _is_eligible_for_slot(player_elig, slot)
+
+            if eligible:
+                costs[idx] = -player_score  # Negative for minimization
+            else:
+                costs[idx] = 999999  # Penalty for ineligible
+
+    # Constraint 1: each slot filled by at most one player
+    # Sum over all players for each slot <= 1
+    slot_constraint_matrix = np.zeros((n_slots, n_vars))
+    for j in range(n_slots):
+        for i in range(n_players):
+            slot_constraint_matrix[j, i * n_slots + j] = 1
+
+    # Constraint 2: each player in at most one slot
+    player_constraint_matrix = np.zeros((n_players, n_vars))
+    for i in range(n_players):
+        for j in range(n_slots):
+            player_constraint_matrix[i, i * n_slots + j] = 1
+
+    A = np.vstack([slot_constraint_matrix, player_constraint_matrix])
+    b_upper = np.ones(n_slots + n_players)
+    b_lower = np.zeros(n_slots + n_players)
+    # Each slot should be filled by exactly 1 player (if possible)
+    b_lower[:n_slots] = 1
+
+    constraints = LinearConstraint(A, b_lower, b_upper)
+    integrality = np.ones(n_vars)  # All binary
+    bounds = Bounds(lb=0, ub=1)
+
+    result = milp(c=costs, constraints=constraints, integrality=integrality, bounds=bounds)
+
+    if not result.success:
+        return None
+
+    # Parse solution
+    lineup = {}
+    assigned_players = set()
+    total_ev = 0
+    for i in range(n_players):
+        for j in range(n_slots):
+            idx = i * n_slots + j
+            if result.x[idx] > 0.5:
+                lineup[j] = roster[i]
+                assigned_players.add(i)
+                pid = roster[i].get("player_id", "") or roster[i].get("name", "")
+                total_ev += day_scores.get(pid, 0)
+
+    bench = [roster[i] for i in range(n_players) if i not in assigned_players]
+
+    return {
+        "lineup": lineup,
+        "bench": bench,
+        "total_ev": round(total_ev, 2),
+        "method": "ilp",
+    }
+
+
+def _optimize_lineup_greedy(roster, active_slots, day_scores):
+    """Greedy lineup optimizer — fallback when scipy is unavailable.
+
+    Sorts players by score descending, fills slots in order.
+    Returns {lineup: {slot_idx: player}, bench: [...], total_ev: float, method: "greedy"}
+    """
+    # Sort players by day score descending
+    sorted_players = sorted(
+        range(len(roster)),
+        key=lambda i: day_scores.get(
+            roster[i].get("player_id", "") or roster[i].get("name", ""), 0
+        ),
+        reverse=True,
+    )
+
+    lineup = {}
+    assigned_players = set()
+    total_ev = 0
+
+    for i in sorted_players:
+        player = roster[i]
+        is_il_player = player.get("status", "") in _IL_STATUSES
+        if is_il_player:
+            continue
+
+        pid = player.get("player_id", "") or player.get("name", "")
+        player_score = day_scores.get(pid, 0)
+        player_elig = player.get("eligible_positions", [])
+
+        for j, slot in enumerate(active_slots):
+            if j in lineup:
+                continue
+
+            if _is_eligible_for_slot(player_elig, slot):
+                lineup[j] = player
+                assigned_players.add(i)
+                total_ev += player_score
+                break
+
+    bench = [roster[i] for i in range(len(roster)) if i not in assigned_players]
+
+    return {
+        "lineup": lineup,
+        "bench": bench,
+        "total_ev": round(total_ev, 2),
+        "method": "greedy",
+    }
+
 
 def cmd_lineup_optimize(args, as_json=False):
     """Cross-reference roster with MLB schedule to find off-day players"""
@@ -497,38 +654,58 @@ def cmd_lineup_optimize(args, as_json=False):
             p["_tier"] = "Streamable"
             p["_z_final"] = 0
 
+    # Build playing status for each player
     for p in roster:
         name = p.get("name", "Unknown")
         team_name = get_player_team(p)
-        status = p.get("status", "")
-        pos = get_player_position(p)
         playing = team_plays_today(team_name, schedule)
+        p["_playing"] = playing
 
         if is_il(p):
             il_players.append(p)
-        elif is_bench(p):
+
+    # Build active slots (exclude BN, IL, NA)
+    positions = get_roster_positions(lg)
+    active_slots = [s for s in positions if s not in ("BN", "IL", "IL+", "NA", "DL")]
+
+    # Build day scores: z_final if playing, 0 if not
+    day_scores = {}
+    for p in roster:
+        pid = p.get("player_id", "") or p.get("name", "")
+        if p.get("_playing"):
+            day_scores[pid] = p.get("_z_final", 0)
+        else:
+            day_scores[pid] = 0
+
+    # Run ILP optimizer (with greedy fallback)
+    opt_result = _optimize_lineup_ilp(roster, active_slots, day_scores)
+    if opt_result is None:
+        opt_result = _optimize_lineup_greedy(roster, active_slots, day_scores)
+
+    # Classify players for output
+    for p in roster:
+        if is_il(p):
+            continue
+        name = p.get("name", "Unknown")
+        playing = p.get("_playing", False)
+        if is_bench(p):
             if playing:
                 bench_playing.append(p)
             else:
                 bench_off_day.append(p)
         else:
-            # Active slot
             if playing:
                 active_playing.append(p)
             else:
                 active_off_day.append(p)
 
-    # Build swap suggestions - tier-aware
-    # Untouchable/Core players should NOT be benched just for off days
-    # Only suggest swapping Solid/Fringe/Streamable tier active off-day players
+    # Generate swaps: find bench_playing players that should be in active slots
+    # where active_off_day players currently sit
     swaps = []
     if active_off_day and bench_playing:
-        # Sort bench players by z-score (best first) for better swap quality
         bench_avail = sorted(bench_playing, key=lambda x: x.get("_z_final", 0), reverse=True)
         for off_player in active_off_day:
             off_pos = get_player_position(off_player)
-            off_tier = off_player.get("_tier", "Streamable")
-            # Find a bench player eligible for that position
             match = None
             for bp in bench_avail:
                 bp_elig = bp.get("eligible_positions", [])
@@ -568,6 +745,8 @@ def cmd_lineup_optimize(args, as_json=False):
             "il_players": il_players_info,
             "suggested_swaps": swap_list,
             "applied": apply_changes,
+            "optimizer_method": opt_result.get("method", "greedy"),
+            "optimizer_ev": opt_result.get("total_ev", 0),
         }
 
     # Report
@@ -1446,6 +1625,14 @@ def cmd_streaming(args, as_json=False):
     # Score pitchers using z-scores + matchup quality
     from valuations import get_player_zscore
 
+    # Fetch FanGraphs pitching data for Stuff+ scoring
+    fg_pitch_data = None
+    try:
+        from intel import _fetch_fangraphs_regression_pitching, _find_in_fangraphs
+        fg_pitch_data = _fetch_fangraphs_regression_pitching()
+    except Exception as e:
+        print("Warning: Could not fetch FG pitching data for streaming: " + str(e))
+
     scored = []
     for p in fa_pitchers:
         name = p.get("name", "Unknown")
@@ -1515,6 +1702,26 @@ def cmd_streaming(args, as_json=False):
         pf_score = max(0, (1.05 - pf) * 100)
         stream_score += pf_score * 0.15
 
+        # Factor 5: Stuff+ quality (10% weight when available)
+        _stuff_plus_out = None
+        if fg_pitch_data:
+            fg_row = _find_in_fangraphs(name, fg_pitch_data)
+            if fg_row:
+                stuff_plus = fg_row.get("stuff_plus")
+                if stuff_plus is not None:
+                    try:
+                        stuff_val = float(stuff_plus)
+                        _stuff_plus_out = stuff_val
+                        stuff_score = (stuff_val - 100) * 0.5  # ~-10 to +10
+                        stuff_score = min(max(stuff_score, -10), 10)
+                        stream_score += stuff_score * 0.10
+                        # Double weight when IP < 30 (early season / callups)
+                        fg_ip = fg_row.get("ip")
+                        if fg_ip is not None and float(fg_ip) < 30:
+                            stream_score += stuff_score * 0.10
+                    except (ValueError, TypeError):
+                        pass
+
         score = stream_score
 
         # Format adjustment: conservative streaming in roto
@@ -1533,6 +1740,7 @@ def cmd_streaming(args, as_json=False):
             "park_factor": round(pf, 3),
             "z_score": round(z_final, 2),
             "tier": tier,
+            "stuff_plus": _stuff_plus_out,
         })
 
     scored.sort(key=lambda x: -x["score"])
@@ -1559,6 +1767,7 @@ def cmd_streaming(args, as_json=False):
                 "park_factor": p.get("park_factor", 1.0),
                 "z_score": p.get("z_score", 0),
                 "tier": p.get("tier", "Unknown"),
+                "stuff_plus": p.get("stuff_plus"),
                 "intel": p.get("intel"),
                 "trend": p.get("trend"),
                 "mlb_id": get_mlb_id(p.get("name", "")),

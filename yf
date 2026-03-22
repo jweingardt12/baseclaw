@@ -228,6 +228,14 @@ case "$1" in
         shift
         docker exec $CONTAINER python3 /app/scripts/yahoo_browser.py change-team-logo "$@"
         ;;
+    # Snapshot system (snapshot.py)
+    snapshot)
+        docker exec $CONTAINER python3 /app/scripts/snapshot.py "$@"
+        ;;
+    # Backtest engine (backtest.py)
+    backtest)
+        docker exec $CONTAINER python3 /app/scripts/backtest.py "$@"
+        ;;
     # Docker management
     shell)
         docker exec -it $CONTAINER /bin/bash
@@ -292,6 +300,10 @@ case "$1" in
         echo "  mlb stats <id>  - Player stats"
         echo "  mlb schedule    - Today's games"
         echo "  mlb injuries    - Current injuries"
+        echo ""
+        echo "Analytics:"
+        echo "  snapshot         - Save weekly state snapshot"
+        echo "  backtest         - Run backtest replay engine"
         echo ""
         echo "API (JSON output):"
         echo "  api <endpoint> [k=v ...]     - Call API directly, output JSON"

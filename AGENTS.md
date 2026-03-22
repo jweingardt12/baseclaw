@@ -145,6 +145,58 @@ Pitcher signals (max composite: ±100):
 
 Thresholds: score > 15 = buy-low, < -15 = sell-high, else neutral. Confidence: |score| > 40 high, > 20 medium, else low.
 
+## Stuff+ / Pitching+ Guidance (v1.5)
+
+Stuff+ measures raw pitch quality (movement, velocity, spin); Location+ measures command accuracy; Pitching+ combines both.
+
+**Stabilization**: Stuff+ stabilizes at ~80 pitches (1-2 starts), making it the single best early-season pitcher signal. After 250 pitches, Stuff+ beats preseason projections for K-rate prediction.
+
+**Interpretation**:
+- Stuff+ >= 130: generational arm (top ~1%)
+- Stuff+ 115-130: elite pitch quality, strong buy signal even with ugly ERA
+- Stuff+ 100-115: above average, confirm with Location+
+- Stuff+ 85-100: below average, needs elite command to survive
+- Stuff+ < 85: poor pitch quality, sell unless significant velocity gain
+
+**Stuff-Location gap**: When Stuff+ exceeds Location+ by 12+ points, the pitcher has elite raw stuff but poor command. These are high-upside/high-risk — regression direction depends on whether command improves (usually age-dependent: younger pitchers more likely to gain command).
+
+**Early-season weighting**: When IP < 30, the Stuff+ modifier in the regression engine is amplified 1.5x because small-sample traditional stats are unreliable but Stuff+ stabilizes quickly.
+
+**Regression integration**: Stuff+ acts as a confidence modifier on existing regression signals:
+- Elite Stuff+ (>= 115) confirming buy-low → amplifies up to +8 pts (+12 early season)
+- Poor Stuff+ (< 90) confirming sell-high → amplifies down to -8 pts (-12 early season)
+- Contradictory Stuff+ → pulls regression score toward neutral (up to ±5 pts)
+
+**Streaming integration**: Stuff+ contributes 10% of the streaming score (20% when IP < 30). Centered at 100, scaled ±10 points.
+
+## Lineup Optimizer (v1.5)
+
+The lineup optimizer uses Integer Linear Programming (ILP) via scipy to find the globally optimal player-to-slot assignment, maximizing total expected value for the day.
+
+**When ILP matters**: The greedy optimizer (sort by score, fill slots in order) fails when:
+- A player is eligible for multiple positions (e.g., a player eligible for 2B and SS blocks a better SS-only player)
+- Utility slots interact with position-specific slots
+- Multiple bench players compete for limited active slots
+
+**Day score**: Each player's value = z_final if their team plays today, 0 if not. Binary playing/not-playing × quality.
+
+**Fallback**: If scipy is unavailable, the greedy optimizer runs automatically with identical output format. The JSON response includes `optimizer_method` ("ilp" or "greedy") and `optimizer_ev` (total expected value).
+
+## Backtesting (v1.5)
+
+Weekly snapshots save projections, roster, and category standings to `data/snapshots/{year}/week_{NN}/`. Snapshots should run every Sunday at 11pm ET via cron.
+
+**Snapshot contents**: projections_hitters.csv, projections_pitchers.csv, roster.json, category_standings.json, metadata.json
+
+**Replay engine** (`./yf backtest`): Loads snapshots, fetches actual stats from pybaseball, and computes:
+- **Lineup efficiency**: ratio of actual started-player value to optimal value (1.0 = perfect lineup decisions)
+- **Value left on bench**: sum of bench player production that could have been captured
+
+**CLI usage**:
+- `./yf snapshot` — save current week's snapshot
+- `./yf backtest --year 2026 --weeks 1-25 --verbose` — replay a season
+- `./yf backtest --year 2026 --weeks 5-5 --json` — single week, JSON output
+
 ## Autonomy Level
 
 Your autonomy level determines what you can execute vs. what needs the user's approval. A hard write gate (`ENABLE_WRITE_OPS`) at the server level overrides all presets — if writes are disabled, no write tools exist regardless of autonomy level.

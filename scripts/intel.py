@@ -835,6 +835,9 @@ def _fetch_fangraphs_regression_pitching():
                         "k_per_9": row.get("K/9", None),
                         "k_rate": row.get("K%", None),
                         "bb_rate": row.get("BB%", None),
+                        "stuff_plus": row.get("Stuff+", None),
+                        "location_plus": row.get("Location+", None),
+                        "pitching_plus": row.get("Pitching+", None),
                         "data_season": year,
                     }
         _cache_set(cache_key, result)
@@ -1215,6 +1218,56 @@ def compute_pitcher_regression_score(player_stats):
         except (ValueError, TypeError):
             pass
 
+    # Signal 8: Stuff+ confidence modifier (weight: ±8, early-season ±12)
+    stuff_plus = player_stats.get("stuff_plus")
+    ip = player_stats.get("ip")
+    if stuff_plus is not None:
+        try:
+            stuff_val = float(stuff_plus)
+            direction = "buy-low" if score > 0 else "sell-high" if score < 0 else None
+            stuff_modifier = 0
+
+            if direction == "buy-low" and stuff_val >= 115:
+                # Elite stuff confirms buy-low — amplify
+                stuff_modifier = min((stuff_val - 115) * 0.8, 8)
+            elif direction == "sell-high" and stuff_val < 90:
+                # Poor stuff confirms sell-high — amplify
+                stuff_modifier = max((stuff_val - 90) * 0.8, -8)
+            elif direction == "buy-low" and stuff_val < 90:
+                # Poor stuff contradicts buy-low — pull toward neutral
+                stuff_modifier = max((stuff_val - 100) * 0.5, -5)
+            elif direction == "sell-high" and stuff_val >= 115:
+                # Elite stuff contradicts sell-high — pull toward neutral
+                stuff_modifier = min((stuff_val - 100) * 0.5, 5)
+
+            # Early-season amplifier: when IP < 30, Stuff+ is more informative
+            if ip is not None and float(ip) < 30 and stuff_modifier != 0:
+                stuff_modifier *= 1.5
+                stuff_modifier = max(min(stuff_modifier, 12), -12)
+
+            if stuff_modifier != 0:
+                score += stuff_modifier
+                signals.append({
+                    "name": "stuff_plus_modifier",
+                    "value": stuff_val,
+                    "direction": "buy-low" if stuff_modifier > 0 else "sell-high",
+                    "strength": "strong" if abs(stuff_modifier) >= 6 else "moderate",
+                    "contribution": round(stuff_modifier, 1),
+                })
+
+            # Informational signal: Stuff+-Location+ gap
+            loc_val = _safe_float(player_stats.get("location_plus")) if player_stats.get("location_plus") is not None else None
+            if loc_val is not None and abs(stuff_val - loc_val) >= 12:
+                signals.append({
+                    "name": "stuff_command_gap",
+                    "value": round(stuff_val - loc_val, 1),
+                    "direction": "info",
+                    "strength": "informational",
+                    "contribution": 0,
+                })
+        except (ValueError, TypeError):
+            pass
+
     return {
         "regression_score": round(score, 1),
         "direction": "buy-low" if score > 15 else "sell-high" if score < -15 else "neutral",
@@ -1529,6 +1582,10 @@ def detect_regression_candidates():
                     "hr_fb_rate": hr_fb_rate,
                     "k_bb_pct": k_bb_pct,
                     "k_per_9": k_per_9,
+                    "stuff_plus": fg_row.get("stuff_plus"),
+                    "pitching_plus": fg_row.get("pitching_plus"),
+                    "location_plus": fg_row.get("location_plus"),
+                    "ip": fg_row.get("ip"),
                 }
                 reg_result = compute_pitcher_regression_score(pitcher_stats)
 
@@ -2310,6 +2367,18 @@ def _build_batted_ball_profile(name):
             "profile_type": profile_type,
             "data_season": year,
         }
+
+        # Stuff+ metrics (if available in the dataset)
+        stuff_plus = _safe_float(player_row.get("Stuff+"))
+        location_plus = _safe_float(player_row.get("Location+"))
+        pitching_plus = _safe_float(player_row.get("Pitching+"))
+        if stuff_plus is not None:
+            result["stuff_plus"] = stuff_plus
+        if location_plus is not None:
+            result["location_plus"] = location_plus
+        if pitching_plus is not None:
+            result["pitching_plus"] = pitching_plus
+
         _cache_manager.set(cache_key, result, ttl=TTL_FANGRAPHS)
         return result
     except Exception as e:
@@ -2468,6 +2537,28 @@ def _build_statcast(name, mlb_id):
                     }
             except Exception as e:
                 print("Warning: SIERA analysis failed for " + str(name) + ": " + str(e))
+
+            # Stuff+ metrics from FanGraphs regression pitching data
+            try:
+                if fg_row is None:
+                    fg_pitch_data = _fetch_fangraphs_regression_pitching()
+                    fg_row = _find_in_fangraphs(name, fg_pitch_data)
+                if fg_row:
+                    stuff_plus = _safe_float(fg_row.get("stuff_plus"))
+                    location_plus = _safe_float(fg_row.get("location_plus"))
+                    pitching_plus = _safe_float(fg_row.get("pitching_plus"))
+                    if stuff_plus is not None or location_plus is not None or pitching_plus is not None:
+                        stuff_gap = None
+                        if stuff_plus is not None and location_plus is not None:
+                            stuff_gap = round(stuff_plus - location_plus, 1)
+                        result["stuff_metrics"] = {
+                            "stuff_plus": stuff_plus,
+                            "location_plus": location_plus,
+                            "pitching_plus": pitching_plus,
+                            "stuff_location_gap": stuff_gap,
+                        }
+            except Exception as e:
+                print("Warning: Stuff+ metrics failed for " + str(name) + ": " + str(e))
 
             # Batted ball profile (GB%, FB%, LD%, barrel%, hard hit%)
             try:

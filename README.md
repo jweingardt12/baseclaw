@@ -58,9 +58,9 @@ Complex questions chain 3-8 tool calls automatically. Simple lookups are one cal
 
 1. **Yahoo Fantasy API** — Your roster, standings, matchups, free agents, transactions, and league settings come from Yahoo's OAuth API in real time. Every tool call fetches current data, not cached snapshots.
 
-2. **Analytics engine** — Z-score valuations using the FVARz method (volume-weighted rate stats so part-timers don't inflate rankings). Projections are consensus blends (Steamer + ZiPS + Depth Charts) with per-category weighting, park-factor adjusted, and blended with live stats via a date-based decay curve (projections dominate early, actuals take over mid-season). Positional scarcity bonuses (catcher premium, middle infield). The engine also runs category gap analysis, research-backed punt strategy with viability ratings, matchup classification with category-specific volatility thresholds, trade evaluation with surplus value analysis (roster spot tax, category fit, consolidation premium, catcher scarcity, rival warnings), FAAB bid recommendations with budget pacing and contender detection, multi-factor streaming pitcher scoring (pitcher quality + park factor + opponent quality), and a trade finder that scans every team for complementary deals.
+2. **Analytics engine** — Z-score valuations using the FVARz method (volume-weighted rate stats so part-timers don't inflate rankings). Projections are consensus blends (Steamer + ZiPS + Depth Charts) with per-category weighting, park-factor adjusted, and blended with live stats via a date-based decay curve (projections dominate early, actuals take over mid-season). Conditional catcher premium (2.0 for 2C leagues, 1.0 for 1C, auto-detected from league settings). ILP lineup optimizer (scipy) finds globally optimal player-to-slot assignments with greedy fallback. The engine also runs category gap analysis, research-backed punt strategy with viability ratings, matchup classification with category-specific volatility thresholds, trade evaluation with surplus value analysis (roster spot tax, category fit, consolidation premium, catcher scarcity, rival warnings), FAAB bid recommendations with budget pacing and contender detection, multi-factor streaming pitcher scoring (pitcher quality + park factor + opponent quality + Stuff+), and a trade finder that scans every team for complementary deals.
 
-3. **Player intelligence** — Every player surface pulls Statcast data (xwOBA, xERA, exit velocity, barrel rate, percentile rankings, pitch arsenal), platoon splits, historical comparisons, arsenal change detection, 7/14/30-day trend splits, FanGraphs plate discipline (SIERA, K-BB%, HR/FB%), Reddit sentiment from r/fantasybaseball, and MLB transaction alerts. A research-calibrated regression engine scores every qualified player from -100 (strong sell-high) to +100 (strong buy-low) using 6 hitter signals (xwOBA gap, career-regressed BABIP, HR/FB vs barrels, plate discipline via O-Swing%, hard-hit divergence, sprint speed) and 7 pitcher signals (ERA vs SIERA, K-BB% vs ERA, ERA vs xERA, K-rate adjusted BABIP, LOB%, HR/FB%, velocity trend) — each with individual contribution breakdowns and confidence levels. API calls are cached with configurable TTL. Before the season starts, Savant data falls back to the prior year so intel surfaces stay populated during spring training.
+3. **Player intelligence** — Every player surface pulls Statcast data (xwOBA, xERA, exit velocity, barrel rate, percentile rankings, pitch arsenal), Stuff+/Location+/Pitching+ metrics, platoon splits, historical comparisons, arsenal change detection, 7/14/30-day trend splits, FanGraphs plate discipline (SIERA, K-BB%, HR/FB%), Reddit sentiment from r/fantasybaseball, and MLB transaction alerts. A research-calibrated regression engine scores every qualified player from -100 (strong sell-high) to +100 (strong buy-low) using 6 hitter signals (xwOBA gap, career-regressed BABIP, HR/FB vs barrels, plate discipline via O-Swing%, hard-hit divergence, sprint speed) and 8 pitcher signals (ERA vs SIERA, K-BB% vs ERA, ERA vs xERA, K-rate adjusted BABIP, LOB%, HR/FB%, velocity trend, Stuff+ confidence modifier) — each with individual contribution breakdowns and confidence levels. API calls are cached with configurable TTL. Before the season starts, Savant data falls back to the prior year so intel surfaces stay populated during spring training.
 
 4. **Browser automation** — Write operations (add, drop, trade, lineup changes) use Playwright to automate the Yahoo Fantasy website directly, since Yahoo's API no longer grants write scope to new developer apps. Read operations still use the fast OAuth API.
 
@@ -315,10 +315,10 @@ Customize `AGENTS.md` to adjust strategy, risk tolerance, or reporting style.
 
 | Tool | Description |
 |------|-------------|
-| `yahoo_lineup_optimize` | Optimize daily lineup (bench off-day players, start active ones) |
+| `yahoo_lineup_optimize` | Optimize daily lineup via ILP solver (globally optimal player-to-slot assignment with greedy fallback) |
 | `yahoo_category_check` | Your rank in each stat category vs the league |
 | `yahoo_injury_report` | Check roster for injured players and suggest IL moves |
-| `yahoo_streaming` | Multi-factor streaming pitcher scoring: pitcher quality (SIERA, K-BB%), park factor, opponent quality, two-start bonus. Format-aware (conservative in roto) |
+| `yahoo_streaming` | Multi-factor streaming pitcher scoring: pitcher quality (SIERA, K-BB%), park factor, opponent quality, two-start bonus, Stuff+ quality. Format-aware (conservative in roto) |
 | `yahoo_scout_opponent` | Scout current matchup opponent — strengths, weaknesses, counter-strategies |
 | `yahoo_matchup_strategy` | Volatility-based category classification (WIN/LOSE/TOSS-UP) with per-category action recommendations |
 | `yahoo_set_lineup` | Move specific player(s) to specific position(s) |
@@ -381,7 +381,7 @@ Customize `AGENTS.md` to adjust strategy, risk tolerance, or reporting style.
 |------|-------------|
 | `fantasy_probable_pitchers` | Probable pitchers for upcoming games |
 | `fantasy_schedule_analysis` | Schedule-based analysis for streaming and lineup planning |
-| `fantasy_regression_candidates` | Research-calibrated regression scoring (-100 to +100): 6 hitter signals (xwOBA, BABIP, HR/FB vs barrels, plate discipline, hard-hit divergence, sprint speed) and 7 pitcher signals (ERA vs SIERA, K-BB% vs ERA, xERA, K-rate adjusted BABIP, LOB%, HR/FB%, velocity trend). Each player gets a composite score, direction, confidence level, and per-signal breakdowns |
+| `fantasy_regression_candidates` | Research-calibrated regression scoring (-100 to +100): 6 hitter signals (xwOBA, BABIP, HR/FB vs barrels, plate discipline, hard-hit divergence, sprint speed) and 8 pitcher signals (ERA vs SIERA, K-BB% vs ERA, xERA, K-rate adjusted BABIP, LOB%, HR/FB%, velocity trend, Stuff+ confidence modifier). Each player gets a composite score, direction, confidence level, and per-signal breakdowns |
 
 </details>
 
@@ -464,6 +464,7 @@ The `./yf` helper script provides direct CLI access to all functionality:
 | **Draft** | `status`, `recommend`, `watch [sec]`, `cheatsheet`, `best-available [B\|P] [n]` |
 | **Valuations** | `rankings [B\|P] [n]`, `compare <name1> <name2>`, `value <name>`, `import-csv <file>`, `generate` |
 | **In-Season** | `lineup-optimize [--apply]`, `category-check`, `injury-report`, `waiver-analyze [B\|P] [n]`, `streaming [week]`, `trade-eval <give> <get>`, `daily-update`, `roster-stats [--period season\|week] [--week N]` |
+| **Analytics** | `snapshot [week]`, `backtest --year YYYY --weeks N-M [--verbose] [--json]` |
 | **MLB** | `mlb teams`, `mlb roster <tm>`, `mlb stats <id>`, `mlb schedule`, `mlb injuries` |
 | **Browser** | `browser-login`, `browser-status`, `browser-test`, `change-team-name <name>`, `change-team-logo <path>` |
 | **API** | `api <endpoint> [key=val]`, `api-list` |
@@ -498,8 +499,8 @@ The `./yf` helper script provides direct CLI access to all functionality:
 
 - **Read operations**: Yahoo Fantasy OAuth API (fast, reliable)
 - **Write operations**: Playwright browser automation against Yahoo Fantasy website
-- **Valuations**: FVARz z-scores with per-category projection blending (Steamer + ZiPS + Depth Charts), park-factor adjusted, date-based decay curve for in-season blending, positional scarcity bonuses. Surplus value trade analysis, budget-paced FAAB, multi-factor streaming, research-backed punt viability
-- **Intelligence**: Statcast data, SIERA, platoon splits, arsenal changes, batted ball profiles, historical comparisons, research-calibrated regression scoring (-100 to +100) with 13 signals across hitters and pitchers. Cached with configurable TTL
+- **Valuations**: FVARz z-scores with per-category projection blending (Steamer + ZiPS + Depth Charts), park-factor adjusted, date-based decay curve for in-season blending, conditional catcher premium. ILP lineup optimizer (scipy) with greedy fallback. Surplus value trade analysis, budget-paced FAAB, multi-factor streaming with Stuff+, research-backed punt viability
+- **Intelligence**: Statcast data, SIERA, Stuff+/Location+/Pitching+, platoon splits, arsenal changes, batted ball profiles, historical comparisons, research-calibrated regression scoring (-100 to +100) with 14 signals across hitters and pitchers. Cached with configurable TTL
 - **MCP Apps**: Inline HTML UIs (React + Plex UI + Recharts) rendered directly in Claude via `@modelcontextprotocol/ext-apps`
 - **Workflow tools**: 11 aggregated endpoints that bundle 5-7+ API calls server-side to keep tool call counts low
 
@@ -563,6 +564,8 @@ baseclaw/
 │   ├── history.py                  # Historical records
 │   ├── intel.py                    # Fantasy intelligence (Statcast, splits, arsenal, caching)
 │   ├── valuations.py               # Z-score valuation engine (consensus, park factors, ROS tracking)
+│   ├── snapshot.py                 # Weekly state snapshots (projections, roster, standings)
+│   ├── backtest.py                 # Backtest replay engine (lineup efficiency vs actuals)
 │   ├── mlb-data.py                 # MLB Stats API helper
 │   ├── mlb_id_cache.py             # Player name → MLB ID mapping
 │   ├── shared.py                   # Shared utilities (team key detection, name normalization)

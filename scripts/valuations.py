@@ -306,10 +306,28 @@ RATIO_BATTING = ["AVG", "OBP"]
 RATIO_PITCHING = ["ERA", "WHIP"]
 
 # Positional scarcity bonuses
-# Catcher premium at 1.5 — compromise for 1C and 2C league formats.
-# TODO: make conditional on league roster slots when yahoo_league_context
-# is plumbed through (2.0 for 2C leagues, 1.0 for 1C leagues).
+# Catcher premium: conditional on league roster slots (2.0 for 2C, 1.0 for 1C, 1.5 fallback).
 POS_BONUS = {"C": 1.5, "SS": 0.5, "2B": 0.3, "3B": 0.3, "RP": 0.5}
+
+
+def get_catcher_premium(roster_positions=None):
+    """Catcher premium based on league roster configuration.
+    2C leagues get 2.0 (catchers are scarcer), 1C leagues get 1.0.
+    Falls back to 1.5 when league context unavailable."""
+    if roster_positions:
+        c_count = sum(1 for rp in roster_positions
+                      if rp.get("position") == "C")
+        if c_count >= 2:
+            return 2.0
+        if c_count == 1:
+            return 1.0
+    return 1.5  # fallback when no league context
+
+
+def set_catcher_premium(roster_positions=None):
+    """Update POS_BONUS['C'] based on league context."""
+    POS_BONUS["C"] = get_catcher_premium(roster_positions)
+
 
 # Park factors (2024-2025 Baseball Savant, 1.0 = neutral)
 PARK_FACTORS = {

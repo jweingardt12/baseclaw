@@ -98,6 +98,28 @@ _proj_thread = threading.Thread(target=_startup_projections, daemon=True)
 _proj_thread.start()
 
 
+def _startup_catcher_premium():
+    """Background thread to set catcher premium based on league roster config"""
+    import time
+    time.sleep(10)  # Wait for Yahoo connection to be ready
+    try:
+        from shared import get_league_settings
+        settings = get_league_settings()
+        roster_positions = settings.get("roster_positions") if settings else None
+        if roster_positions:
+            valuations.set_catcher_premium(roster_positions)
+            c_premium = valuations.POS_BONUS.get("C", 1.5)
+            print("Catcher premium set to " + str(c_premium) + " based on league roster")
+        else:
+            print("No roster positions available, using default catcher premium")
+    except Exception as e:
+        print("Catcher premium startup failed (using default): " + str(e))
+
+
+_catcher_thread = threading.Thread(target=_startup_catcher_premium, daemon=True)
+_catcher_thread.start()
+
+
 # --- Health check ---
 
 
