@@ -35,7 +35,7 @@ async function checkResponseStatus(response: Response, url: URL): Promise<void> 
   }
 }
 
-var DEFAULT_TIMEOUT_MS = 90000;
+var DEFAULT_TIMEOUT_MS = 40000;
 
 async function fetchWithTimeout(url: URL, init: RequestInit, timeoutMs?: number): Promise<Response> {
   var controller = new AbortController();

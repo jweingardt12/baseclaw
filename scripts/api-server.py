@@ -30,14 +30,14 @@ app = Flask(__name__)
 
 # --- JSON sanitization helper ---
 
+import re
+_CTRL_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f]')
+
+
 def _sanitize_for_json(obj):
     """Recursively strip control characters (0x00-0x1F except \\n \\r \\t)
     from all string values in a dict/list structure.
     This prevents invalid JSON from reaching the client."""
-    import re
-    # Match control chars except \n (0x0A), \r (0x0D), \t (0x09)
-    _CTRL_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f]')
-
     if isinstance(obj, str):
         return _CTRL_RE.sub('', obj)
     elif isinstance(obj, dict):
@@ -115,11 +115,22 @@ _news_thread.start()
 
 
 def _startup_catcher_premium():
-    """Background thread to set catcher premium based on league roster config"""
+    """Background thread to pre-warm Yahoo connection and set catcher premium."""
     import time
-    time.sleep(10)  # Wait for Yahoo connection to be ready
+    time.sleep(8)  # Wait for other startup tasks
     try:
-        from shared import get_league_settings
+        from shared import get_league_settings, get_league, get_cached_teams, get_cached_standings
+        # Pre-warm Yahoo connection + league objects
+        sc, gm, lg = get_league()
+        print("Pre-warm: Yahoo connection ready")
+        # Pre-warm teams/standings caches
+        try:
+            get_cached_teams(lg)
+            get_cached_standings(lg)
+            print("Pre-warm: teams/standings cached")
+        except Exception as e:
+            print("Pre-warm: teams/standings failed (non-fatal): " + str(e))
+        # Set catcher premium from league roster config
         settings = get_league_settings()
         roster_positions = settings.get("roster_positions") if settings else None
         if roster_positions:
@@ -129,11 +140,52 @@ def _startup_catcher_premium():
         else:
             print("No roster positions available, using default catcher premium")
     except Exception as e:
-        print("Catcher premium startup failed (using default): " + str(e))
+        print("Startup pre-warm failed (using defaults): " + str(e))
 
 
 _catcher_thread = threading.Thread(target=_startup_catcher_premium, daemon=True)
 _catcher_thread.start()
+
+
+# --- Response caching + timeout for slow endpoints ---
+
+import concurrent.futures
+from shared import cache_get, cache_set
+
+_response_cache = {}
+_timeout_pool = concurrent.futures.ThreadPoolExecutor(max_workers=6)
+
+
+def _cached_endpoint(cache_key, fn, ttl_seconds, timeout_sec=38):
+    """Cache + timeout wrapper for slow endpoints.
+    Returns cached response if available. Otherwise runs fn in a thread
+    with timeout, caches the result, and returns it. On timeout the function
+    keeps running in the background and populates the cache for next call."""
+    cached = cache_get(_response_cache, cache_key, ttl_seconds)
+    if cached is not None:
+        return safe_jsonify(cached)
+    future = _timeout_pool.submit(fn)
+    try:
+        result = future.result(timeout=timeout_sec)
+        if result and not (isinstance(result, dict) and result.get("error")):
+            cache_set(_response_cache, cache_key, result)
+        return safe_jsonify(result or {})
+    except concurrent.futures.TimeoutError:
+        # Background: let the future finish and populate cache for next caller
+        def _on_done(f):
+            try:
+                result = f.result()
+                if result and not (isinstance(result, dict) and result.get("error")):
+                    cache_set(_response_cache, cache_key, result)
+            except Exception:
+                pass
+        future.add_done_callback(_on_done)
+        return safe_jsonify({
+            "error": "Request timed out after " + str(timeout_sec) + "s. Data is being cached in background — retry in 30s.",
+            "_timeout": True,
+        }, 504)
+    except Exception as e:
+        return safe_jsonify({"error": str(e)}, 500)
 
 
 # --- Health check ---
@@ -200,11 +252,8 @@ def api_change_team_logo():
 
 @app.route("/api/roster")
 def api_roster():
-    try:
-        result = yahoo_fantasy.cmd_roster([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("roster",
+        lambda: yahoo_fantasy.cmd_roster([], as_json=True), 15)
 
 
 @app.route("/api/free-agents")
@@ -220,11 +269,8 @@ def api_free_agents():
 
 @app.route("/api/standings")
 def api_standings():
-    try:
-        result = yahoo_fantasy.cmd_standings([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("standings",
+        lambda: yahoo_fantasy.cmd_standings([], as_json=True), 60)
 
 
 @app.route("/api/info")
@@ -355,18 +401,16 @@ def api_scoreboard():
 
 @app.route("/api/transactions")
 def api_transactions():
-    try:
-        args = []
-        tx_type = request.args.get("type", "")
-        if tx_type:
-            args.append(tx_type)
-        count = request.args.get("count", "")
-        if count:
-            args.append(count)
-        result = yahoo_fantasy.cmd_transactions(args, as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    tx_type = request.args.get("type", "")
+    count = request.args.get("count", "")
+    cache_key = "transactions:" + tx_type + ":" + count
+    args = []
+    if tx_type:
+        args.append(tx_type)
+    if count:
+        args.append(count)
+    return _cached_endpoint(cache_key,
+        lambda: yahoo_fantasy.cmd_transactions(args, as_json=True), 60)
 
 
 @app.route("/api/stat-categories")
@@ -389,11 +433,8 @@ def api_transaction_trends():
 
 @app.route("/api/matchup-detail")
 def api_matchup_detail():
-    try:
-        result = yahoo_fantasy.cmd_matchup_detail([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("matchup-detail",
+        lambda: yahoo_fantasy.cmd_matchup_detail([], as_json=True), 60)
 
 
 # --- Draft Assistant (draft-assistant.py) ---
@@ -547,20 +588,14 @@ def api_lineup_optimize():
 
 @app.route("/api/category-check")
 def api_category_check():
-    try:
-        result = season_manager.cmd_category_check([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("category-check",
+        lambda: season_manager.cmd_category_check([], as_json=True), 120)
 
 
 @app.route("/api/injury-report")
 def api_injury_report():
-    try:
-        result = season_manager.cmd_injury_report([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("injury-report",
+        lambda: season_manager.cmd_injury_report([], as_json=True), 120)
 
 
 @app.route("/api/waiver-analyze")
@@ -620,20 +655,14 @@ def api_category_simulate():
 
 @app.route("/api/scout-opponent")
 def api_scout_opponent():
-    try:
-        result = season_manager.cmd_scout_opponent([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("scout-opponent",
+        lambda: season_manager.cmd_scout_opponent([], as_json=True), 300)
 
 
 @app.route("/api/matchup-strategy")
 def api_matchup_strategy():
-    try:
-        result = season_manager.cmd_matchup_strategy([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("matchup-strategy",
+        lambda: season_manager.cmd_matchup_strategy([], as_json=True), 300)
 
 
 @app.route("/api/daily-update")
@@ -801,11 +830,8 @@ def api_percent_owned():
 
 @app.route("/api/league-pulse")
 def api_league_pulse():
-    try:
-        result = yahoo_fantasy.cmd_league_pulse([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("league-pulse",
+        lambda: yahoo_fantasy.cmd_league_pulse([], as_json=True), 120)
 
 
 # --- Phase 3: What's New & Trade Finder ---
@@ -822,7 +848,6 @@ def api_whats_new():
 
 @app.route("/api/trade-finder")
 def api_trade_finder():
-    import concurrent.futures
     try:
         target = request.args.get("target", "")
         timeout = int(request.args.get("timeout", "120"))
@@ -843,11 +868,14 @@ def api_trade_finder():
 
 @app.route("/api/power-rankings")
 def api_power_rankings():
-    try:
-        result = season_manager.cmd_power_rankings([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("power-rankings",
+        lambda: season_manager.cmd_power_rankings([], as_json=True), 300)
+
+
+@app.route("/api/league-intel")
+def api_league_intel():
+    return _cached_endpoint("league-intel",
+        lambda: season_manager.cmd_league_intel([], as_json=True), 300)
 
 
 @app.route("/api/week-planner")
@@ -865,11 +893,8 @@ def api_week_planner():
 
 @app.route("/api/season-pace")
 def api_season_pace():
-    try:
-        result = season_manager.cmd_season_pace([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("season-pace",
+        lambda: season_manager.cmd_season_pace([], as_json=True), 120)
 
 
 # --- Phase 5: Closer Monitor ---
@@ -877,11 +902,8 @@ def api_season_pace():
 
 @app.route("/api/closer-monitor")
 def api_closer_monitor():
-    try:
-        result = season_manager.cmd_closer_monitor([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("closer-monitor",
+        lambda: season_manager.cmd_closer_monitor([], as_json=True), 300)
 
 
 # --- Phase 5: Pitcher Matchup ---
@@ -1762,8 +1784,7 @@ def _synthesize_morning_actions(injury, lineup, whats_new, waiver_b, waiver_p):
 
 @app.route("/api/workflow/morning-briefing")
 def workflow_morning_briefing():
-    import concurrent.futures
-    timeout = int(request.args.get("timeout", "180"))
+    timeout = int(request.args.get("timeout", "38"))
     def _run_briefing():
         injury = _safe_call(season_manager.cmd_injury_report)
         lineup = _safe_call(season_manager.cmd_lineup_optimize)
@@ -1841,7 +1862,7 @@ def workflow_morning_briefing():
 
 @app.route("/api/workflow/league-landscape")
 def workflow_league_landscape():
-    try:
+    def _run():
         standings = _safe_call(yahoo_fantasy.cmd_standings)
         pace = _safe_call(season_manager.cmd_season_pace)
         power = _safe_call(season_manager.cmd_power_rankings)
@@ -1849,8 +1870,7 @@ def workflow_league_landscape():
         transactions = _safe_call(yahoo_fantasy.cmd_transactions, ["", "15"])
         trade_finder = _safe_call(season_manager.cmd_trade_finder)
         scoreboard = _safe_call(yahoo_fantasy.cmd_scoreboard)
-
-        return safe_jsonify({
+        return {
             "standings": standings,
             "pace": pace,
             "power_rankings": power,
@@ -1858,9 +1878,8 @@ def workflow_league_landscape():
             "transactions": transactions,
             "trade_finder": trade_finder,
             "scoreboard": scoreboard,
-        })
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+        }
+    return _cached_endpoint("wf-landscape", _run, 600)
 
 
 def _synthesize_roster_issues(injury, lineup, roster, busts):
@@ -1916,23 +1935,20 @@ def _synthesize_roster_issues(injury, lineup, roster, busts):
 
 @app.route("/api/workflow/roster-health")
 def workflow_roster_health():
-    try:
+    def _run():
         injury = _safe_call(season_manager.cmd_injury_report)
         lineup = _safe_call(season_manager.cmd_lineup_optimize)
         roster = _safe_call(yahoo_fantasy.cmd_roster)
         busts = _safe_call(intel.cmd_busts, ["B", "20"])
-
         issues = _synthesize_roster_issues(injury, lineup, roster, busts)
-
-        return safe_jsonify({
+        return {
             "issues": issues,
             "injury": injury,
             "lineup": lineup,
             "roster": roster,
             "busts": busts,
-        })
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+        }
+    return _cached_endpoint("wf-roster-hp", _run, 300)
 
 
 def _synthesize_waiver_pairs(waiver_b, waiver_p, cat_check=None):
@@ -1976,24 +1992,21 @@ def _synthesize_waiver_pairs(waiver_b, waiver_p, cat_check=None):
 
 @app.route("/api/workflow/waiver-recommendations")
 def workflow_waiver_recommendations():
-    try:
-        count = request.args.get("count", "5")
+    count = request.args.get("count", "5")
+    def _run():
         cat_check = _safe_call(season_manager.cmd_category_check)
         waiver_b = _safe_call(season_manager.cmd_waiver_analyze, ["B", count])
         waiver_p = _safe_call(season_manager.cmd_waiver_analyze, ["P", count])
         roster = _safe_call(yahoo_fantasy.cmd_roster)
-
         pairs = _synthesize_waiver_pairs(waiver_b, waiver_p, cat_check=cat_check)
-
-        return safe_jsonify({
+        return {
             "pairs": pairs,
             "category_check": cat_check,
             "waiver_batters": waiver_b,
             "waiver_pitchers": waiver_p,
             "roster": roster,
-        })
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+        }
+    return _cached_endpoint("wf-waiver-recs-" + count, _run, 600)
 
 
 def _compute_positional_impact(roster_players, get_players, give_players):
@@ -2145,12 +2158,12 @@ def _compute_category_impact(give_players, get_players):
 
 @app.route("/api/workflow/trade-analysis", methods=["POST"])
 def workflow_trade_analysis():
+    data = request.get_json(silent=True) or {}
+    give_names = data.get("give_names", [])
+    get_names = data.get("get_names", [])
+    if not give_names or not get_names:
+        return safe_jsonify({"error": "Missing give_names and/or get_names arrays"}, 400)
     try:
-        data = request.get_json(silent=True) or {}
-        give_names = data.get("give_names", [])
-        get_names = data.get("get_names", [])
-        if not give_names or not get_names:
-            return safe_jsonify({"error": "Missing give_names and/or get_names arrays"}, 400)
 
         # Resolve player names to IDs via value lookup
         give_players = []
@@ -2289,48 +2302,33 @@ def workflow_trade_analysis():
 
 @app.route("/api/workflow/game-day-manager")
 def workflow_game_day_manager():
-    try:
-        data = season_manager.cmd_game_day_manager([], as_json=True)
-        return safe_jsonify(data)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("wf-gameday",
+        lambda: season_manager.cmd_game_day_manager([], as_json=True), 300)
 
 
 @app.route("/api/workflow/waiver-deadline-prep")
 def workflow_waiver_deadline_prep():
-    try:
-        count = request.args.get("count", "5")
-        data = season_manager.cmd_waiver_deadline_prep([count], as_json=True)
-        return safe_jsonify(data)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    count = request.args.get("count", "5")
+    return _cached_endpoint("wf-waiver-prep-" + count,
+        lambda: season_manager.cmd_waiver_deadline_prep([count], as_json=True), 600)
 
 
 @app.route("/api/workflow/trade-pipeline")
 def workflow_trade_pipeline():
-    try:
-        data = season_manager.cmd_trade_pipeline([], as_json=True)
-        return safe_jsonify(data)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("wf-trade-pipe",
+        lambda: season_manager.cmd_trade_pipeline([], as_json=True), 600)
 
 
 @app.route("/api/workflow/weekly-digest")
 def workflow_weekly_digest():
-    try:
-        data = season_manager.cmd_weekly_digest([], as_json=True)
-        return safe_jsonify(data)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("wf-digest",
+        lambda: season_manager.cmd_weekly_digest([], as_json=True), 1800)
 
 
 @app.route("/api/workflow/season-checkpoint")
 def workflow_season_checkpoint():
-    try:
-        data = season_manager.cmd_season_checkpoint([], as_json=True)
-        return safe_jsonify(data)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("wf-checkpoint",
+        lambda: season_manager.cmd_season_checkpoint([], as_json=True), 1800)
 
 
 # --- News (RotoWire RSS) ---
@@ -2474,13 +2472,11 @@ def api_trash_talk():
 
 @app.route("/api/rival-history")
 def api_rival_history():
-    try:
-        opponent = request.args.get("opponent", "")
-        args = [opponent] if opponent else []
-        result = season_manager.cmd_rival_history(args, as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    opponent = request.args.get("opponent", "")
+    args = [opponent] if opponent else []
+    cache_key = "rival-history-" + opponent
+    return _cached_endpoint(cache_key,
+        lambda: season_manager.cmd_rival_history(args, as_json=True), 1800)
 
 
 @app.route("/api/achievements")

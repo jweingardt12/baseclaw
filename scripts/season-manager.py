@@ -20,6 +20,7 @@ from mlb_id_cache import get_mlb_id
 from shared import (
     get_connection, get_league_context, get_league, get_team_key,
     get_league_settings, get_regression_adjusted_z,
+    get_cached_teams, get_cached_standings,
     LEAGUE_ID, TEAM_ID, GAME_KEY, DATA_DIR,
     MLB_API, mlb_fetch, TEAM_ALIASES, normalize_team_name,
     get_trend_lookup, enrich_with_intel, enrich_with_trends, enrich_with_context,
@@ -4920,7 +4921,7 @@ def _trade_finder_league_scan(lg, team, as_json=False):
                     and p.get("status", "") not in ("IL", "IL+", "DL", "DL+")]
 
     # --- Phase 2: Analyze each opponent ---
-    all_teams = lg.teams()
+    all_teams = get_cached_teams(lg)
     partners = []
     _roster_cache = {}  # Cache rosters to avoid duplicate fetches
     _cat_profile_cache = {}  # Cache category profiles
@@ -5262,7 +5263,7 @@ def cmd_power_rankings(args, as_json=False):
     """Rank all teams by estimated roster strength"""
     sc, gm, lg = get_league()
     try:
-        all_teams = lg.teams()
+        all_teams = get_cached_teams(lg)
         rankings = []
         for team_key, team_data in all_teams.items():
             team_name = team_data.get("name", "Unknown")
@@ -5318,6 +5319,823 @@ def cmd_power_rankings(args, as_json=False):
         if as_json:
             return {"error": "Error building power rankings: " + str(e)}
         print("Error building power rankings: " + str(e))
+
+
+# ---------------------------------------------------------------------------
+# League Intel — comprehensive league intelligence
+# ---------------------------------------------------------------------------
+_league_intel_cache = {}
+_LEAGUE_INTEL_TTL = 300  # 5 minutes
+
+
+def cmd_league_intel(args, as_json=False):
+    """Comprehensive league intelligence: z-score power rankings, top performers,
+    team profiles with category strengths/weaknesses, and trade fit analysis."""
+    from valuations import DEFAULT_BATTING_CATS, DEFAULT_BATTING_CATS_NEGATIVE, DEFAULT_PITCHING_CATS, DEFAULT_PITCHING_CATS_NEGATIVE
+    from shared import cache_get, cache_set, normalize_player_name
+
+    import time
+
+    # Check cache
+    cached = cache_get(_league_intel_cache, "intel", _LEAGUE_INTEL_TTL)
+    if cached is not None:
+        if as_json:
+            return cached
+        _print_league_intel(cached)
+        return
+
+    _intel_start = time.time()
+
+    sc, gm, lg = get_league()
+
+    all_cats = (DEFAULT_BATTING_CATS + DEFAULT_BATTING_CATS_NEGATIVE
+                + DEFAULT_PITCHING_CATS + DEFAULT_PITCHING_CATS_NEGATIVE)
+    non_playing = {"BN", "Bench", "IL", "IL+", "DL", "DL+", "NA"}
+
+    try:
+        all_teams = get_cached_teams(lg)
+        standings = get_cached_standings(lg)
+    except Exception as e:
+        msg = "Error fetching league data: " + str(e)
+        if as_json:
+            return {"error": msg}
+        print(msg)
+        return
+
+    # Build standings lookup: team_name -> {wins, losses, ties, rank, points_for}
+    standings_lookup = {}
+    for idx, st in enumerate(standings, 1):
+        name = st.get("name", "")
+        ot = st.get("outcome_totals", {})
+        standings_lookup[name] = {
+            "wins": int(ot.get("wins", 0)),
+            "losses": int(ot.get("losses", 0)),
+            "ties": int(ot.get("ties", 0)),
+            "standings_rank": idx,
+            "points_for": st.get("points_for", ""),
+        }
+
+    # Collect all roster data and z-scores per team
+    team_data_list = []
+    all_players = []  # for top performers
+
+    for team_key, team_info in all_teams.items():
+        team_name = team_info.get("name", "Unknown")
+        logo_url, mgr_image = _extract_team_meta(team_info)
+        is_my_team = TEAM_ID in str(team_key)
+
+        try:
+            t = lg.to_team(team_key)
+            roster = t.roster()
+        except Exception:
+            continue
+
+        if not roster:
+            continue
+
+        hitting_z = 0.0
+        pitching_z = 0.0
+        total_z = 0.0
+        cat_totals = {}
+        top_players = []
+        position_counts = {}  # position -> count of starters (non-BN/IL)
+
+        for p in roster:
+            name = p.get("name", "")
+            positions = p.get("eligible_positions", [])
+            is_pitcher = is_pitcher_position(positions)
+            selected_pos = get_player_position(p)
+            mlb_team = get_player_team(p)
+
+            z_val, tier, per_cat = _player_z_summary(name)
+
+            total_z += z_val
+            if is_pitcher:
+                pitching_z += z_val
+            else:
+                hitting_z += z_val
+
+            # Accumulate per-category z-scores
+            for cat in all_cats:
+                if cat in per_cat:
+                    cat_totals[cat] = cat_totals.get(cat, 0) + per_cat[cat]
+
+            top_players.append({
+                "name": name,
+                "z_final": round(z_val, 2),
+                "tier": tier,
+                "position": selected_pos,
+                "eligible_positions": positions,
+                "mlb_team": mlb_team,
+            })
+
+            # Track position depth (non-bench/IL starters)
+            if selected_pos not in non_playing:
+                for ep in positions:
+                    if ep not in non_playing and ep != "Util":
+                        position_counts[ep] = position_counts.get(ep, 0) + 1
+
+            # Add to league-wide player list
+            all_players.append({
+                "name": name,
+                "team_key": team_key,
+                "team_name": team_name,
+                "position": selected_pos,
+                "z_final": round(z_val, 2),
+                "tier": tier,
+                "mlb_team": mlb_team,
+            })
+
+        # Sort team's players by z-score for top players list
+        top_players.sort(key=lambda x: x.get("z_final", 0), reverse=True)
+
+        # Get standings info
+        st_info = standings_lookup.get(team_name, {})
+
+        wins = st_info.get("wins", 0)
+        losses = st_info.get("losses", 0)
+        ties = st_info.get("ties", 0)
+        team_data_list.append({
+            "team_key": team_key,
+            "name": team_name,
+            "team_logo": logo_url,
+            "manager_image": mgr_image,
+            "is_my_team": is_my_team,
+            "wins": wins,
+            "losses": losses,
+            "ties": ties,
+            "record": str(wins) + "-" + str(losses) + "-" + str(ties),
+            "standings_rank": st_info.get("standings_rank", 99),
+            "points_for": st_info.get("points_for", ""),
+            "roster_z_total": round(total_z, 2),
+            "hitting_z": round(hitting_z, 2),
+            "pitching_z": round(pitching_z, 2),
+            "cat_totals": {k: round(v, 2) for k, v in cat_totals.items()},
+            "top_players": top_players[:5],
+            "position_counts": position_counts,
+            "roster_size": len(roster),
+        })
+
+    if not team_data_list:
+        msg = "No team data collected"
+        if as_json:
+            return {"error": msg}
+        print(msg)
+        return
+
+    # --- Enrichment: intel (statcast + trends) + regression signals ---
+    try:
+        enrich_with_intel(all_players)
+    except Exception as e:
+        print("Warning: intel enrichment failed for league intel: " + str(e))
+
+    regression_lookup = {}
+    try:
+        from intel import detect_regression_candidates
+        candidates = detect_regression_candidates() or {}
+        for category in ["buy_low_hitters", "sell_high_hitters",
+                         "buy_low_pitchers", "sell_high_pitchers"]:
+            signal = "buy_low" if "buy_low" in category else "sell_high"
+            for entry in candidates.get(category, []):
+                norm = normalize_player_name(entry.get("name", ""))
+                if norm:
+                    regression_lookup[norm] = {
+                        "signal": signal,
+                        "score": entry.get("regression_score", 0),
+                        "details": entry.get("details", ""),
+                    }
+    except Exception as e:
+        print("Warning: regression detection failed for league intel: " + str(e))
+
+    # --- Compute adjusted z-scores per player ---
+    # Build player lookup by (team_key, name) for updating team data
+    team_adjusted_z = {}  # team_key -> total adjusted z
+    team_intel_summary = {}  # team_key -> {quality counts, regression counts, hot/cold}
+
+    player_lookup = {}  # (team_key, norm_name) -> player dict
+
+    for p in all_players:
+        z_val = p.get("z_final", 0)
+        adjusted_z = z_val
+        tk = p.get("team_key", "")
+
+        # Intel enrichment fields
+        intel_data = p.get("intel") or {}
+        sc_data = intel_data.get("statcast") or {}
+        quality_tier = sc_data.get("quality_tier")
+        trends_data = intel_data.get("trends") or {}
+        hot_cold = trends_data.get("status")  # intel.py _build_trends uses "status"
+
+        # Regression signal
+        norm_name = normalize_player_name(p.get("name", ""))
+        reg = regression_lookup.get(norm_name)
+        reg_signal = reg.get("signal") if reg else None
+
+        # Adjusted z: regression (same formula as shared.get_regression_adjusted_z)
+        if reg:
+            reg_score = reg.get("score", 0)
+            try:
+                adjusted_z += min(max(float(reg_score) / 50.0, -2.0), 2.0)
+            except (ValueError, TypeError):
+                pass
+
+        # Adjusted z: statcast quality
+        if quality_tier == "elite":
+            adjusted_z += 1.5
+        elif quality_tier == "strong":
+            adjusted_z += 0.75
+
+        # Adjusted z: hot/cold momentum
+        if hot_cold == "hot":
+            adjusted_z += 0.8
+        elif hot_cold == "warm":
+            adjusted_z += 0.4
+        elif hot_cold == "cold":
+            adjusted_z -= 0.4
+        elif hot_cold == "ice":
+            adjusted_z -= 0.8
+
+        adjusted_z = round(adjusted_z, 2)
+
+        # Attach to player dict and strip raw intel blob
+        p["quality_tier"] = quality_tier
+        p["hot_cold"] = hot_cold
+        p["regression"] = reg_signal
+        p["adjusted_z"] = adjusted_z
+        p.pop("intel", None)
+        player_lookup[(tk, norm_name)] = p
+
+        # Accumulate team-level stats
+        team_adjusted_z[tk] = team_adjusted_z.get(tk, 0) + adjusted_z
+        summary = team_intel_summary.get(tk, {
+            "quality_counts": {}, "buy_low": 0, "sell_high": 0,
+            "hot": 0, "cold": 0,
+        })
+        if quality_tier:
+            summary["quality_counts"][quality_tier] = summary["quality_counts"].get(quality_tier, 0) + 1
+        if reg_signal == "buy_low":
+            summary["buy_low"] = summary.get("buy_low", 0) + 1
+        elif reg_signal == "sell_high":
+            summary["sell_high"] = summary.get("sell_high", 0) + 1
+        if hot_cold in ("hot", "warm"):
+            summary["hot"] = summary.get("hot", 0) + 1
+        elif hot_cold in ("cold", "ice"):
+            summary["cold"] = summary.get("cold", 0) + 1
+        team_intel_summary[tk] = summary
+
+    # Also enrich top_players in team_data_list
+    for t in team_data_list:
+        tk = t.get("team_key", "")
+        t["adjusted_z_total"] = round(team_adjusted_z.get(tk, 0), 2)
+        t["z_upside"] = round(t.get("adjusted_z_total", 0) - t.get("roster_z_total", 0), 2)
+        t["intel_summary"] = team_intel_summary.get(tk, {})
+        # Update top_players with intel fields via O(1) lookup
+        for tp in t.get("top_players", []):
+            norm = normalize_player_name(tp.get("name", ""))
+            ap = player_lookup.get((tk, norm))
+            if ap:
+                tp["quality_tier"] = ap.get("quality_tier")
+                tp["hot_cold"] = ap.get("hot_cold")
+                tp["regression"] = ap.get("regression")
+                tp["adjusted_z"] = ap.get("adjusted_z")
+
+    # --- Power Rankings: composite with adjusted z + standings + quality ---
+    num_teams = len(team_data_list)
+
+    # Detect pre-season (all records 0-0-0)
+    total_games = sum(t.get("wins", 0) + t.get("losses", 0) + t.get("ties", 0) for t in team_data_list)
+    is_preseason = total_games == 0
+
+    # Adjusted z-score rank (highest = rank 1)
+    z_sorted = sorted(team_data_list, key=lambda t: t.get("adjusted_z_total", 0), reverse=True)
+    for i, t in enumerate(z_sorted, 1):
+        t["z_rank"] = i
+
+    # Quality rank: count of elite + strong statcast players
+    for t in team_data_list:
+        qc = t.get("intel_summary", {}).get("quality_counts", {})
+        t["_quality_score"] = qc.get("elite", 0) * 2 + qc.get("strong", 0)
+    q_sorted = sorted(team_data_list, key=lambda t: t.get("_quality_score", 0), reverse=True)
+    for i, t in enumerate(q_sorted, 1):
+        t["_quality_rank"] = i
+
+    # Composite score
+    for t in team_data_list:
+        z_r = t.get("z_rank", num_teams)
+        s_r = t.get("standings_rank", num_teams)
+        q_r = t.get("_quality_rank", num_teams)
+        if is_preseason:
+            composite_rank = 0.7 * z_r + 0.3 * q_r
+        else:
+            composite_rank = 0.5 * z_r + 0.35 * s_r + 0.15 * q_r
+        t["composite_score"] = round(100 * (1 - (composite_rank - 1) / max(num_teams - 1, 1)), 1)
+
+    team_data_list.sort(key=lambda t: t.get("composite_score", 0), reverse=True)
+    for i, t in enumerate(team_data_list, 1):
+        t["rank"] = i
+
+    # --- Category rankings per team (league-wide) ---
+    team_by_key = {t.get("team_key"): t for t in team_data_list}
+    for cat in all_cats:
+        cat_values = sorted(
+            ((t.get("cat_totals", {}).get(cat, 0), t.get("team_key", ""))
+             for t in team_data_list),
+            key=lambda x: x[0], reverse=True,
+        )
+        for rank, (val, tk) in enumerate(cat_values, 1):
+            team = team_by_key.get(tk)
+            if team is not None:
+                cat_ranks = team.get("_cat_ranks", {})
+                cat_ranks[cat] = rank
+                team["_cat_ranks"] = cat_ranks
+
+    # Determine strongest/weakest categories per team
+    for t in team_data_list:
+        cat_ranks = t.get("_cat_ranks", {})
+        sorted_cats = sorted(cat_ranks.items(), key=lambda x: x[1])
+        t["strongest_categories"] = [c for c, r in sorted_cats[:3]]
+        t["weakest_categories"] = [c for c, r in sorted_cats[-3:]]
+
+    # --- Find my team for trade fit analysis ---
+    my_team = None
+    for t in team_data_list:
+        if t.get("is_my_team"):
+            my_team = t
+            break
+
+    # --- Build team profiles with trade fit ---
+    # Pre-compute position averages once
+    scored_positions = ["C", "1B", "2B", "3B", "SS", "OF", "SP", "RP"]
+    pos_averages = {}
+    if num_teams > 1:
+        for pos in scored_positions:
+            pos_averages[pos] = sum(
+                td.get("position_counts", {}).get(pos, 0)
+                for td in team_data_list
+            ) / num_teams
+
+    team_profiles = []
+    for t in team_data_list:
+        # Surplus/weak positions: compare position counts to league average
+        surplus = []
+        weak = []
+        for pos in scored_positions:
+            avg_count = pos_averages.get(pos, 0)
+            my_count = t.get("position_counts", {}).get(pos, 0)
+            if my_count >= avg_count + 1.5:
+                surplus.append(pos)
+            elif avg_count > 0 and my_count <= max(avg_count - 1.0, 0):
+                weak.append(pos)
+
+        # Trade fit: compare to user's team
+        trade_fit = ""
+        if my_team and not t.get("is_my_team"):
+            my_weak = my_team.get("weakest_categories", [])
+            their_strong = t.get("strongest_categories", [])
+            my_strong = my_team.get("strongest_categories", [])
+            their_weak = t.get("weakest_categories", [])
+
+            # Find category overlaps: they're strong where I'm weak, and vice versa
+            they_help_me = [c for c in their_strong if c in my_weak]
+            i_help_them = [c for c in my_strong if c in their_weak]
+
+            parts = []
+            if they_help_me:
+                parts.append("They help you in " + ", ".join(they_help_me))
+            if i_help_them:
+                parts.append("You help them in " + ", ".join(i_help_them))
+            if parts:
+                trade_fit = ". ".join(parts)
+            elif surplus:
+                trade_fit = "Surplus at " + ", ".join(surplus)
+
+        intel_sum = t.get("intel_summary", {})
+        profile = {
+            "team_key": t.get("team_key", ""),
+            "name": t.get("name", ""),
+            "team_logo": t.get("team_logo", ""),
+            "manager_image": t.get("manager_image", ""),
+            "is_my_team": t.get("is_my_team", False),
+            "rank": t.get("rank", 0),
+            "record": t.get("record", "0-0-0"),
+            "hitting_z": t.get("hitting_z", 0),
+            "pitching_z": t.get("pitching_z", 0),
+            "roster_z_total": t.get("roster_z_total", 0),
+            "adjusted_z_total": t.get("adjusted_z_total", 0),
+            "z_upside": t.get("z_upside", 0),
+            "top_players": [
+                p.get("name", "") + " (" + str(p.get("z_final", 0)) + ")"
+                for p in t.get("top_players", [])[:3]
+            ],
+            "strongest_categories": t.get("strongest_categories", []),
+            "weakest_categories": t.get("weakest_categories", []),
+            "surplus_positions": surplus,
+            "weak_positions": weak,
+            "trade_fit": trade_fit,
+            "quality_breakdown": intel_sum.get("quality_counts", {}),
+            "buy_low_count": intel_sum.get("buy_low", 0),
+            "sell_high_count": intel_sum.get("sell_high", 0),
+            "hot_players": intel_sum.get("hot", 0),
+            "cold_players": intel_sum.get("cold", 0),
+        }
+        team_profiles.append(profile)
+
+    # --- Top performers across the league (top 30 by adjusted z-score) ---
+    all_players.sort(key=lambda x: x.get("adjusted_z", x.get("z_final", 0)), reverse=True)
+    top_performers = all_players[:30]
+
+    # --- Build power rankings subset ---
+    power_rankings = []
+    for t in team_data_list:
+        power_rankings.append({
+            "rank": t.get("rank", 0),
+            "name": t.get("name", ""),
+            "team_key": t.get("team_key", ""),
+            "team_logo": t.get("team_logo", ""),
+            "manager_image": t.get("manager_image", ""),
+            "is_my_team": t.get("is_my_team", False),
+            "record": t.get("record", "0-0-0"),
+            "wins": t.get("wins", 0),
+            "losses": t.get("losses", 0),
+            "ties": t.get("ties", 0),
+            "roster_z_total": t.get("roster_z_total", 0),
+            "hitting_z": t.get("hitting_z", 0),
+            "pitching_z": t.get("pitching_z", 0),
+            "composite_score": t.get("composite_score", 0),
+            "adjusted_z_total": t.get("adjusted_z_total", 0),
+            "z_upside": t.get("z_upside", 0),
+            "strongest_categories": t.get("strongest_categories", []),
+            "weakest_categories": t.get("weakest_categories", []),
+        })
+
+    # Team name lookup shared by leaderboards + H2H
+    tk_to_name = {td.get("team_key", ""): td.get("name", "")
+                  for td in team_data_list}
+
+    # --- Category Leaderboards (actual season stats from scoreboard) ---
+    category_leaderboards = []
+    if not is_preseason:
+        try:
+            stat_id_to_name_lb = _build_stat_id_to_name(lg)
+            lower_is_better_sids_lb = _build_lower_is_better_sids(stat_id_to_name_lb)
+            scoreboard = lg.matchups()
+
+            all_teams_stats = {}
+            if isinstance(scoreboard, list):
+                for matchup in scoreboard:
+                    teams = matchup.get("teams", []) if isinstance(matchup, dict) else []
+                    for t in teams:
+                        tk = t.get("team_key", "")
+                        if not tk:
+                            continue
+                        stats = t.get("stats", {})
+                        if not stats and isinstance(t, dict):
+                            for k, v in t.items():
+                                if isinstance(v, dict) and "value" in v:
+                                    stats[k] = v.get("value", 0)
+                        all_teams_stats[tk] = stats
+            elif isinstance(scoreboard, dict):
+                for key, val in scoreboard.items():
+                    if isinstance(val, dict):
+                        all_teams_stats[key] = val
+
+            if all_teams_stats:
+                all_stat_keys = set()
+                for stats in all_teams_stats.values():
+                    all_stat_keys.update(stats.keys())
+
+                for cat_key in sorted(all_stat_keys):
+                    if cat_key in stat_id_to_name_lb:
+                        display_name = stat_id_to_name_lb[cat_key]
+                        lower_better = cat_key in lower_is_better_sids_lb
+                    else:
+                        display_name = cat_key
+                        lower_better = cat_key in _LOWER_IS_BETTER_STATS or cat_key.upper() in _LOWER_IS_BETTER_STATS
+
+                    team_vals = []
+                    for tk, stats in all_teams_stats.items():
+                        raw_val = stats.get(cat_key, 0)
+                        try:
+                            num_val = float(raw_val)
+                        except (ValueError, TypeError):
+                            num_val = 0.0
+                        team_vals.append((num_val, tk, raw_val))
+
+                    team_vals.sort(key=lambda x: x[0], reverse=not lower_better)
+
+                    rankings = []
+                    for rank_idx, (num_val, tk, raw_val) in enumerate(team_vals, 1):
+                        rankings.append({
+                            "rank": rank_idx,
+                            "team_name": tk_to_name.get(tk, "?"),
+                            "team_key": tk,
+                            "value": raw_val,
+                            "is_my_team": TEAM_ID in str(tk),
+                        })
+
+                    category_leaderboards.append({
+                        "category": display_name,
+                        "rankings": rankings,
+                    })
+        except Exception as e:
+            print("Warning: category leaderboards failed: " + str(e))
+
+    # --- H2H Records (league-wide matchup results) ---
+    h2h_matrix = []
+    if not is_preseason:
+        try:
+            def _h2h_key(tdata):
+                if isinstance(tdata, dict):
+                    team_info = tdata.get("team", [])
+                    if isinstance(team_info, list) and len(team_info) > 0:
+                        items = team_info[0] if isinstance(team_info[0], list) else team_info
+                        for item in items:
+                            if isinstance(item, dict) and "team_key" in item:
+                                return item.get("team_key", "")
+                return ""
+
+            def _h2h_name(tdata):
+                if isinstance(tdata, dict):
+                    team_info = tdata.get("team", [])
+                    if isinstance(team_info, list) and len(team_info) > 0:
+                        items = team_info[0] if isinstance(team_info[0], list) else team_info
+                        for item in items:
+                            if isinstance(item, dict) and "name" in item:
+                                return item.get("name", "?")
+                return "?"
+
+            current_week_h2h = lg.current_week()
+            last_completed = current_week_h2h - 1
+
+            if last_completed >= 1:
+                records = {}
+                h2h_budget = max(5, 30 - (time.time() - _intel_start))
+                h2h_deadline = time.time() + h2h_budget
+
+                for week_num in range(1, last_completed + 1):
+                    if time.time() > h2h_deadline:
+                        break
+                    try:
+                        raw = lg.matchups(week=week_num)
+                    except Exception:
+                        continue
+                    if not raw:
+                        continue
+
+                    try:
+                        league_data = raw.get("fantasy_content", {}).get("league", [])
+                        if len(league_data) < 2:
+                            continue
+                        sb_data = league_data[1].get("scoreboard", {})
+                        matchup_block = sb_data.get("0", {}).get("matchups", {})
+                        count = int(matchup_block.get("count", 0))
+
+                        for i in range(count):
+                            matchup = matchup_block.get(str(i), {}).get("matchup", {})
+                            teams_data = matchup.get("0", {}).get("teams", {})
+                            t1_data = teams_data.get("0", {})
+                            t2_data = teams_data.get("1", {})
+
+                            key1 = _h2h_key(t1_data)
+                            key2 = _h2h_key(t2_data)
+                            if not key1 or not key2:
+                                continue
+
+                            name1 = _h2h_name(t1_data)
+                            name2 = _h2h_name(t2_data)
+                            if name1 and name1 != "?":
+                                tk_to_name[key1] = name1
+                            if name2 and name2 != "?":
+                                tk_to_name[key2] = name2
+
+                            stat_winners = matchup.get("stat_winners", [])
+                            t1_cat_w = 0
+                            t1_cat_l = 0
+                            for sw in stat_winners:
+                                w = sw.get("stat_winner", {})
+                                if not w.get("is_tied"):
+                                    if w.get("winner_team_key", "") == key1:
+                                        t1_cat_w += 1
+                                    else:
+                                        t1_cat_l += 1
+
+                            if t1_cat_w > t1_cat_l:
+                                r1, r2 = "W", "L"
+                            elif t1_cat_l > t1_cat_w:
+                                r1, r2 = "L", "W"
+                            else:
+                                r1, r2 = "T", "T"
+
+                            for k in (key1, key2):
+                                if k not in records:
+                                    records[k] = {"w": 0, "l": 0, "t": 0,
+                                                  "vs": {}, "results": []}
+
+                            for k, res in ((key1, r1), (key2, r2)):
+                                rec = records[k]
+                                opp = key2 if k == key1 else key1
+                                if res == "W":
+                                    rec["w"] += 1
+                                elif res == "L":
+                                    rec["l"] += 1
+                                else:
+                                    rec["t"] += 1
+                                rec["results"].append(res)
+                                vs_rec = rec["vs"].get(opp, {"w": 0, "l": 0, "t": 0})
+                                if res == "W":
+                                    vs_rec["w"] += 1
+                                elif res == "L":
+                                    vs_rec["l"] += 1
+                                else:
+                                    vs_rec["t"] += 1
+                                rec["vs"][opp] = vs_rec
+
+                    except Exception as e:
+                        print("Warning: H2H parsing failed for week " + str(week_num) + ": " + str(e))
+                        continue
+
+                for tk, rec in records.items():
+                    streak = ""
+                    if rec.get("results"):
+                        last = rec["results"][-1]
+                        cnt = 0
+                        for r in reversed(rec["results"]):
+                            if r == last:
+                                cnt += 1
+                            else:
+                                break
+                        streak = last + str(cnt)
+
+                    vs_list = []
+                    for opp_key, opp_rec in rec.get("vs", {}).items():
+                        vs_list.append({
+                            "opponent": tk_to_name.get(opp_key, "?"),
+                            "opponent_key": opp_key,
+                            "wins": opp_rec.get("w", 0),
+                            "losses": opp_rec.get("l", 0),
+                            "ties": opp_rec.get("t", 0),
+                        })
+
+                    h2h_matrix.append({
+                        "team_key": tk,
+                        "team_name": tk_to_name.get(tk, "?"),
+                        "is_my_team": TEAM_ID in str(tk),
+                        "overall": {
+                            "wins": rec.get("w", 0),
+                            "losses": rec.get("l", 0),
+                            "ties": rec.get("t", 0),
+                        },
+                        "streak": streak,
+                        "vs": vs_list,
+                    })
+
+                h2h_matrix.sort(
+                    key=lambda x: (x.get("overall", {}).get("wins", 0),
+                                   -x.get("overall", {}).get("losses", 0)),
+                    reverse=True)
+
+        except Exception as e:
+            print("Warning: H2H records failed: " + str(e))
+
+    result = {
+        "generated_at": datetime.now().isoformat(),
+        "my_team_key": TEAM_ID,
+        "num_teams": num_teams,
+        "power_rankings": power_rankings,
+        "top_performers": top_performers,
+        "team_profiles": team_profiles,
+        "category_leaderboards": category_leaderboards,
+        "h2h_matrix": h2h_matrix,
+    }
+
+    cache_set(_league_intel_cache, "intel", result)
+
+    if as_json:
+        return result
+
+    _print_league_intel(result)
+
+
+def _print_league_intel(data):
+    """CLI output for league intel."""
+    print("League Intelligence Report")
+    print("=" * 60)
+
+    # Power Rankings
+    print("\nPOWER RANKINGS (adjusted z + standings + quality):")
+    print("  " + "#".rjust(3) + "  " + "Team".ljust(25) + "Record".rjust(8)
+          + "  Adj-Z".rjust(8) + "  Upside".rjust(8) + "  Score".rjust(7))
+    print("  " + "-" * 63)
+    for r in data.get("power_rankings", []):
+        marker = " <-- YOU" if r.get("is_my_team") else ""
+        upside = r.get("z_upside", 0)
+        upside_str = ("+" if upside > 0 else "") + str(upside)
+        print("  " + str(r.get("rank", "?")).rjust(3) + "  "
+              + r.get("name", "?")[:25].ljust(25)
+              + r.get("record", "0-0-0").rjust(8) + "  "
+              + str(r.get("adjusted_z_total", 0)).rjust(7) + "  "
+              + upside_str.rjust(7) + "  "
+              + str(r.get("composite_score", 0)).rjust(6)
+              + marker)
+
+    # Top Performers
+    print("\nTOP PERFORMERS (league-wide, by adjusted z-score):")
+    print("  " + "#".rjust(3) + "  " + "Player".ljust(20) + "Team".ljust(18)
+          + "Pos".ljust(5) + "Adj-Z".rjust(7) + "  Flags")
+    print("  " + "-" * 70)
+    for i, p in enumerate(data.get("top_performers", [])[:15], 1):
+        flags = []
+        qt = p.get("quality_tier")
+        if qt in ("elite", "strong"):
+            flags.append("[" + qt + "]")
+        reg = p.get("regression")
+        if reg:
+            flags.append(reg.upper().replace("_", "-"))
+        hc = p.get("hot_cold")
+        if hc in ("hot", "cold"):
+            flags.append(hc.upper())
+        flag_str = " ".join(flags)
+        print("  " + str(i).rjust(3) + "  "
+              + p.get("name", "?")[:20].ljust(20)
+              + p.get("team_name", "?")[:18].ljust(18)
+              + p.get("position", "?").ljust(5)
+              + str(p.get("adjusted_z", p.get("z_final", 0))).rjust(7)
+              + "  " + flag_str)
+
+    # Team Profiles
+    print("\nTEAM PROFILES:")
+    for tp in data.get("team_profiles", []):
+        marker = " (YOU)" if tp.get("is_my_team") else ""
+        upside = tp.get("z_upside", 0)
+        upside_str = ("+" if upside > 0 else "") + str(upside)
+        print("\n  #" + str(tp.get("rank", "?")) + " " + tp.get("name", "?") + marker)
+        print("    Record: " + tp.get("record", "?")
+              + " | Adj Z: " + str(tp.get("adjusted_z_total", 0))
+              + " | Upside: " + upside_str)
+        # Quality summary
+        qb = tp.get("quality_breakdown", {})
+        if qb:
+            q_parts = []
+            for tier in ["elite", "strong", "average", "below", "poor"]:
+                cnt = qb.get(tier, 0)
+                if cnt:
+                    q_parts.append(str(cnt) + " " + tier)
+            if q_parts:
+                print("    Quality: " + ", ".join(q_parts))
+        # Regression + momentum
+        signals = []
+        bl = tp.get("buy_low_count", 0)
+        sh = tp.get("sell_high_count", 0)
+        hot = tp.get("hot_players", 0)
+        cold = tp.get("cold_players", 0)
+        if bl:
+            signals.append(str(bl) + " buy-low")
+        if sh:
+            signals.append(str(sh) + " sell-high")
+        if hot:
+            signals.append(str(hot) + " hot")
+        if cold:
+            signals.append(str(cold) + " cold")
+        if signals:
+            print("    Signals: " + ", ".join(signals))
+        if tp.get("strongest_categories"):
+            print("    Strong: " + ", ".join(tp.get("strongest_categories", [])))
+        if tp.get("weakest_categories"):
+            print("    Weak: " + ", ".join(tp.get("weakest_categories", [])))
+        if tp.get("trade_fit"):
+            print("    Trade fit: " + tp.get("trade_fit", ""))
+
+    # Category Leaderboards
+    leaderboards = data.get("category_leaderboards", [])
+    if leaderboards:
+        print("\nCATEGORY LEADERBOARDS:")
+        print("  " + "Category".ljust(10) + "Leader".ljust(28) + "Value".rjust(10))
+        print("  " + "-" * 48)
+        for lb in leaderboards:
+            rankings = lb.get("rankings", [])
+            if rankings:
+                leader = rankings[0]
+                marker = " *" if leader.get("is_my_team") else ""
+                print("  " + str(lb.get("category", "?")).ljust(10)
+                      + str(leader.get("team_name", "?"))[:28].ljust(28)
+                      + str(leader.get("value", "")).rjust(10) + marker)
+
+    # H2H Records
+    h2h = data.get("h2h_matrix", [])
+    if h2h:
+        print("\nH2H RECORDS:")
+        print("  " + "Team".ljust(28) + "Record".rjust(10) + "  Streak")
+        print("  " + "-" * 48)
+        for entry in h2h:
+            overall = entry.get("overall", {})
+            record = (str(overall.get("wins", 0)) + "-"
+                      + str(overall.get("losses", 0)) + "-"
+                      + str(overall.get("ties", 0)))
+            marker = " <-- YOU" if entry.get("is_my_team") else ""
+            print("  " + str(entry.get("team_name", "?"))[:28].ljust(28)
+                  + record.rjust(10) + "  "
+                  + str(entry.get("streak", "")).ljust(4)
+                  + marker)
 
 
 def cmd_week_planner(args, as_json=False):
@@ -5434,7 +6252,7 @@ def cmd_season_pace(args, as_json=False):
     """Project season pace, playoff odds, and magic number"""
     sc, gm, lg = get_league()
     try:
-        standings = lg.standings()
+        standings = get_cached_standings(lg)
         settings = lg.settings()
         current_week = lg.current_week()
         try:
@@ -5449,7 +6267,7 @@ def cmd_season_pace(args, as_json=False):
         # Fetch teams for logo/avatar data
         team_meta = {}
         try:
-            all_teams = lg.teams()
+            all_teams = get_cached_teams(lg)
             for tk, td in all_teams.items():
                 tname = td.get("name", "")
                 logo_url, mgr_image = _extract_team_meta(td)
@@ -8261,6 +9079,9 @@ def cmd_trash_talk(args, as_json=False):
 def cmd_rival_history(args, as_json=False):
     """Show head-to-head record against each league opponent with detailed matchup history.
     Supports cross-season history when config/league-history.json exists."""
+    import time
+    _rival_start = time.time()
+
     if not as_json:
         print("Rival History")
         print("=" * 50)
@@ -8438,6 +9259,8 @@ def cmd_rival_history(args, as_json=False):
                 continue  # Already scanned
             if hist_count >= max_hist_seasons:
                 break
+            if time.time() - _rival_start > 30:
+                break  # Time budget exceeded
             try:
                 hist_sc = get_connection()
                 hist_gm = yfa.Game(hist_sc, "mlb")
@@ -9967,6 +10790,7 @@ COMMANDS = {
     "whats-new": cmd_whats_new,
     "trade-finder": cmd_trade_finder,
     "power-rankings": cmd_power_rankings,
+    "league-intel": cmd_league_intel,
     "week-planner": cmd_week_planner,
     "season-pace": cmd_season_pace,
     "closer-monitor": cmd_closer_monitor,

@@ -178,7 +178,7 @@ def get_league_context():
     return sc, gm, lg, team
 
 
-_YAHOO_CACHE_TTL_SECONDS = int(os.environ.get("YAHOO_CONTEXT_CACHE_TTL_SECONDS", "30"))
+_YAHOO_CACHE_TTL_SECONDS = int(os.environ.get("YAHOO_CONTEXT_CACHE_TTL_SECONDS", "120"))
 _yahoo_cache_lock = threading.Lock()
 _yahoo_cache = {
     "connection": None,
@@ -195,6 +195,40 @@ _yahoo_cache = {
 # ---------------------------------------------------------------------------
 # League settings cache (static settings that rarely change mid-season)
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Cached lg.teams() / lg.standings() — called by many commands, each makes
+# its own Yahoo API call.  A shared cache eliminates massive redundancy.
+# ---------------------------------------------------------------------------
+_league_data_cache = {}
+_league_data_lock = threading.Lock()
+_LEAGUE_DATA_TTL = 60
+
+
+def _get_cached_league_call(key, ttl, call):
+    """Thread-safe cache wrapper for expensive league API calls."""
+    with _league_data_lock:
+        cached = cache_get(_league_data_cache, key, ttl)
+        if cached is not None:
+            return cached
+    result = call()
+    with _league_data_lock:
+        existing = cache_get(_league_data_cache, key, ttl)
+        if existing is not None:
+            return existing
+        cache_set(_league_data_cache, key, result)
+    return result
+
+
+def get_cached_teams(lg):
+    """Cache lg.teams() for 60s — called by many commands."""
+    return _get_cached_league_call("teams", _LEAGUE_DATA_TTL, lg.teams)
+
+
+def get_cached_standings(lg):
+    """Cache lg.standings() for 60s."""
+    return _get_cached_league_call("standings", _LEAGUE_DATA_TTL, lg.standings)
+
+
 _LEAGUE_SETTINGS_CACHE_TTL = int(os.environ.get("LEAGUE_SETTINGS_CACHE_TTL", "3600"))
 _LEAGUE_SETTINGS_NEGATIVE_TTL = 60  # seconds to cache empty result on API failure
 _league_settings_cache = {}
@@ -351,7 +385,7 @@ def cache_get(cache_dict, key, ttl_seconds):
         return None
     data, fetch_time = entry
     if time.time() - fetch_time > ttl_seconds:
-        del cache_dict[key]
+        cache_dict.pop(key, None)
         return None
     return data
 

@@ -66,6 +66,7 @@ export const TOOLSETS: Record<string, string[]> = {
     "yahoo_punt_advisor",
     "yahoo_league_landscape",
     "yahoo_power_rankings",
+    "yahoo_league_intel",
     "yahoo_season_pace",
     "yahoo_playoff_planner",
     "yahoo_category_trends",
@@ -177,6 +178,7 @@ export const TOOLSETS: Record<string, string[]> = {
     "yahoo_who_owns",
     "yahoo_percent_owned",
     "yahoo_positional_ranks",
+    "yahoo_league_intel",
   ],
 };
 
@@ -255,7 +257,8 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
   yahoo_scout_opponent: "Deep analysis of an opponent's roster strengths, weaknesses, and tendencies",
   yahoo_punt_advisor: "Identify categories to strategically punt for roto or head-to-head advantage",
   yahoo_league_landscape: "League-wide competitive analysis with tier rankings and playoff odds",
-  yahoo_power_rankings: "Algorithmic power rankings based on roster strength, not just record",
+  yahoo_power_rankings: "Z-score power rankings blending roster strength (60%) with actual record (40%)",
+  yahoo_league_intel: "Comprehensive league intelligence: power rankings, top performers, team profiles, trade fits",
   yahoo_season_pace: "Season pace projections for cumulative categories (HR, K, W, etc.)",
   yahoo_playoff_planner: "Playoff scenarios, magic numbers, and clinching paths",
   yahoo_category_trends: "Track how your category ranks have moved over recent scoring periods",

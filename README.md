@@ -10,7 +10,7 @@ Ask Claude about your Yahoo Fantasy Baseball league in plain English. Get instan
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-1.0-green.svg)](https://modelcontextprotocol.io)
-[![Tools](https://img.shields.io/badge/tools-129-orange.svg)](#all-tools-reference)
+[![Tools](https://img.shields.io/badge/tools-130-orange.svg)](#all-tools-reference)
 [![Docker](https://img.shields.io/badge/docker-required-blue.svg)](https://www.docker.com/products/docker-desktop/)
 [![Yahoo Fantasy](https://img.shields.io/badge/Yahoo-Fantasy%20Baseball-7B0099.svg)](https://baseball.fantasysports.yahoo.com)
 
@@ -23,7 +23,7 @@ Ask Claude about your Yahoo Fantasy Baseball league in plain English. Get instan
 | "Show me my roster" | Pulls your full roster with positions, eligibility, today's games, injury flags, and intel overlays |
 | "Should I accept this trade — my Soto for his Burnes and Tucker?" | Runs surplus value analysis with category fit, roster impact, and a letter grade |
 | "Best pickup at SS right now" | Scores every free-agent shortstop by z-score value, category fit, and regression signals |
-| "How does my team compare to the rest of the league?" | Ranks your roster against all teams with positional grades and trade partner suggestions |
+| "How does my team compare to the rest of the league?" | Multi-layer league intel: adjusted z-scores (projections + statcast + regression + trends), power rankings, top performers across all teams, category strengths/weaknesses, and trade fit analysis |
 | "What happened overnight?" | Injuries, transactions, trending pickups, prospect call-ups, and pending trades — one shot |
 | "Scout my opponent this week" | Strengths, weaknesses, streamable categories, and a game plan to beat them |
 
@@ -199,7 +199,7 @@ Add to `.cursor/mcp.json` in your project root:
 }
 ```
 
-> **Note:** Cursor has a 40-tool limit per MCP server. BaseClaw exposes 123 tools, so Cursor will only load the first 40. Core roster, standings, and valuation tools load first. Advanced analytics, prospect, and workflow tools may be unavailable.
+> **Note:** Cursor has a 40-tool limit per MCP server. BaseClaw exposes 130 tools, so Cursor will only load the first 40. Core roster, standings, and valuation tools load first. Advanced analytics, prospect, and workflow tools may be unavailable.
 
 </details>
 
@@ -331,6 +331,7 @@ The `AGENTS.md` file defines the agent's identity and behavior:
 - **Season phases** — Early (build depth, stream aggressively), mid (trade for balance, buy low), late (playoff positioning)
 - **Decision trees** — Injury response pipelines, trade search with surplus value evaluation, waiver deadline claim chains
 - **FAAB management** — Kelly criterion bid sizing with posterior variance from Bayesian model, competition shading, category scarcity bonus, season phase multipliers, contender detection
+- **League intelligence** — Comprehensive league intel with multi-layer power rankings (adjusted z-scores blending projections + statcast quality + regression signals + hot/cold trends), top performers across all teams with quality/regression flags, team profiles with trade fit analysis, and z-upside detection. Pre-season uses 70% z-rank + 30% quality rank; in-season shifts to 50% z-rank + 35% standings + 15% quality
 - **Competitive intelligence** — Track rival activity, react to opponent moves, standings-aware trade blocking
 - **Token efficiency** — Workflow tools over individual tools, concise reports
 
@@ -356,7 +357,7 @@ Player valuations use **FVARz z-scores** — volume-weighted rate stats so part-
 │  │  (Flask :8766)    │──│  (Express :4951)    │  │
 │  │                   │  │                     │  │
 │  │  yahoo_fantasy_api│  │  MCP SDK + ext-apps │  │
-│  │  pybaseball       │  │  129 tool defs      │  │
+│  │  pybaseball       │  │  130 tool defs      │  │
 │  │  MLB-StatsAPI     │  │  4 apps / 75 views  │  │
 │  │  Playwright       │  │  11 workflow tools  │  │
 │  │  CacheManager     │  │  11 tool files      │  │
@@ -522,7 +523,7 @@ The `./yf` helper script provides direct CLI access to all functionality:
 <details>
 <summary><strong>All tools reference</strong></summary>
 
-129 tools across 12 tool files. Default profile loads ~26 tools; set `MCP_TOOLSET` to load more (see env vars). Core dashboards and action tools (20) render interactive UI in Claude; the rest return text.
+130 tools across 12 tool files. Default profile loads ~26 tools; set `MCP_TOOLSET` to load more (see env vars). Core dashboards and action tools (20) render interactive UI in Claude; the rest return text.
 
 **Roster Management** (16 tools)
 
@@ -545,7 +546,7 @@ The `./yf` helper script provides direct CLI access to all functionality:
 | `yahoo_waivers` | Players currently on waivers (in claim period, not yet free agents) |
 | `yahoo_all_rostered` | All rostered players across the league with team ownership |
 
-**League & Standings** (10 tools)
+**League & Standings** (11 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -556,7 +557,8 @@ The `./yf` helper script provides direct CLI access to all functionality:
 | `yahoo_transactions` | Recent league transactions (add, drop, trade) |
 | `yahoo_transaction_trends` | Most added and most dropped players across Yahoo |
 | `yahoo_league_pulse` | League activity — moves and trades per team |
-| `yahoo_power_rankings` | Teams ranked by estimated roster strength |
+| `yahoo_league_intel` | Comprehensive league intelligence: multi-layer power rankings (adjusted z-scores blending projections + statcast quality + regression signals + hot/cold trends with standings and quality rank), top 30 performers across all teams with quality/regression flags, team profiles with category strengths/weaknesses and trade fit analysis, z-upside detection for teams with hidden value |
+| `yahoo_power_rankings` | Teams ranked by adjusted z-score composite (projections + statcast + regression + trends + standings). Use `yahoo_league_intel` for the full picture |
 | `yahoo_positional_ranks` | Positional rankings for all teams with grades and trade partner recommendations |
 | `yahoo_season_pace` | Projected season pace, playoff probability, and magic numbers |
 
@@ -706,7 +708,7 @@ Aggregated tools that bundle 5-7+ API calls server-side so the agent gets a comp
 
 | | **BaseClaw** | **Flaim** | **yahoo-fantasy-baseball-mcp** | **Manual** |
 |---|---|---|---|---|
-| Tools | 129 | ~30 | ~15 | 0 |
+| Tools | 130 | ~30 | ~15 | 0 |
 | Yahoo Fantasy API | Full read + browser write | Read only | Read only | Website |
 | Statcast / Savant | Built-in (xwOBA, Stuff+, barrel rate, bat tracking, percentiles) | No | No | Separate lookup |
 | Z-score valuations | FVARz with consensus projections, park factors, decay curve | Basic rankings | No | Spreadsheet |

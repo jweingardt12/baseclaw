@@ -8,7 +8,6 @@ import { tkey } from "../api/format-text.js";
 import {
   generateStandingsInsight,
   generateSeasonPaceInsight,
-  generatePowerRankInsight,
 } from "../insights.js";
 import {
   str,
@@ -20,8 +19,8 @@ import {
   type TransactionsResponse,
   type TransactionTrendsResponse,
   type LeaguePulseResponse,
-  type PowerRankingsResponse,
   type SeasonPaceResponse,
+  type LeagueIntelResponse,
 } from "../api/types.js";
 import { shouldRegister as _shouldRegister } from "../toolsets.js";
 
@@ -332,33 +331,211 @@ export function registerStandingsTools(server: McpServer, distDir: string, enabl
   );
   }
 
-  // yahoo_power_rankings
+  // yahoo_power_rankings — now backed by league-intel z-score data
   if (shouldRegister("yahoo_power_rankings")) {
   registerAppTool(
     server,
     "yahoo_power_rankings",
     {
-      description: "Use this to rank all league teams by estimated roster strength based on aggregate player ownership percentages. Shows average owned %, hitter/pitcher splits, and your team's position. Use yahoo_standings instead for actual win-loss records, or yahoo_positional_ranks to see per-position strength across teams.",
+      description: "Use this to rank all league teams by roster strength using multi-layer analysis: adjusted z-scores (projections + statcast + regression + trends), standings, and quality. Use yahoo_league_intel for the full picture with top performers, team profiles, and trade fits. Use yahoo_standings for just win-loss records.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
     async () => {
       try {
-        const data = await apiGet<PowerRankingsResponse>("/api/power-rankings");
+        const data = await apiGet<LeagueIntelResponse>("/api/league-intel");
         const lines = [
-          "Power Rankings:",
-          "  " + "#".padStart(3) + "  " + "Team".padEnd(30) + "Avg Own%".padStart(9) + "  H/P",
-          "  " + "-".repeat(52),
+          "Power Rankings (adjusted z + standings + quality):",
+          "  " + "#".padStart(3) + "  " + "Team".padEnd(25) + "Record".padStart(8) + "  Adj-Z".padStart(8) + "  Upside".padStart(8) + "  Score".padStart(7),
+          "  " + "-".repeat(63),
         ];
-        for (const r of data.rankings) {
+        for (const r of data.power_rankings) {
           const marker = r.is_my_team ? " <-- YOU" : "";
-          lines.push("  " + String(r.rank).padStart(3) + "  " + str(r.name).padEnd(30) + tkey(r.team_key)
-            + String(r.avg_owned_pct).padStart(8) + "%  " + r.hitting_count + "/" + r.pitching_count + marker);
+          const upside = r.z_upside || 0;
+          const upsideStr = (upside > 0 ? "+" : "") + String(upside);
+          lines.push("  " + String(r.rank).padStart(3) + "  " + str(r.name).padEnd(25) + tkey(r.team_key)
+            + r.record.padStart(8) + "  " + String(r.adjusted_z_total).padStart(7) + "  "
+            + upsideStr.padStart(7) + "  " + String(r.composite_score).padStart(6) + marker);
         }
-        const ai_recommendation = generatePowerRankInsight(data);
+        const myTeam = data.power_rankings.find(r => r.is_my_team);
+        const ai_recommendation = myTeam
+          ? "Ranked #" + myTeam.rank + " of " + data.num_teams + " by composite score (" + myTeam.composite_score
+            + "). Adjusted z-total: " + myTeam.adjusted_z_total + " (upside: " + (myTeam.z_upside > 0 ? "+" : "") + myTeam.z_upside
+            + "). Strong in " + myTeam.strongest_categories.join(", ") + "; weak in " + myTeam.weakest_categories.join(", ") + "."
+          : "Power rankings loaded.";
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
-          structuredContent: { type: "power-rankings", ai_recommendation, ...data },
+          structuredContent: { type: "power-rankings", ai_recommendation, rankings: data.power_rankings },
+        };
+      } catch (e) { return toolError(e); }
+    },
+  );
+  }
+
+  // yahoo_league_intel
+  if (shouldRegister("yahoo_league_intel")) {
+  registerAppTool(
+    server,
+    "yahoo_league_intel",
+    {
+      description: "Use this to get a comprehensive league intelligence report with multi-layer value analysis: adjusted z-scores (projections + statcast quality + regression signals + hot/cold trends), power rankings, top performers across all teams, team profiles with category strengths/weaknesses, and trade fit analysis. Best tool for 'who has who', 'which teams are strong/weak', 'who should I trade with', and 'who is overperforming/underperforming'. Use yahoo_positional_ranks for Yahoo's native position grades, or yahoo_scout_opponent for current-week matchup scouting.",
+      annotations: { readOnlyHint: true },
+      _meta: {},
+    },
+    async () => {
+      try {
+        const data = await apiGet<LeagueIntelResponse>("/api/league-intel");
+        const lines: string[] = [];
+
+        // Power Rankings section
+        lines.push("POWER RANKINGS (adjusted z + standings + quality):");
+        lines.push("  " + "#".padStart(3) + "  " + "Team".padEnd(25) + "Record".padStart(8) + "  Adj-Z".padStart(8) + "  Upside".padStart(8) + "  Score".padStart(7));
+        lines.push("  " + "-".repeat(63));
+        for (const r of data.power_rankings) {
+          const marker = r.is_my_team ? " <-- YOU" : "";
+          const upside = r.z_upside || 0;
+          const upsideStr = (upside > 0 ? "+" : "") + String(upside);
+          lines.push("  " + String(r.rank).padStart(3) + "  " + str(r.name).padEnd(25) + tkey(r.team_key)
+            + r.record.padStart(8) + "  " + String(r.adjusted_z_total).padStart(7) + "  "
+            + upsideStr.padStart(7) + "  " + String(r.composite_score).padStart(6) + marker);
+        }
+
+        // Top Performers section
+        lines.push("\nTOP PERFORMERS (league-wide by adjusted z-score):");
+        lines.push("  " + "#".padStart(3) + "  " + "Player".padEnd(20) + "Team".padEnd(18) + "Pos".padEnd(5) + "Adj-Z".padStart(7) + "  Flags");
+        lines.push("  " + "-".repeat(70));
+        for (let i = 0; i < Math.min(data.top_performers.length, 20); i++) {
+          const p = data.top_performers[i];
+          const flags: string[] = [];
+          if (p.quality_tier === "elite" || p.quality_tier === "strong") flags.push("[" + p.quality_tier + "]");
+          if (p.regression) flags.push(p.regression.toUpperCase().replace("_", "-"));
+          if (p.hot_cold === "hot" || p.hot_cold === "cold") flags.push(p.hot_cold.toUpperCase());
+          lines.push("  " + String(i + 1).padStart(3) + "  " + str(p.name).slice(0, 20).padEnd(20)
+            + str(p.team_name).slice(0, 18).padEnd(18) + str(p.position).padEnd(5)
+            + String(p.adjusted_z ?? p.z_final).padStart(7) + "  " + flags.join(" "));
+        }
+
+        // Team Profiles section
+        lines.push("\nTEAM PROFILES:");
+        for (const tp of data.team_profiles) {
+          const marker = tp.is_my_team ? " (YOU)" : "";
+          const upside = tp.z_upside || 0;
+          const upsideStr = (upside > 0 ? "+" : "") + String(upside);
+          lines.push("\n  #" + tp.rank + " " + str(tp.name) + marker + " | " + tp.record
+            + " | Adj Z: " + tp.adjusted_z_total + " | Upside: " + upsideStr);
+          if (tp.top_players.length > 0) {
+            lines.push("    Stars: " + tp.top_players.join(", "));
+          }
+          // Quality + signals
+          const qParts: string[] = [];
+          for (const tier of ["elite", "strong", "average"]) {
+            const cnt = tp.quality_breakdown?.[tier];
+            if (cnt) qParts.push(cnt + " " + tier);
+          }
+          const sigParts: string[] = [];
+          if (tp.buy_low_count) sigParts.push(tp.buy_low_count + " buy-low");
+          if (tp.sell_high_count) sigParts.push(tp.sell_high_count + " sell-high");
+          if (tp.hot_players) sigParts.push(tp.hot_players + " hot");
+          if (tp.cold_players) sigParts.push(tp.cold_players + " cold");
+          if (qParts.length) lines.push("    Quality: " + qParts.join(", "));
+          if (sigParts.length) lines.push("    Signals: " + sigParts.join(", "));
+          lines.push("    Strong: " + (tp.strongest_categories.join(", ") || "none")
+            + " | Weak: " + (tp.weakest_categories.join(", ") || "none"));
+          if (tp.trade_fit) {
+            lines.push("    Trade fit: " + tp.trade_fit);
+          }
+        }
+
+        // Category Leaderboards section
+        if ((data.category_leaderboards || []).length > 0) {
+          lines.push("\nCATEGORY LEADERBOARDS:");
+          lines.push("  " + "Category".padEnd(10) + "Leader".padEnd(28) + "Value".padStart(10));
+          lines.push("  " + "-".repeat(48));
+          for (const lb of data.category_leaderboards) {
+            const top = (lb.rankings || [])[0];
+            if (top) {
+              const marker = top.is_my_team ? " *" : "";
+              lines.push("  " + str(lb.category).padEnd(10)
+                + str(top.team_name).slice(0, 28).padEnd(28)
+                + String(top.value).padStart(10) + marker);
+            }
+          }
+        }
+
+        // H2H Records section
+        if ((data.h2h_matrix || []).length > 0) {
+          lines.push("\nH2H RECORDS:");
+          lines.push("  " + "Team".padEnd(28) + "Record".padStart(10) + "  Streak");
+          lines.push("  " + "-".repeat(48));
+          for (const entry of data.h2h_matrix) {
+            const overall = entry.overall || { wins: 0, losses: 0, ties: 0 };
+            const record = overall.wins + "-" + overall.losses + "-" + overall.ties;
+            const marker = entry.is_my_team ? " <-- YOU" : "";
+            lines.push("  " + str(entry.team_name).slice(0, 28).padEnd(28)
+              + record.padStart(10) + "  " + str(entry.streak).padStart(4) + marker);
+          }
+        }
+
+        // Build AI recommendation
+        const myTeam = data.power_rankings.find(r => r.is_my_team);
+        const rivals = data.power_rankings.filter(r => !r.is_my_team).slice(0, 3);
+        const tradeFits = data.team_profiles.filter(tp => !tp.is_my_team && tp.trade_fit).slice(0, 2);
+        const upsideTeams = data.team_profiles.filter(tp => !tp.is_my_team && tp.z_upside > 5).sort((a, b) => b.z_upside - a.z_upside).slice(0, 2);
+        const paperTigers = data.team_profiles.filter(tp => !tp.is_my_team && tp.z_upside < -5).sort((a, b) => a.z_upside - b.z_upside).slice(0, 2);
+        let ai_recommendation = "";
+        if (myTeam) {
+          ai_recommendation = "You're ranked #" + myTeam.rank + " of " + data.num_teams
+            + " (composite " + myTeam.composite_score + "). "
+            + "Adjusted z-total: " + myTeam.adjusted_z_total
+            + " (upside: " + (myTeam.z_upside > 0 ? "+" : "") + myTeam.z_upside + "). "
+            + "Strong in " + myTeam.strongest_categories.join(", ")
+            + "; weak in " + myTeam.weakest_categories.join(", ") + ". ";
+          if (rivals.length > 0) {
+            ai_recommendation += "Top rivals: " + rivals.map(r => r.name + " (#" + r.rank + ")").join(", ") + ". ";
+          }
+          if (upsideTeams.length > 0) {
+            ai_recommendation += "Teams with hidden upside (buy-low/elite quality): " + upsideTeams.map(t => t.name + " (+" + t.z_upside + ")").join(", ") + ". ";
+          }
+          if (paperTigers.length > 0) {
+            ai_recommendation += "Paper tigers (sell-high/poor quality): " + paperTigers.map(t => t.name + " (" + t.z_upside + ")").join(", ") + ". ";
+          }
+          if (tradeFits.length > 0) {
+            ai_recommendation += "Best trade fits: " + tradeFits.map(t => t.name + " — " + t.trade_fit).join("; ") + ". ";
+          }
+        }
+
+        // Category leaderboard insights
+        if ((data.category_leaderboards || []).length > 0) {
+          const myLeads: string[] = [];
+          const myTrails: string[] = [];
+          for (const lb of data.category_leaderboards) {
+            const myRank = (lb.rankings || []).find(r => r.is_my_team);
+            if (myRank) {
+              if (myRank.rank === 1) myLeads.push(lb.category);
+              else if (myRank.rank >= (lb.rankings || []).length - 1) myTrails.push(lb.category);
+            }
+          }
+          if (myLeads.length > 0) ai_recommendation += "Leading league in: " + myLeads.join(", ") + ". ";
+          if (myTrails.length > 0) ai_recommendation += "Trailing in: " + myTrails.join(", ") + ". ";
+        }
+
+        // H2H record insights
+        if ((data.h2h_matrix || []).length > 0) {
+          const myH2H = data.h2h_matrix.find(e => e.is_my_team);
+          if (myH2H) {
+            const o = myH2H.overall || { wins: 0, losses: 0, ties: 0 };
+            ai_recommendation += "H2H record: " + o.wins + "-" + o.losses + "-" + o.ties
+              + (myH2H.streak ? " (" + myH2H.streak + ")" : "") + ". ";
+            const noWinsAgainst = (myH2H.vs || []).filter(v => v.wins === 0 && (v.losses > 0 || v.ties > 0));
+            if (noWinsAgainst.length > 0) {
+              ai_recommendation += "Haven't beaten: " + noWinsAgainst.map(v => v.opponent).join(", ") + ". ";
+            }
+          }
+        }
+
+        return {
+          content: [{ type: "text" as const, text: lines.join("\n") }],
+          structuredContent: { type: "league-intel", ai_recommendation, ...data },
         };
       } catch (e) { return toolError(e); }
     },

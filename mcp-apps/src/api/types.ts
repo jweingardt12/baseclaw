@@ -1193,6 +1193,109 @@ export interface PowerRankingsResponse {
   rankings: PowerRankingTeam[];
 }
 
+// League Intel response
+export interface LeagueIntelPowerRanking {
+  rank: number;
+  name: string;
+  team_key: string;
+  team_logo: string;
+  manager_image: string;
+  is_my_team: boolean;
+  record: string;
+  wins: number;
+  losses: number;
+  ties: number;
+  roster_z_total: number;
+  hitting_z: number;
+  pitching_z: number;
+  composite_score: number;
+  adjusted_z_total: number;
+  z_upside: number;
+  strongest_categories: string[];
+  weakest_categories: string[];
+}
+
+export interface LeagueIntelPerformer {
+  name: string;
+  team_key: string;
+  team_name: string;
+  position: string;
+  z_final: number;
+  tier: string;
+  mlb_team: string;
+  quality_tier?: string;
+  hot_cold?: string;
+  regression?: string;
+  adjusted_z?: number;
+}
+
+export interface LeagueIntelTeamProfile {
+  team_key: string;
+  name: string;
+  team_logo: string;
+  manager_image: string;
+  is_my_team: boolean;
+  rank: number;
+  record: string;
+  hitting_z: number;
+  pitching_z: number;
+  roster_z_total: number;
+  adjusted_z_total: number;
+  z_upside: number;
+  top_players: string[];
+  strongest_categories: string[];
+  weakest_categories: string[];
+  surplus_positions: string[];
+  weak_positions: string[];
+  trade_fit: string;
+  quality_breakdown: Record<string, number>;
+  buy_low_count: number;
+  sell_high_count: number;
+  hot_players: number;
+  cold_players: number;
+}
+
+export interface LeagueIntelCategoryRanking {
+  rank: number;
+  team_name: string;
+  team_key: string;
+  value: string | number;
+  is_my_team: boolean;
+}
+
+export interface LeagueIntelCategoryLeaderboard {
+  category: string;
+  rankings: LeagueIntelCategoryRanking[];
+}
+
+export interface LeagueIntelH2HOpponent {
+  opponent: string;
+  opponent_key: string;
+  wins: number;
+  losses: number;
+  ties: number;
+}
+
+export interface LeagueIntelH2HRecord {
+  team_key: string;
+  team_name: string;
+  is_my_team: boolean;
+  overall: { wins: number; losses: number; ties: number };
+  streak: string;
+  vs: LeagueIntelH2HOpponent[];
+}
+
+export interface LeagueIntelResponse {
+  generated_at: string;
+  my_team_key: string;
+  num_teams: number;
+  power_rankings: LeagueIntelPowerRanking[];
+  top_performers: LeagueIntelPerformer[];
+  team_profiles: LeagueIntelTeamProfile[];
+  category_leaderboards: LeagueIntelCategoryLeaderboard[];
+  h2h_matrix: LeagueIntelH2HRecord[];
+}
+
 // Week Planner response
 export interface WeekPlannerPlayer {
   name: string;
