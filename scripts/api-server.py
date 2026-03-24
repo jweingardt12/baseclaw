@@ -153,7 +153,16 @@ import concurrent.futures
 from shared import cache_get, cache_set
 
 _response_cache = {}
-_timeout_pool = concurrent.futures.ThreadPoolExecutor(max_workers=6)
+_timeout_pool = concurrent.futures.ThreadPoolExecutor(max_workers=10)
+_workflow_pool = concurrent.futures.ThreadPoolExecutor(max_workers=8)
+
+
+def _get_future(future, timeout=30):
+    """Harvest a future result, returning error dict on failure."""
+    try:
+        return future.result(timeout=timeout)
+    except Exception as e:
+        return {"_error": str(e)}
 
 
 def _cached_endpoint(cache_key, fn, ttl_seconds, timeout_sec=38):
@@ -852,12 +861,11 @@ def api_trade_finder():
         target = request.args.get("target", "")
         timeout = int(request.args.get("timeout", "120"))
         args = [target] if target else []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            future = pool.submit(season_manager.cmd_trade_finder, args, as_json=True)
-            try:
-                result = future.result(timeout=timeout)
-            except concurrent.futures.TimeoutError:
-                return safe_jsonify({"error": "Trade finder timed out after " + str(timeout) + "s. Try with a specific target player name."}, 504)
+        future = _timeout_pool.submit(season_manager.cmd_trade_finder, args, as_json=True)
+        try:
+            result = future.result(timeout=timeout)
+        except concurrent.futures.TimeoutError:
+            return safe_jsonify({"error": "Trade finder timed out after " + str(timeout) + "s. Try with a specific target player name."}, 504)
         return safe_jsonify(result)
     except Exception as e:
         return safe_jsonify({"error": str(e)}, 500)
@@ -1782,102 +1790,107 @@ def _synthesize_morning_actions(injury, lineup, whats_new, waiver_b, waiver_p):
     return actions
 
 
+def _run_briefing():
+    # Run all 7 sub-calls in parallel (dedicated pool to avoid starving _timeout_pool)
+    futures = {
+        "injury": _workflow_pool.submit(_safe_call, season_manager.cmd_injury_report),
+        "lineup": _workflow_pool.submit(_safe_call, season_manager.cmd_lineup_optimize),
+        "matchup": _workflow_pool.submit(_safe_call, yahoo_fantasy.cmd_matchup_detail),
+        "strategy": _workflow_pool.submit(_safe_call, season_manager.cmd_matchup_strategy),
+        "whats_new": _workflow_pool.submit(_safe_call, season_manager.cmd_whats_new),
+        "waiver_b": _workflow_pool.submit(_safe_call, season_manager.cmd_waiver_analyze, ["B", "5"]),
+        "waiver_p": _workflow_pool.submit(_safe_call, season_manager.cmd_waiver_analyze, ["P", "5"]),
+    }
+    injury = _get_future(futures["injury"])
+    lineup = _get_future(futures["lineup"])
+    matchup = _get_future(futures["matchup"])
+    strategy = _get_future(futures["strategy"])
+    whats_new = _get_future(futures["whats_new"])
+    waiver_b = _get_future(futures["waiver_b"])
+    waiver_p = _get_future(futures["waiver_p"])
+
+    action_items = _synthesize_morning_actions(
+        injury, lineup, whats_new, waiver_b, waiver_p
+    )
+
+    # Include next lineup edit date
+    edit_date = None
+    _lg = None
+    try:
+        _sc, _gm, _lg = yahoo_fantasy.get_league()
+        edit_date = str(_lg.edit_date())
+    except Exception:
+        pass
+
+    # Roster player context — parallel fetch (news/injuries/streaks for rostered players)
+    roster_context = []
+    try:
+        from news import get_player_context
+        if not _lg:
+            _sc, _gm, _lg = yahoo_fantasy.get_league()
+        _team2 = _lg.to_team(yahoo_fantasy.TEAM_ID)
+        _roster2 = _team2.roster()
+        players_with_names = [(p, p.get("name", "")) for p in _roster2 if p.get("name", "")]
+        ctx_futures = {name: _workflow_pool.submit(get_player_context, name) for _, name in players_with_names}
+        for p, name in players_with_names:
+            try:
+                ctx = ctx_futures[name].result(timeout=15)
+            except Exception:
+                continue
+            if ctx.get("flags") or ctx.get("injury_severity"):
+                entry = {"name": name, "status": p.get("status", "")}
+                if ctx.get("flags"):
+                    entry["flags"] = ctx.get("flags")
+                if ctx.get("injury_severity"):
+                    entry["injury_severity"] = ctx.get("injury_severity")
+                if ctx.get("headlines"):
+                    entry["latest_headline"] = ctx.get("headlines", [{}])[0].get("title", "")
+                reddit = ctx.get("reddit", {})
+                if reddit.get("mentions", 0) >= 3:
+                    entry["reddit"] = reddit
+                roster_context.append(entry)
+    except Exception as e:
+        print("Warning: roster context for morning briefing failed: " + str(e))
+
+    return {
+        "action_items": action_items,
+        "injury": injury,
+        "lineup": lineup,
+        "matchup": matchup,
+        "strategy": strategy,
+        "whats_new": whats_new,
+        "waiver_batters": waiver_b,
+        "waiver_pitchers": waiver_p,
+        "edit_date": edit_date,
+        "roster_context": roster_context,
+    }
+
+
 @app.route("/api/workflow/morning-briefing")
 def workflow_morning_briefing():
-    timeout = int(request.args.get("timeout", "38"))
-    def _run_briefing():
-        injury = _safe_call(season_manager.cmd_injury_report)
-        lineup = _safe_call(season_manager.cmd_lineup_optimize)
-        matchup = _safe_call(yahoo_fantasy.cmd_matchup_detail)
-        strategy = _safe_call(season_manager.cmd_matchup_strategy)
-        whats_new = _safe_call(season_manager.cmd_whats_new)
-        waiver_b = _safe_call(season_manager.cmd_waiver_analyze, ["B", "5"])
-        waiver_p = _safe_call(season_manager.cmd_waiver_analyze, ["P", "5"])
-
-        action_items = _synthesize_morning_actions(
-            injury, lineup, whats_new, waiver_b, waiver_p
-        )
-
-        # Include next lineup edit date
-        edit_date = None
-        _lg = None
-        try:
-            _sc, _gm, _lg = yahoo_fantasy.get_league()
-            edit_date = str(_lg.edit_date())
-        except Exception:
-            pass
-
-        # Roster player context (news/injuries/streaks for rostered players)
-        roster_context = []
-        try:
-            from news import get_player_context
-            if not _lg:
-                _sc, _gm, _lg = yahoo_fantasy.get_league()
-            _team2 = _lg.to_team(yahoo_fantasy.TEAM_ID)
-            _roster2 = _team2.roster()
-            for p in _roster2:
-                name = p.get("name", "")
-                if not name:
-                    continue
-                ctx = get_player_context(name)
-                if ctx.get("flags") or ctx.get("injury_severity"):
-                    entry = {"name": name, "status": p.get("status", "")}
-                    if ctx.get("flags"):
-                        entry["flags"] = ctx.get("flags")
-                    if ctx.get("injury_severity"):
-                        entry["injury_severity"] = ctx.get("injury_severity")
-                    if ctx.get("headlines"):
-                        entry["latest_headline"] = ctx.get("headlines", [{}])[0].get("title", "")
-                    reddit = ctx.get("reddit", {})
-                    if reddit.get("mentions", 0) >= 3:
-                        entry["reddit"] = reddit
-                    roster_context.append(entry)
-        except Exception as e:
-            print("Warning: roster context for morning briefing failed: " + str(e))
-
-        return {
-            "action_items": action_items,
-            "injury": injury,
-            "lineup": lineup,
-            "matchup": matchup,
-            "strategy": strategy,
-            "whats_new": whats_new,
-            "waiver_batters": waiver_b,
-            "waiver_pitchers": waiver_p,
-            "edit_date": edit_date,
-            "roster_context": roster_context,
-        }
-
-    try:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            future = pool.submit(_run_briefing)
-            try:
-                result = future.result(timeout=timeout)
-            except concurrent.futures.TimeoutError:
-                return safe_jsonify({"error": "Morning briefing timed out after " + str(timeout) + "s. Try individual endpoints instead."}, 504)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("wf-morning-briefing", _run_briefing, 300)
 
 
 @app.route("/api/workflow/league-landscape")
 def workflow_league_landscape():
     def _run():
-        standings = _safe_call(yahoo_fantasy.cmd_standings)
-        pace = _safe_call(season_manager.cmd_season_pace)
-        power = _safe_call(season_manager.cmd_power_rankings)
-        pulse = _safe_call(yahoo_fantasy.cmd_league_pulse)
-        transactions = _safe_call(yahoo_fantasy.cmd_transactions, ["", "15"])
-        trade_finder = _safe_call(season_manager.cmd_trade_finder)
-        scoreboard = _safe_call(yahoo_fantasy.cmd_scoreboard)
+        futures = {
+            "standings": _workflow_pool.submit(_safe_call, yahoo_fantasy.cmd_standings),
+            "pace": _workflow_pool.submit(_safe_call, season_manager.cmd_season_pace),
+            "power": _workflow_pool.submit(_safe_call, season_manager.cmd_power_rankings),
+            "pulse": _workflow_pool.submit(_safe_call, yahoo_fantasy.cmd_league_pulse),
+            "transactions": _workflow_pool.submit(_safe_call, yahoo_fantasy.cmd_transactions, ["", "15"]),
+            "trade_finder": _workflow_pool.submit(_safe_call, season_manager.cmd_trade_finder),
+            "scoreboard": _workflow_pool.submit(_safe_call, yahoo_fantasy.cmd_scoreboard),
+        }
         return {
-            "standings": standings,
-            "pace": pace,
-            "power_rankings": power,
-            "league_pulse": pulse,
-            "transactions": transactions,
-            "trade_finder": trade_finder,
-            "scoreboard": scoreboard,
+            "standings": _get_future(futures["standings"]),
+            "pace": _get_future(futures["pace"]),
+            "power_rankings": _get_future(futures["power"]),
+            "league_pulse": _get_future(futures["pulse"]),
+            "transactions": _get_future(futures["transactions"]),
+            "trade_finder": _get_future(futures["trade_finder"]),
+            "scoreboard": _get_future(futures["scoreboard"]),
         }
     return _cached_endpoint("wf-landscape", _run, 600)
 
@@ -1936,10 +1949,16 @@ def _synthesize_roster_issues(injury, lineup, roster, busts):
 @app.route("/api/workflow/roster-health")
 def workflow_roster_health():
     def _run():
-        injury = _safe_call(season_manager.cmd_injury_report)
-        lineup = _safe_call(season_manager.cmd_lineup_optimize)
-        roster = _safe_call(yahoo_fantasy.cmd_roster)
-        busts = _safe_call(intel.cmd_busts, ["B", "20"])
+        futures = {
+            "injury": _workflow_pool.submit(_safe_call, season_manager.cmd_injury_report),
+            "lineup": _workflow_pool.submit(_safe_call, season_manager.cmd_lineup_optimize),
+            "roster": _workflow_pool.submit(_safe_call, yahoo_fantasy.cmd_roster),
+            "busts": _workflow_pool.submit(_safe_call, intel.cmd_busts, ["B", "20"]),
+        }
+        injury = _get_future(futures["injury"])
+        lineup = _get_future(futures["lineup"])
+        roster = _get_future(futures["roster"])
+        busts = _get_future(futures["busts"])
         issues = _synthesize_roster_issues(injury, lineup, roster, busts)
         return {
             "issues": issues,
@@ -1994,10 +2013,16 @@ def _synthesize_waiver_pairs(waiver_b, waiver_p, cat_check=None):
 def workflow_waiver_recommendations():
     count = request.args.get("count", "5")
     def _run():
-        cat_check = _safe_call(season_manager.cmd_category_check)
-        waiver_b = _safe_call(season_manager.cmd_waiver_analyze, ["B", count])
-        waiver_p = _safe_call(season_manager.cmd_waiver_analyze, ["P", count])
-        roster = _safe_call(yahoo_fantasy.cmd_roster)
+        futures = {
+            "cat_check": _workflow_pool.submit(_safe_call, season_manager.cmd_category_check),
+            "waiver_b": _workflow_pool.submit(_safe_call, season_manager.cmd_waiver_analyze, ["B", count]),
+            "waiver_p": _workflow_pool.submit(_safe_call, season_manager.cmd_waiver_analyze, ["P", count]),
+            "roster": _workflow_pool.submit(_safe_call, yahoo_fantasy.cmd_roster),
+        }
+        cat_check = _get_future(futures["cat_check"])
+        waiver_b = _get_future(futures["waiver_b"])
+        waiver_p = _get_future(futures["waiver_p"])
+        roster = _get_future(futures["roster"])
         pairs = _synthesize_waiver_pairs(waiver_b, waiver_p, cat_check=cat_check)
         return {
             "pairs": pairs,
@@ -2248,42 +2273,48 @@ def workflow_trade_analysis():
             except Exception:
                 get_players.append({"name": name, "_error": "Player not found in projections"})
 
-        # Run trade eval if we have IDs
-        trade_eval = None
-        if give_ids and get_ids:
-            try:
-                trade_eval = season_manager.cmd_trade_eval(
-                    [",".join(give_ids), ",".join(get_ids)], as_json=True
-                )
-            except Exception as e:
-                trade_eval = {"_error": str(e)}
-
-        # --- Positional awareness (Fix #6) ---
-        positional_impact = _compute_positional_impact(roster_players, get_players, give_players)
-
-        # --- Category-level impact (Fix #7) ---
-        category_impact = _compute_category_impact(give_players, get_players)
-
-        # Get intel for each player
+        # Phase 2: parallel — trade_eval, intel reports, news context all at once
         all_names = give_names + get_names
-        intel_data = {}
-        for name in all_names:
-            try:
-                intel_data[name] = intel.cmd_player_report([name], as_json=True)
-            except Exception:
-                intel_data[name] = {"_error": "unavailable"}
 
-        # Get news context for each player
-        news_context = {}
+        trade_eval_future = None
+        if give_ids and get_ids:
+            trade_eval_future = _workflow_pool.submit(
+                _safe_call, season_manager.cmd_trade_eval,
+                [",".join(give_ids), ",".join(get_ids)]
+            )
+
+        intel_futures = {
+            name: _workflow_pool.submit(_safe_call, intel.cmd_player_report, [name])
+            for name in all_names
+        }
+
         try:
             from news import get_player_context
-            for name in all_names:
-                try:
-                    news_context[name] = get_player_context(name)
-                except Exception:
-                    news_context[name] = {"headlines": [], "transactions": [], "flags": []}
+            news_futures = {
+                name: _workflow_pool.submit(get_player_context, name)
+                for name in all_names
+            }
         except Exception:
-            pass
+            news_futures = {}
+
+        # Phase 3: gather results
+        trade_eval = _get_future(trade_eval_future) if trade_eval_future else None
+
+        intel_data = {}
+        for name in all_names:
+            intel_data[name] = _get_future(intel_futures[name])
+
+        news_context = {}
+        for name in all_names:
+            if name in news_futures:
+                result = _get_future(news_futures[name])
+                news_context[name] = result if not isinstance(result, dict) or "_error" not in result else {"headlines": [], "transactions": [], "flags": []}
+            else:
+                news_context[name] = {"headlines": [], "transactions": [], "flags": []}
+
+        # Phase 4: compute impacts (depend on trade_eval + player data)
+        positional_impact = _compute_positional_impact(roster_players, get_players, give_players)
+        category_impact = _compute_category_impact(give_players, get_players)
 
         return safe_jsonify({
             "give_players": give_players,
