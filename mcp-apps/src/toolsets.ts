@@ -43,6 +43,7 @@ export const TOOLSETS: Record<string, string[]> = {
     "yahoo_add",
     "yahoo_drop",
     "yahoo_swap",
+    "yahoo_transactions",
     "yahoo_transaction_trends",
     "yahoo_il_stash_advisor",
     "yahoo_waiver_deadline_prep",
