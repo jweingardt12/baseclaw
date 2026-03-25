@@ -64,7 +64,7 @@ export function registerStandingsTools(server: McpServer, distDir: string, enabl
     server,
     "yahoo_standings",
     {
-      description: "Use this to see current league standings with win-loss records, points, and team rankings. Returns all teams sorted by rank. Use yahoo_season_pace instead when you want projected final records and playoff probability, or yahoo_power_rankings for roster-strength-based rankings.",
+      description: "Use this to see current league standings with win-loss records, points, and team rankings. Returns all teams sorted by rank.",
       annotations: { readOnlyHint: true },
       _meta: { ui: { resourceUri: STANDINGS_URI } },
     },
@@ -91,7 +91,7 @@ export function registerStandingsTools(server: McpServer, distDir: string, enabl
     server,
     "yahoo_matchups",
     {
-      description: "Use this to see all head-to-head matchup pairings for a given week across the league. Leave week empty for current week. Returns team pairings and matchup status. Use yahoo_my_matchup instead when you want detailed category scores for your own matchup, or yahoo_matchup_strategy for strategic advice.",
+      description: "Use this to see all head-to-head matchup pairings for a given week across the league. Leave week empty for current week. Returns team pairings and matchup status.",
       inputSchema: { week: z.string().describe("Week number, empty for current week").default("") },
       annotations: { readOnlyHint: true },
       _meta: { ui: { resourceUri: STANDINGS_URI } },
@@ -122,7 +122,7 @@ export function registerStandingsTools(server: McpServer, distDir: string, enabl
     server,
     "yahoo_my_matchup",
     {
-      description: "Use this to see how you're doing in this week's head-to-head matchup. Shows your score vs your opponent across every stat category with running totals. Use yahoo_matchup_strategy for deeper category-level advice, or yahoo_scout_opponent to analyze their roster.",
+      description: "Use this to see how you're doing in this week's head-to-head matchup. Shows your score vs your opponent across every stat category with running totals.",
       annotations: { readOnlyHint: true },
       _meta: { ui: { resourceUri: STANDINGS_URI } },
     },
@@ -152,7 +152,7 @@ export function registerStandingsTools(server: McpServer, distDir: string, enabl
     server,
     "yahoo_league_context",
     {
-      description: "Use this to load the league profile at the start of a session: waiver type (FAAB/priority), scoring format (H2H/roto), stat categories, roster slots, and FAAB balance. Returns format-specific behavioral notes for the agent. Use yahoo_standings instead when you want current win-loss records, or yahoo_category_check for your team's category performance.",
+      description: "Use this to load the league profile at the start of a session: waiver type (FAAB/priority), scoring format (H2H/roto), stat categories, roster slots, and FAAB balance. Returns format-specific behavioral notes for the agent.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -251,7 +251,7 @@ export function registerStandingsTools(server: McpServer, distDir: string, enabl
     server,
     "yahoo_transaction_trends",
     {
-      description: "Use this to see the most-added and most-dropped players across ALL of Yahoo Fantasy (not your league). Shows global ownership trends and deltas. Only use this when the user explicitly asks about Yahoo-wide trends, most popular pickups globally, or ownership percentages. If they ask about 'league transactions' or 'recent moves', use yahoo_transactions instead — that shows YOUR league's actual moves.",
+      description: "Use this to see the most-added and most-dropped players across ALL of Yahoo Fantasy (not your league). Shows global ownership trends and deltas. Only use this when the user explicitly asks about Yahoo-wide trends, most popular pickups globally, or ownership percentages.",
       inputSchema: {
         limit: z.number().default(20).describe("Max results per list to return (default 20)"),
         offset: z.number().default(0).describe("Offset for pagination"),
@@ -302,7 +302,7 @@ export function registerStandingsTools(server: McpServer, distDir: string, enabl
     server,
     "yahoo_league_pulse",
     {
-      description: "Use this to see how active each manager in the league has been — total moves, trades, and add/drops per team sorted by most active. Helps identify dormant teams to exploit and active competitors to watch. Use yahoo_transactions instead when you want the specific player moves, or yahoo_league_landscape for a full strategic overview.",
+      description: "Use this to see how active each manager in the league has been — total moves, trades, and add/drops per team sorted by most active. Helps identify dormant teams to exploit and active competitors to watch.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -337,7 +337,7 @@ export function registerStandingsTools(server: McpServer, distDir: string, enabl
     server,
     "yahoo_power_rankings",
     {
-      description: "Use this to rank all league teams by roster strength using multi-layer analysis: adjusted z-scores (projections + statcast + regression + trends), standings, and quality. Use yahoo_league_intel for the full picture with top performers, team profiles, and trade fits. Use yahoo_standings for just win-loss records.",
+      description: "Use this to rank all league teams by roster strength using multi-layer analysis: adjusted z-scores (projections + statcast + regression + trends), standings, and quality.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -378,7 +378,7 @@ export function registerStandingsTools(server: McpServer, distDir: string, enabl
     server,
     "yahoo_league_intel",
     {
-      description: "Use this to get a comprehensive league intelligence report with multi-layer value analysis: adjusted z-scores (projections + statcast quality + regression signals + hot/cold trends), power rankings, top performers across all teams, team profiles with category strengths/weaknesses, and trade fit analysis. Best tool for 'who has who', 'which teams are strong/weak', 'who should I trade with', and 'who is overperforming/underperforming'. Use yahoo_positional_ranks for Yahoo's native position grades, or yahoo_scout_opponent for current-week matchup scouting.",
+      description: "Use this to get a comprehensive league intelligence report with multi-layer value analysis: adjusted z-scores (projections + statcast quality + regression signals + hot/cold trends), power rankings, top performers across all teams, team profiles with category strengths/weaknesses, and trade fit analysis. Best tool for 'who has who', 'which teams are strong/weak', 'who should I trade with', and 'who is overperforming/underperforming'.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -548,7 +548,7 @@ export function registerStandingsTools(server: McpServer, distDir: string, enabl
     server,
     "yahoo_season_pace",
     {
-      description: "Use this to see projected final records, playoff probability, and magic numbers for every team in the league. Shows current pace, playoff status (clinched/in contention/eliminated), and your position. Use yahoo_standings instead for current records only, or yahoo_playoff_planner for a detailed action plan to reach the playoffs.",
+      description: "Use this to see projected final records, playoff probability, and magic numbers for every team in the league. Shows current pace, playoff status (clinched/in contention/eliminated), and your position.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -584,7 +584,7 @@ export function registerStandingsTools(server: McpServer, distDir: string, enabl
     server,
     "yahoo_positional_ranks",
     {
-      description: "Use this to see how every team ranks at each position (C, 1B, 2B, SS, 3B, OF, SP, RP) with strong/neutral/weak grades and recommended trade partners. Returns starters, bench players, and complementary trade opportunities for each team. Use yahoo_power_rankings instead for aggregate roster strength, or yahoo_trade_pipeline to act on the trade partner suggestions.",
+      description: "Use this to see how every team ranks at each position (C, 1B, 2B, SS, 3B, OF, SP, RP) with strong/neutral/weak grades and recommended trade partners. Returns starters, bench players, and complementary trade opportunities for each team.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },

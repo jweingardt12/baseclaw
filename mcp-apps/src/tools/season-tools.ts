@@ -97,7 +97,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_lineup_optimize",
     {
-      description: "Use this to optimize today's lineup by benching off-day players and starting active bench players. Set apply=true to execute changes, false for preview. Returns suggested swaps and off-day conflicts. Use yahoo_auto_lineup instead for a fully autonomous version that also checks injuries, or yahoo_set_lineup for manual player-to-position moves.",
+      description: "Use this to optimize today's lineup by benching off-day players and starting active bench players. Set apply=true to execute changes, false for preview. Returns suggested swaps and off-day conflicts.",
       inputSchema: { apply: z.boolean().describe("Set true to apply lineup changes, false for preview only").default(false) },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
       _meta: { ui: { resourceUri: SEASON_URI } },
@@ -145,7 +145,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_category_check",
     {
-      description: "Use this to see where your team ranks in each scoring category relative to the league. Returns your value, rank, and total teams for each category with strong/weak flags. Use yahoo_category_trends instead when you want to see how your category ranks have changed over time, or yahoo_punt_advisor for strategic punt/target recommendations.",
+      description: "Use this to see where your team ranks in each scoring category relative to the league. Returns your value, rank, and total teams for each category with strong/weak flags.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -181,7 +181,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_injury_report",
     {
-      description: "Use this to audit your roster for injury problems: injured players in active slots, healthy players stuck on IL, and injured bench players. Returns severity ratings (minor/moderate/severe) with injury details. Use yahoo_roster_health_check instead for a broader audit that also catches bust candidates and off-day conflicts, or yahoo_il_stash_advisor for stash-vs-drop decisions.",
+      description: "Use this to audit your roster for injury problems: injured players in active slots, healthy players stuck on IL, and injured bench players. Returns severity ratings (minor/moderate/severe) with injury details.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -231,7 +231,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_streaming",
     {
-      description: "Use this to find the best pitchers to stream this week. Analyzes pitcher quality (SIERA, Stuff+), matchup strength (opponent batting stats), and schedule (two-start pitchers). Returns ranked recommendations with multi-factor scores. Best called Thursday or before the upcoming week. Use yahoo_pitcher_matchup instead when you want matchup grades for your own rostered starters.",
+      description: "Use this to find the best pitchers to stream this week. Analyzes pitcher quality (SIERA, Stuff+), matchup strength (opponent batting stats), and schedule (two-start pitchers). Returns ranked recommendations with multi-factor scores. Best called Thursday or before the upcoming week.",
       inputSchema: { week: z.string().describe("Week number, empty for current week").default("") },
       annotations: { readOnlyHint: true },
       _meta: {},
@@ -280,7 +280,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_scout_opponent",
     {
-      description: "Use this to scout your current week's opponent — their roster strengths, weaknesses, and specific counter-strategies. Returns the score, strategy tips, and exploitable weaknesses. Use yahoo_matchup_strategy instead when you want category-level classification (win/lose/toss-up) with volatility analysis, or yahoo_my_matchup for just the raw score comparison.",
+      description: "Use this to scout your current week's opponent — their roster strengths, weaknesses, and specific counter-strategies. Returns the score, strategy tips, and exploitable weaknesses.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -313,7 +313,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_matchup_strategy",
     {
-      description: "Use this to get deep strategic advice for your current matchup. Classifies each category as WIN/LOSE/TOSS-UP using volatility thresholds, with target/protect/concede/lock buckets and concrete action recommendations. Focus resources on toss-up categories. Use yahoo_scout_opponent instead for a simpler roster analysis of your opponent, or yahoo_my_matchup for just the raw score.",
+      description: "Use this to get deep strategic advice for your current matchup. Classifies each category as WIN/LOSE/TOSS-UP using volatility thresholds, with target/protect/concede/lock buckets and concrete action recommendations. Focus resources on toss-up categories.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -351,7 +351,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_set_lineup",
     {
-      description: "Use this to manually move specific players to specific roster positions. Each move takes a player_id and target position (C, 1B, 2B, SS, 3B, OF, Util, BN, IL, SP, RP). Use yahoo_lineup_optimize instead for automatic lineup optimization, or yahoo_auto_lineup for a fully autonomous version.",
+      description: "Use this to manually move specific players to specific roster positions. Each move takes a player_id and target position (C, 1B, 2B, SS, 3B, OF, Util, BN, IL, SP, RP).",
       inputSchema: {
         moves: z.array(z.object({ player_id: z.string().describe("Yahoo player ID"), position: z.string().describe("Target roster position (e.g. C, 1B, OF, BN, IL)") })).describe("List of player moves to execute"),
       },
@@ -387,7 +387,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_pending_trades",
     {
-      description: "Use this to see all pending incoming and outgoing trade proposals in your league. Returns trade details with player names, IDs, team names, and transaction keys needed for yahoo_accept_trade or yahoo_reject_trade. Use yahoo_trade_analysis instead when you want to evaluate whether a pending trade is worth accepting.",
+      description: "Use this to see all pending incoming and outgoing trade proposals in your league. Returns trade details with player names, IDs, team names, and transaction keys needed for yahoo_accept_trade or yahoo_reject_trade.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -427,7 +427,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_propose_trade",
     {
-      description: "Use this to send a trade proposal to another team. Requires the target team key, comma-separated player IDs you are offering, and comma-separated player IDs you want. Use yahoo_trade_analysis first to evaluate the trade value, or yahoo_trade_pipeline to find the best trade partners and packages automatically.",
+      description: "Use this to send a trade proposal to another team. Requires the target team key, comma-separated player IDs you are offering, and comma-separated player IDs you want.",
       inputSchema: {
         their_team_key: z.string().describe("Target team key (e.g. 469.l.16960.t.5)"),
         your_player_ids: z.string().describe("Comma-separated Yahoo player IDs you are offering"),
@@ -457,7 +457,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_accept_trade",
     {
-      description: "Use this to accept a pending trade offer using its transaction key from yahoo_pending_trades. Permanently exchanges the players between teams. Use yahoo_trade_analysis first to evaluate whether the trade improves your roster, or yahoo_reject_trade to decline the offer.",
+      description: "Use this to accept a pending trade offer using its transaction key from yahoo_pending_trades. Permanently exchanges the players between teams.",
       inputSchema: { transaction_key: z.string().describe("Transaction key from pending trades"), note: z.string().describe("Optional response message").default("") },
       annotations: { readOnlyHint: false },
       _meta: { ui: { resourceUri: SEASON_URI } },
@@ -480,7 +480,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_reject_trade",
     {
-      description: "Use this to reject and permanently dismiss a pending trade offer using its transaction key from yahoo_pending_trades. The proposing team will be notified of the rejection. Use yahoo_accept_trade instead to accept the offer, or yahoo_trade_analysis to evaluate the trade first.",
+      description: "Use this to reject and permanently dismiss a pending trade offer using its transaction key from yahoo_pending_trades. The proposing team will be notified of the rejection.",
       inputSchema: { transaction_key: z.string().describe("Transaction key from pending trades"), note: z.string().describe("Optional response message").default("") },
       annotations: { readOnlyHint: false, destructiveHint: true },
       _meta: { ui: { resourceUri: SEASON_URI } },
@@ -505,7 +505,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_whats_new",
     {
-      description: "Use this to get a quick digest of everything new: roster injuries, pending trade offers, recent league transactions, trending pickups, and prospect call-ups. Returns counts and summaries for each section. Use yahoo_morning_briefing instead for a comprehensive daily report with action items, or yahoo_transactions for detailed league move history.",
+      description: "Use this to get a quick digest of everything new: roster injuries, pending trade offers, recent league transactions, trending pickups, and prospect call-ups. Returns counts and summaries for each section.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -559,7 +559,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_week_planner",
     {
-      description: "Use this to see a day-by-day schedule grid for every player on your roster this week. Identifies off-days, two-start pitchers, and schedule density. Use yahoo_lineup_optimize instead when you want automatic swap suggestions for today, or yahoo_streaming to find streamable pitchers for the week.",
+      description: "Use this to see a day-by-day schedule grid for every player on your roster this week. Identifies off-days, two-start pitchers, and schedule density.",
       inputSchema: { week: z.string().describe("Week number, empty for current week").default("") },
       annotations: { readOnlyHint: true },
       _meta: {},
@@ -594,7 +594,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_closer_monitor",
     {
-      description: "Use this to monitor saves and closer situations across the league — your rostered closers, available closers sorted by ownership %, and MLB saves leaders. Use yahoo_streaming instead when you want to find starting pitcher streamers, or yahoo_free_agents with pos_type='P' for a broader pitcher search.",
+      description: "Use this to monitor saves and closer situations across the league — your rostered closers, available closers sorted by ownership %, and MLB saves leaders.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -640,7 +640,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_pitcher_matchup",
     {
-      description: "Use this to see matchup grades for your rostered starting pitchers based on opponent team batting stats. Shows next start date, opponent, home/away, matchup grade, and two-start flags. Use yahoo_streaming instead when you want to find free-agent pitchers to stream, or yahoo_week_planner for the full roster schedule grid.",
+      description: "Use this to see matchup grades for your rostered starting pitchers based on opponent team batting stats. Shows next start date, opponent, home/away, matchup grade, and two-start flags.",
       inputSchema: { week: z.string().describe("Week number, empty for current week").default("") },
       annotations: { readOnlyHint: true },
       _meta: {},
@@ -677,7 +677,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_roster_stats",
     {
-      description: "Use this to see full fantasy stats for every player on a roster for a given period (season or specific week). Optionally specify a team_key to view another team's stats. Returns per-player stat lines for all scoring categories. Use yahoo_player_stats instead when you want stats for a single specific player, or yahoo_category_check for aggregate category rankings.",
+      description: "Use this to see full fantasy stats for every player on a roster for a given period (season or specific week). Optionally specify a team_key to view another team's stats. Returns per-player stat lines for all scoring categories.",
       inputSchema: {
         period: z.string().describe("Stats period: season or week").default("season"),
         week: z.string().describe("Week number (optional, required when period=week)").default(""),
@@ -723,7 +723,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_faab_recommend",
     {
-      description: "Use this when you need a FAAB bid recommendation for a specific player. Returns recommended bid with budget pacing (season phase multiplier, contender detection), player tier classification, and bid range. Use yahoo_waiver_claim to submit the actual claim after getting the recommendation, or yahoo_waiver_deadline_prep for batch recommendations before the waiver deadline.",
+      description: "Use this when you need a FAAB bid recommendation for a specific player. Returns recommended bid with budget pacing (season phase multiplier, contender detection), player tier classification, and bid range.",
       inputSchema: { player_name: z.string().describe("Name of the player to bid on") },
       annotations: { readOnlyHint: true },
       _meta: {},
@@ -784,7 +784,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_ownership_trends",
     {
-      description: "Use this to see how a player's ownership percentage has changed over time with 7-day and 30-day deltas and direction (rising/falling/stable). Pulls from season.db historical snapshots. Use yahoo_percent_owned instead for a simple current ownership lookup, or yahoo_transaction_trends for the most-added/dropped players league-wide.",
+      description: "Use this to see how a player's ownership percentage has changed over time with 7-day and 30-day deltas and direction (rising/falling/stable). Pulls from season.db historical snapshots.",
       inputSchema: { player_name: z.string().describe("Name of the player to look up") },
       annotations: { readOnlyHint: true },
       _meta: {},
@@ -824,7 +824,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_category_trends",
     {
-      description: "Use this to track how your category ranks have changed over the season — shows current, best, worst, and trend direction (improving/declining/stable) for each category. Pulls from season.db historical snapshots. Use yahoo_category_check instead for a one-time snapshot of current category ranks, or yahoo_punt_advisor for strategic punt/target recommendations.",
+      description: "Use this to track how your category ranks have changed over the season — shows current, best, worst, and trend direction (improving/declining/stable) for each category. Pulls from season.db historical snapshots.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -869,7 +869,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_punt_advisor",
     {
-      description: "Use this to get strategic advice on which categories to target and which to punt. Each category is rated with a punt viability score, risk level, and correlation warnings (e.g., punting ERA also hurts WHIP). Format-aware: punting disabled in roto leagues. Use yahoo_category_check instead for a simple rank snapshot, or yahoo_season_checkpoint for a broader monthly strategic assessment.",
+      description: "Use this to get strategic advice on which categories to target and which to punt. Each category is rated with a punt viability score, risk level, and correlation warnings (e.g., punting ERA also hurts WHIP). Format-aware: punting disabled in roto leagues.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -926,7 +926,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_il_stash_advisor",
     {
-      description: "Use this to evaluate whether to stash or drop injured players on your IL, and identify valuable IL-eligible free agents worth stashing. Returns z-score values, tier classifications, and stash/drop recommendations with reasoning. Use yahoo_injury_report instead for a simpler list of injured players, or yahoo_roster_health_check for a broader roster audit.",
+      description: "Use this to evaluate whether to stash or drop injured players on your IL, and identify valuable IL-eligible free agents worth stashing. Returns z-score values, tier classifications, and stash/drop recommendations with reasoning.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -980,7 +980,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_optimal_moves",
     {
-      description: "Use this to find the optimal chain of add/drop moves that maximizes your roster's total z-score value. Returns ranked moves with drop candidate, add candidate, z-improvement, and category impact for each swap. Use yahoo_waiver_recommendations instead when you want category-focused add/drop pairs, or yahoo_swap to execute a recommended move.",
+      description: "Use this to find the optimal chain of add/drop moves that maximizes your roster's total z-score value. Returns ranked moves with drop candidate, add candidate, z-improvement, and category impact for each swap.",
       inputSchema: { count: z.number().describe("Number of moves to return (1-10)").default(5) },
       annotations: { readOnlyHint: true },
       _meta: {},
@@ -1045,7 +1045,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_playoff_planner",
     {
-      description: "Use this to calculate a concrete path to the playoffs — shows category gaps to close, games back, playoff probability, and prioritized recommended actions (trades, waiver adds, drops). Returns target and punt category suggestions. Use yahoo_season_pace instead for a simpler league-wide playoff projection, or yahoo_season_checkpoint for a monthly strategic assessment.",
+      description: "Use this to calculate a concrete path to the playoffs — shows category gaps to close, games back, playoff probability, and prioritized recommended actions (trades, waiver adds, drops). Returns target and punt category suggestions.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -1108,7 +1108,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_trash_talk",
     {
-      description: "Use this when the user wants to trash-talk their current matchup opponent. Generates contextual lines based on score, standings, and matchup data at three intensity levels: friendly, competitive, or savage. Use yahoo_scout_opponent instead when you want actual strategic analysis of the opponent's roster.",
+      description: "Use this when the user wants to trash-talk their current matchup opponent. Generates contextual lines based on score, standings, and matchup data at three intensity levels: friendly, competitive, or savage.",
       inputSchema: { intensity: z.string().describe("Trash talk intensity: friendly, competitive, or savage").default("competitive") },
       annotations: { readOnlyHint: true },
       _meta: {},
@@ -1143,7 +1143,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_rival_history",
     {
-      description: "Use this to see your all-time head-to-head record against league opponents. Leave opponent empty for an overview of all rivals, or specify a team name for detailed week-by-week history with category edges and narrative. Use yahoo_scout_opponent instead when you want strategy for the current week's matchup.",
+      description: "Use this to see your all-time head-to-head record against league opponents. Leave opponent empty for an overview of all rivals, or specify a team name for detailed week-by-week history with category edges and narrative.",
       inputSchema: { opponent: z.string().describe("Opponent team name to filter to (empty for all rivals overview)").default("") },
       annotations: { readOnlyHint: true },
       _meta: {},
@@ -1214,7 +1214,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_achievements",
     {
-      description: "Use this to see your fantasy baseball achievements and milestones for the season — earned and available trophies, record, rank, and progress toward each achievement. Use yahoo_weekly_narrative instead for a prose recap of your most recent week, or yahoo_weekly_digest for a structured end-of-week summary.",
+      description: "Use this to see your fantasy baseball achievements and milestones for the season — earned and available trophies, record, rank, and progress toward each achievement.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -1251,7 +1251,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_weekly_narrative",
     {
-      description: "Use this to get a narrative prose recap of your most recent week — includes matchup result, per-category breakdown, MVP category, biggest weakness, standings movement, and key roster moves. Use yahoo_weekly_digest instead for a structured end-of-week summary with achievements, or yahoo_achievements for cumulative season milestones.",
+      description: "Use this to get a narrative prose recap of your most recent week — includes matchup result, per-category breakdown, MVP category, biggest weakness, standings movement, and key roster moves.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },

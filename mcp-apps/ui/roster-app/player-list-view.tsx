@@ -1,17 +1,16 @@
-import React, { useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@plexui/ui/components/Button";
 import { Input } from "@plexui/ui/components/Input";
 import { Badge } from "@plexui/ui/components/Badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { Dialog } from "@plexui/ui/components/Dialog";
-import { Subheading } from "../components/heading";
-import { Text } from "../components/text";
+import { EmptyMessage } from "@plexui/ui/components/EmptyMessage";
+import { LoadingIndicator } from "@plexui/ui/components/Indicator";
 import { useCallTool } from "../shared/use-call-tool";
-import { PlayerRow, PlayerRowData } from "../shared/player-row";
-import { AiInsight } from "../shared/ai-insight";
-import { Search, UserPlus, Loader2, ArrowUp, TrendingDown } from "@/shared/icons";
+import { PlayerRowData } from "../shared/player-row";
 import { PlayerName } from "../shared/player-name";
 import { IntelBadge } from "../shared/intel-badge";
+import { TeamLogo } from "../shared/team-logo";
 
 var BATTER_POSITIONS = ["B", "C", "1B", "2B", "SS", "3B", "OF", "Util"];
 var PITCHER_POSITIONS = ["P", "SP", "RP"];
@@ -37,6 +36,23 @@ interface PlayerListData {
 
 type SortDir = "asc" | "desc";
 
+function getSortValue(p: PlayerRowData, col: string): any {
+  if (col === "name") return (p.name || "").toLowerCase();
+  if (col === "percent_owned") return p.percent_owned != null ? p.percent_owned : (p.pct != null ? p.pct : -1);
+  if (col === "percent_started") return p.percent_started != null ? p.percent_started : -1;
+  if (col === "preseason_pick") return p.preseason_pick != null ? p.preseason_pick : 9999;
+  if (col === "current_pick") return p.current_pick != null ? p.current_pick : 9999;
+  if (col === "opponent") return p.opponent || "";
+  if (col.indexOf("stat_") === 0) {
+    var statKey = col.slice(5);
+    var val = p.stats ? p.stats[statKey] : undefined;
+    if (val == null) return -99999;
+    var num = parseFloat(String(val));
+    return isNaN(num) ? -99999 : num;
+  }
+  return 0;
+}
+
 export function PlayerListView({ data, app, navigate }: { data: PlayerListData; app: any; navigate: (data: any) => void }) {
   var { callTool, loading } = useCallTool(app);
   var [activePos, setActivePos] = useState(data.pos_type || "B");
@@ -47,8 +63,6 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
   var [sortDir, setSortDir] = useState<SortDir>("desc");
 
   var rawPlayers = data.players || data.results || [];
-
-  // Sort players
   var players = rawPlayers.slice().sort(function (a, b) {
     var aVal = getSortValue(a, sortCol);
     var bVal = getSortValue(b, sortCol);
@@ -72,7 +86,7 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
     }
   }, [callTool, navigate]);
 
-  var handleSearch = useCallback(async function (e: React.FormEvent) {
+  var handleSearch = useCallback(async function (e: any) {
     e.preventDefault();
     if (!searchQuery.trim()) return;
     var result = await callTool("yahoo_search", { player_name: searchQuery });
@@ -104,7 +118,6 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
       setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
       setSortCol(col);
-      // Default desc for numeric columns, asc for names
       setSortDir(col === "name" ? "asc" : "desc");
     }
   }, [sortCol, sortDir]);
@@ -115,11 +128,8 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
 
   return (
     <div className="space-y-4">
-      <Subheading>{title}</Subheading>
+      <h2 className="text-lg font-semibold">{title}</h2>
 
-      <AiInsight recommendation={data.ai_recommendation} />
-
-      {/* Position filter pills */}
       <div className="flex flex-wrap gap-1.5">
         {ALL_POSITIONS.map(function (pos) {
           var label = pos === "B" ? "All Batters" : pos === "P" ? "All Pitchers" : pos;
@@ -140,54 +150,40 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
         })}
       </div>
 
-      {/* Search bar */}
       <form onSubmit={handleSearch} className="flex gap-2">
         <Input
           placeholder="Search players..."
           value={searchQuery}
-          onChange={function (e: React.ChangeEvent<HTMLInputElement>) { setSearchQuery(e.target.value); }}
+          onChange={function (e: any) { setSearchQuery(e.target.value); }}
         />
         <Button type="submit" color="secondary" disabled={loading}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+          {loading ? <LoadingIndicator size={16} /> : "Search"}
         </Button>
       </form>
 
-      {/* Player table */}
       <div className="relative">
         {loading && (
           <div className="loading-overlay">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <LoadingIndicator size={20} />
           </div>
         )}
         {players.length === 0 ? (
-          <Text>No players found.</Text>
+          <EmptyMessage title="No players found" description="Try a different position or search." />
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableHead col="name" label="Player" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortHead col="name" label="Player" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <TableHead className="hidden sm:table-cell">Pos</TableHead>
-                  <SortableHead col="opponent" label="Opp" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} className="hidden md:table-cell" />
-                  <TableHead className="hidden lg:table-cell text-right">
-                    <span className="cursor-pointer select-none" onClick={function () { handleSort("preseason_pick"); }}>
-                      Pre ADP{sortCol === "preseason_pick" ? (sortDir === "asc" ? " \u2191" : " \u2193") : ""}
-                    </span>
-                  </TableHead>
-                  <TableHead className="hidden lg:table-cell text-right">
-                    <span className="cursor-pointer select-none" onClick={function () { handleSort("current_pick"); }}>
-                      Curr ADP{sortCol === "current_pick" ? (sortDir === "asc" ? " \u2191" : " \u2193") : ""}
-                    </span>
-                  </TableHead>
-                  <SortableHead col="percent_owned" label="%Own" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} className="text-right" />
-                  <SortableHead col="percent_started" label="%Start" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} className="hidden md:table-cell text-right" />
+                  <SortHead col="opponent" label="Opp" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} className="hidden md:table-cell" />
+                  <SortHead col="preseason_pick" label="Pre ADP" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} className="hidden lg:table-cell text-right" />
+                  <SortHead col="current_pick" label="Curr ADP" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} className="hidden lg:table-cell text-right" />
+                  <SortHead col="percent_owned" label="%Own" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} className="text-right" />
+                  <SortHead col="percent_started" label="%Start" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} className="hidden md:table-cell text-right" />
                   {statKeys.map(function (key) {
                     return (
-                      <TableHead key={key} className="hidden lg:table-cell text-right font-mono text-xs">
-                        <span className="cursor-pointer select-none" onClick={function () { handleSort("stat_" + key); }}>
-                          {key}{sortCol === "stat_" + key ? (sortDir === "asc" ? " \u2191" : " \u2193") : ""}
-                        </span>
-                      </TableHead>
+                      <SortHead key={key} col={"stat_" + key} label={key} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} className="hidden lg:table-cell text-right font-mono text-xs" />
                     );
                   })}
                   <TableHead className="w-12">Status</TableHead>
@@ -202,14 +198,14 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
                   } else if (p.positions) {
                     posDisplay = Array.isArray(p.positions) ? p.positions.join(", ") : String(p.positions);
                   }
-
                   var isRostered = (p as any).roster_status && (p as any).roster_status !== "FA";
+                  var hasStatus = p.status && p.status !== "Healthy";
 
                   return (
                     <TableRow key={p.player_id || p.pid} className={isRostered ? "bg-muted/30" : ""}>
                       <TableCell className="font-medium">
                         <span className="flex items-center gap-1 min-w-0">
-                          {p.team && <img src={"https://www.mlbstatic.com/team-logos/" + getTeamId(p.team) + ".svg"} alt="" className="w-4 h-4" onError={function (e: any) { e.target.style.display = "none"; }} />}
+                          {p.team && <TeamLogo abbrev={p.team} size={16} />}
                           <PlayerName name={p.name} playerId={p.player_id || p.pid} mlbId={p.mlb_id} app={app} navigate={navigate} context="free-agents" />
                           {p.intel && <IntelBadge intel={p.intel} size="sm" />}
                         </span>
@@ -246,7 +242,7 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
                         );
                       })}
                       <TableCell>
-                        {p.status && p.status !== "Healthy" ? (
+                        {hasStatus ? (
                           <Badge color="danger" size="sm">{p.status}</Badge>
                         ) : isRostered ? (
                           <Badge color="secondary" size="sm">Rostered</Badge>
@@ -255,7 +251,6 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
                       <TableCell>
                         {!isRostered && (
                           <Button color="secondary" size="xs" onClick={function () { setAddTarget(p); }}>
-                            <UserPlus size={14} />
                             Add
                           </Button>
                         )}
@@ -269,12 +264,11 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
         )}
       </div>
 
-      {/* Footer */}
       <div className="flex items-center justify-between">
-        <Text>{players.length + " players"}</Text>
+        <p className="text-sm text-muted-foreground">{players.length + " players"}</p>
         {!isSearchResult && players.length >= 20 && (
           <Button variant="outline" color="secondary" onClick={handleLoadMore} disabled={loading}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+            {loading ? <LoadingIndicator size={16} /> : null}
             Load More
           </Button>
         )}
@@ -289,7 +283,7 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
           <Dialog.Footer>
             <Button variant="ghost" color="secondary" onClick={function () { setAddTarget(null); }} disabled={loading}>Cancel</Button>
             <Button color="secondary" onClick={handleAdd} disabled={loading}>
-              {loading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
+              {loading ? <LoadingIndicator size={16} /> : null}
               Add
             </Button>
           </Dialog.Footer>
@@ -299,7 +293,7 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
   );
 }
 
-function SortableHead({ col, label, sortCol, sortDir, onSort, className }: {
+function SortHead({ col, label, sortCol, sortDir, onSort, className }: {
   col: string;
   label: string;
   sortCol: string;
@@ -315,35 +309,4 @@ function SortableHead({ col, label, sortCol, sortDir, onSort, className }: {
       </span>
     </TableHead>
   );
-}
-
-function getSortValue(p: PlayerRowData, col: string): any {
-  if (col === "name") return (p.name || "").toLowerCase();
-  if (col === "percent_owned") return p.percent_owned != null ? p.percent_owned : (p.pct != null ? p.pct : -1);
-  if (col === "percent_started") return p.percent_started != null ? p.percent_started : -1;
-  if (col === "preseason_pick") return p.preseason_pick != null ? p.preseason_pick : 9999;
-  if (col === "current_pick") return p.current_pick != null ? p.current_pick : 9999;
-  if (col === "opponent") return p.opponent || "";
-  if (col.indexOf("stat_") === 0) {
-    var statKey = col.slice(5);
-    var val = p.stats ? p.stats[statKey] : undefined;
-    if (val == null) return -99999;
-    var num = parseFloat(String(val));
-    return isNaN(num) ? -99999 : num;
-  }
-  return 0;
-}
-
-// MLB team abbreviation -> team ID mapping for logos
-var TEAM_IDS: Record<string, string> = {
-  ARI: "109", ATL: "144", BAL: "110", BOS: "111", CHC: "112",
-  CWS: "145", CIN: "113", CLE: "114", COL: "115", DET: "116",
-  HOU: "117", KC: "118", LAA: "108", LAD: "119", MIA: "146",
-  MIL: "158", MIN: "142", NYM: "121", NYY: "147", OAK: "133",
-  PHI: "143", PIT: "134", SD: "135", SF: "137", SEA: "136",
-  STL: "138", TB: "139", TEX: "140", TOR: "141", WSH: "120",
-};
-
-function getTeamId(abbrev: string): string {
-  return TEAM_IDS[abbrev] || "0";
 }

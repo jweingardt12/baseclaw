@@ -2,7 +2,7 @@ import { execSync } from "child_process";
 import { mkdirSync, renameSync, existsSync, rmSync, readdirSync } from "fs";
 import { join } from "path";
 
-const apps = ["roster", "standings", "season", "intel"];
+const apps = ["roster", "standings", "season", "intel", "setup-wizard"];
 const distDir = "dist";
 
 // Clean dist dir of old HTML files
@@ -16,14 +16,16 @@ if (existsSync(distDir)) {
 }
 
 for (const app of apps) {
-  const input = "ui/" + app + "-app/index.html";
+  // setup-wizard doesn't follow the *-app naming convention
+  const inputDir = app === "setup-wizard" ? "ui/setup-wizard" : "ui/" + app + "-app";
+  const input = inputDir + "/index.html";
   console.log("Building " + app + "...");
   execSync("npx vite build", {
     stdio: "inherit",
     env: { ...process.env, INPUT: input },
   });
   // Move the built file to dist/app.html
-  const built = join(distDir, "ui", app + "-app", "index.html");
+  const built = join(distDir, inputDir, "index.html");
   const dest = join(distDir, app + ".html");
   if (existsSync(built)) {
     renameSync(built, dest);

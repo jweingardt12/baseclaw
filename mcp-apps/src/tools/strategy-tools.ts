@@ -19,7 +19,7 @@ export function registerStrategyTools(server: McpServer, enabledTools?: Set<stri
     server,
     "fantasy_probable_pitchers",
     {
-      description: "Use this to see upcoming probable starting pitchers for the next N days with matchup details. Returns pitcher names, teams, dates, and home/away opponents to help plan streaming decisions. Use fantasy_schedule_analysis instead when you want to analyze a specific team's overall schedule density rather than pitcher-specific matchups.",
+      description: "Use this to see upcoming probable starting pitchers for the next N days with matchup details. Returns pitcher names, teams, dates, and home/away opponents to help plan streaming decisions.",
       inputSchema: { days: z.number().describe("Number of days to look ahead").default(7) },
       annotations: { readOnlyHint: true },
       _meta: {},
@@ -56,7 +56,7 @@ export function registerStrategyTools(server: McpServer, enabledTools?: Set<stri
     server,
     "fantasy_schedule_analysis",
     {
-      description: "Use this to analyze schedule density for an MLB team over the next N days, including games per week, off days, and a density rating. Pass a team name or abbreviation and optional day count. Use fantasy_probable_pitchers instead when you need specific pitcher matchups rather than overall team schedule volume.",
+      description: "Use this to analyze schedule density for an MLB team over the next N days, including games per week, off days, and a density rating. Pass a team name or abbreviation and optional day count.",
       inputSchema: {
         team: z.string().describe("MLB team name or abbreviation"),
         days: z.number().describe("Number of days to analyze").default(14),
@@ -88,7 +88,7 @@ export function registerStrategyTools(server: McpServer, enabledTools?: Set<stri
     server,
     "fantasy_regression_candidates",
     {
-      description: "Use this to find buy-low and sell-high regression candidates with composite scores from -100 to +100 based on multi-signal analysis of xwOBA vs wOBA, BABIP, HR/FB vs barrel rate, sprint speed, ERA vs SIERA, and LOB%. Returns candidates with regression_score, direction, confidence level, and detailed signal breakdown for both hitters and pitchers. Use fantasy_player_report instead when you want a full scouting report on a specific player rather than a league-wide regression scan.",
+      description: "Use this to find buy-low and sell-high regression candidates with composite scores from -100 to +100 based on multi-signal analysis of xwOBA vs wOBA, BABIP, HR/FB vs barrel rate, sprint speed, ERA vs SIERA, and LOB%. Returns candidates with regression_score, direction, confidence level, and detailed signal breakdown for both hitters and pitchers.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },

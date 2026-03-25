@@ -1,9 +1,7 @@
 import { Badge } from "@plexui/ui/components/Badge";
 import { Button } from "@plexui/ui/components/Button";
-import { Subheading } from "../components/heading";
+import { LoadingIndicator } from "@plexui/ui/components/Indicator";
 import { useCallTool } from "../shared/use-call-tool";
-import { AiInsight } from "../shared/ai-insight";
-import { Search, Loader2 } from "@/shared/icons";
 
 interface WhoOwnsData {
   player_key: string;
@@ -20,19 +18,19 @@ function ownershipBadge(type: string) {
 }
 
 export function WhoOwnsView({ data, app, navigate }: { data: WhoOwnsData; app: any; navigate: (data: any) => void }) {
-  const { callTool, loading } = useCallTool(app);
+  var { callTool, loading } = useCallTool(app);
 
-  const handleSearch = async () => {
-    const result = await callTool("yahoo_free_agents", { pos_type: "B" });
+  var handleSearch = async function () {
+    var result = await callTool("yahoo_free_agents", { pos_type: "B" });
     if (result && result.structuredContent) {
       navigate(result.structuredContent);
     }
   };
 
   return (
-    <div className="space-y-4 mt-2 animate-slide-up">
+    <div className="space-y-4">
       <div className="surface-card p-5">
-        <Subheading className="mb-3">Player Ownership</Subheading>
+        <h2 className="text-lg font-semibold mb-3">Player Ownership</h2>
         <div className="flex items-center gap-3 flex-wrap">
           {ownershipBadge(data.ownership_type)}
           {data.ownership_type === "team" && data.owner && (
@@ -41,14 +39,11 @@ export function WhoOwnsView({ data, app, navigate }: { data: WhoOwnsData; app: a
         </div>
       </div>
 
-      <AiInsight recommendation={data.ai_recommendation} />
-
       <div className="flex items-center gap-2">
-        <Button variant="outline" color="secondary" onClick={handleSearch}>
-          <Search size={14} />
+        <Button variant="outline" color="secondary" onClick={handleSearch} disabled={loading}>
           Search Players
         </Button>
-        {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+        {loading && <LoadingIndicator size={16} />}
       </div>
     </div>
   );

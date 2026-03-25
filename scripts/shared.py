@@ -18,13 +18,38 @@ from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
 # ---------------------------------------------------------------------------
-# Environment / config
+# Environment / config (env var > baseclaw.json config file > default)
 # ---------------------------------------------------------------------------
 OAUTH_FILE = os.environ.get("OAUTH_FILE", "/app/config/yahoo_oauth.json")
-LEAGUE_ID = os.environ.get("LEAGUE_ID", "")
-TEAM_ID = os.environ.get("TEAM_ID", "")
-GAME_KEY = LEAGUE_ID.split(".")[0] if LEAGUE_ID else ""
 DATA_DIR = os.environ.get("DATA_DIR", "/app/data")
+
+_BASECLAW_CONFIG_PATH = os.environ.get("BASECLAW_CONFIG_PATH", "/app/config/baseclaw.json")
+_baseclaw_config_cache = None
+
+def _read_baseclaw_config():
+    """Read the baseclaw.json config file (written by setup wizard). Cached per process."""
+    global _baseclaw_config_cache
+    if _baseclaw_config_cache is not None:
+        return _baseclaw_config_cache
+    try:
+        with open(_BASECLAW_CONFIG_PATH, "r") as f:
+            _baseclaw_config_cache = json.load(f)
+            return _baseclaw_config_cache
+    except Exception:
+        pass
+    return {}
+
+def _get_config(env_var, config_key, default=""):
+    """Get config value: env var > baseclaw.json > default."""
+    val = os.environ.get(env_var, "")
+    if val:
+        return val
+    cfg = _read_baseclaw_config()
+    return cfg.get(config_key, default)
+
+LEAGUE_ID = _get_config("LEAGUE_ID", "league_id", "")
+TEAM_ID = _get_config("TEAM_ID", "team_id", "")
+GAME_KEY = LEAGUE_ID.split(".")[0] if LEAGUE_ID else ""
 
 # ---------------------------------------------------------------------------
 # MLB Stats API

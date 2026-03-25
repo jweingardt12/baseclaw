@@ -105,7 +105,7 @@ def _get_browser_context():
         )
 
     pw = sync_playwright().start()
-    browser = pw.chromium.launch(headless=True)
+    browser = pw.chromium.launch(headless=True, args=["--disable-dev-shm-usage"])
     context = browser.new_context(storage_state=SESSION_FILE)
     return pw, browser, context
 

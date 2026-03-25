@@ -1,9 +1,7 @@
 import { Button } from "@plexui/ui/components/Button";
-import { Subheading } from "../components/heading";
-import { Text } from "../components/text";
+import { Alert } from "@plexui/ui/components/Alert";
+import { LoadingIndicator } from "@plexui/ui/components/Indicator";
 import { useCallTool } from "../shared/use-call-tool";
-import { AiInsight } from "../shared/ai-insight";
-import { CheckCircle, XCircle, ArrowLeft, Loader2 } from "@/shared/icons";
 
 interface ActionData {
   type: string;
@@ -16,45 +14,35 @@ interface ActionData {
 }
 
 export function ActionView({ data, app, navigate }: { data: ActionData; app: any; navigate: (data: any) => void }) {
-  const { callTool, loading } = useCallTool(app);
-  const labels: Record<string, string> = { add: "Player Added", drop: "Player Dropped", swap: "Player Swap" };
-  const title = labels[data.type] || "Roster Action";
+  var { callTool, loading } = useCallTool(app);
+  var labels: Record<string, string> = { add: "Player Added", drop: "Player Dropped", swap: "Player Swap" };
+  var title = labels[data.type] || "Roster Action";
 
-  const handleBackToRoster = async () => {
-    const result = await callTool("yahoo_roster", {});
+  var handleBackToRoster = async function () {
+    var result = await callTool("yahoo_roster", {});
     if (result) {
       navigate(result.structuredContent);
     }
   };
 
   return (
-    <div className="space-y-4 mt-2 animate-slide-up">
-      <div className={"surface-card overflow-hidden"}>
-        <div className={"p-5 " + (data.success ? "bg-sem-success-subtle" : "bg-destructive/5")}>
-          <div className="flex items-center gap-2">
-            <Subheading>{title}</Subheading>
-            {data.success
-              ? <CheckCircle size={20} className="text-sem-success animate-success-pop" />
-              : <XCircle size={20} className="text-destructive animate-error-shake" />
-            }
-          </div>
-        </div>
-        <div className="p-5">
-          <p className="text-base">{data.message}</p>
-          {data.player_id && <Text className="mt-2">{"Player ID: " + data.player_id}</Text>}
-          {data.add_id && <Text className="mt-1">{"Added ID: " + data.add_id}</Text>}
-          {data.drop_id && <Text className="mt-1">{"Dropped ID: " + data.drop_id}</Text>}
-        </div>
-      </div>
+    <div className="space-y-4">
+      <Alert
+        color={data.success ? "success" : "danger"}
+        variant="soft"
+        title={title}
+        description={data.message}
+      />
 
-      <AiInsight recommendation={data.ai_recommendation} />
+      {data.player_id && <p className="text-xs text-muted-foreground">{"Player ID: " + data.player_id}</p>}
+      {data.add_id && <p className="text-xs text-muted-foreground">{"Added ID: " + data.add_id}</p>}
+      {data.drop_id && <p className="text-xs text-muted-foreground">{"Dropped ID: " + data.drop_id}</p>}
 
       <div className="flex items-center gap-2">
-        <Button variant="outline" color="secondary" onClick={handleBackToRoster}>
-          <ArrowLeft size={14} />
+        <Button variant="outline" color="secondary" onClick={handleBackToRoster} disabled={loading}>
           Back to Roster
         </Button>
-        {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+        {loading && <LoadingIndicator size={16} />}
       </div>
     </div>
   );

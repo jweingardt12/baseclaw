@@ -49,7 +49,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_roster",
     {
-      description: "Use this to see your full fantasy roster — every player, their assigned position, eligible positions, injury status, Statcast quality tier, and hot/cold trend. Returns player IDs needed for add/drop/trade tools. Use yahoo_free_agents to find available pickups or yahoo_lineup_optimize to set your best lineup.",
+      description: "Use this to see your full fantasy roster — every player, their assigned position, eligible positions, injury status, Statcast quality tier, and hot/cold trend. Returns player IDs needed for add/drop/trade tools.",
       annotations: { readOnlyHint: true },
       _meta: { ui: { resourceUri: ROSTER_URI } },
     },
@@ -86,7 +86,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_free_agents",
     {
-      description: "Use this to browse the best available free agents in the league. Set pos_type='B' for batters or 'P' for pitchers. Returns players sorted by ownership % with stats. Use yahoo_waiver_recommendations instead if you want add/drop pairs tailored to your team's weak categories.",
+      description: "Use this to browse the best available free agents in the league. Set pos_type='B' for batters or 'P' for pitchers. Returns players sorted by ownership % with stats.",
       inputSchema: {
         pos_type: z.string().describe("B for batters, P for pitchers").default("B"),
         count: z.number().describe("Number of free agents to return").default(20),
@@ -139,7 +139,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_player_list",
     {
-      description: "Use this to explore the full player universe with granular position filters (C, 1B, 2B, SS, 3B, OF, SP, RP) and ownership stats. Returns enriched player data including stats and Statcast tiers. Use yahoo_free_agents instead when you only want available free agents sorted by ownership, or yahoo_search when looking for a specific player by name.",
+      description: "Use this to explore the full player universe with granular position filters (C, 1B, 2B, SS, 3B, OF, SP, RP) and ownership stats. Returns enriched player data including stats and Statcast tiers.",
       inputSchema: {
         pos_type: z.string().describe("Position filter: B (all batters), P (all pitchers), C, 1B, 2B, SS, 3B, OF, SP, RP, Util").default("B"),
         count: z.number().describe("Number of players to return").default(50),
@@ -194,7 +194,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_search",
     {
-      description: "Use this to find a specific player by name among free agents. Returns matching players with positions, ownership %, and player IDs. Use yahoo_who_owns instead when you have a player ID and want to check ownership status, or yahoo_free_agents to browse top available players by position.",
+      description: "Use this to find a specific player by name among free agents. Returns matching players with positions, ownership %, and player IDs.",
       inputSchema: { player_name: z.string().describe("Player name to search for") },
       annotations: { readOnlyHint: true },
       _meta: {},
@@ -228,7 +228,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_add",
     {
-      description: "Use this to add a free agent to your roster. Requires the Yahoo player ID (get it from yahoo_roster, yahoo_search, or yahoo_free_agents). Use yahoo_swap instead when your roster is full and you need to drop someone simultaneously.",
+      description: "Use this to add a free agent to your roster. Requires the Yahoo player ID (get it from yahoo_roster, yahoo_search, or yahoo_free_agents).",
       inputSchema: { player_id: z.string().describe("Yahoo player ID to add") },
       annotations: { readOnlyHint: false },
       _meta: { ui: { resourceUri: ROSTER_URI } },
@@ -252,7 +252,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_drop",
     {
-      description: "Use this to permanently drop a player from your roster. The player becomes a free agent available to other teams. Requires the Yahoo player ID from yahoo_roster. Use yahoo_swap instead when you want to simultaneously add a replacement.",
+      description: "Use this to permanently drop a player from your roster. The player becomes a free agent available to other teams. Requires the Yahoo player ID from yahoo_roster.",
       inputSchema: { player_id: z.string().describe("Yahoo player ID to drop") },
       annotations: { readOnlyHint: false, destructiveHint: true },
       _meta: { ui: { resourceUri: ROSTER_URI } },
@@ -276,7 +276,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_swap",
     {
-      description: "Use this to atomically add a free agent and drop a roster player in one transaction. Guarantees both happen together so your roster stays full. Requires player IDs from yahoo_roster and yahoo_free_agents. Use yahoo_add instead when you have an open roster slot and do not need to drop anyone.",
+      description: "Use this to atomically add a free agent and drop a roster player in one transaction. Guarantees both happen together so your roster stays full. Requires player IDs from yahoo_roster and yahoo_free_agents.",
       inputSchema: { add_id: z.string().describe("Yahoo player ID to add"), drop_id: z.string().describe("Yahoo player ID to drop") },
       annotations: { readOnlyHint: false },
       _meta: { ui: { resourceUri: ROSTER_URI } },
@@ -300,7 +300,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_waiver_claim",
     {
-      description: "Use this to submit a waiver claim for a player in the claim period (not yet a free agent). Supports optional FAAB bid amount and optional drop player for claim+drop combos. Use yahoo_add or yahoo_swap instead when the player is already a free agent, or yahoo_faab_recommend to get a bid recommendation first.",
+      description: "Use this to submit a waiver claim for a player in the claim period (not yet a free agent). Supports optional FAAB bid amount and optional drop player for claim+drop combos.",
       inputSchema: { player_id: z.string().describe("Yahoo player ID to claim"), drop_id: z.string().describe("Yahoo player ID to drop (optional, for claim+drop)").optional(), faab: z.number().describe("FAAB bid amount in dollars").optional() },
       annotations: { readOnlyHint: false, destructiveHint: false },
       _meta: { ui: { resourceUri: ROSTER_URI } },
@@ -413,7 +413,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_who_owns",
     {
-      description: "Use this to check whether a specific player is owned, on waivers, or a free agent. Returns the owner's team name if rostered. Use yahoo_search instead when you have a player name and want to find them among free agents, or yahoo_percent_owned for bulk ownership percentages.",
+      description: "Use this to check whether a specific player is owned, on waivers, or a free agent. Returns the owner's team name if rostered.",
       inputSchema: { player_id: z.string().describe("Yahoo player ID to look up") },
       annotations: { readOnlyHint: true },
       _meta: {},
@@ -452,7 +452,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_percent_owned",
     {
-      description: "Use this to look up ownership percentages across all Yahoo leagues for one or more players by their IDs. Accepts comma-separated player IDs. Use yahoo_ownership_trends instead when you want to see how a player's ownership has changed over time, or yahoo_who_owns to check which team in your league owns a specific player.",
+      description: "Use this to look up ownership percentages across all Yahoo leagues for one or more players by their IDs. Accepts comma-separated player IDs.",
       inputSchema: { ids: z.string().describe("Comma-separated Yahoo player IDs (e.g. '10660,9542')") },
       annotations: { readOnlyHint: true },
       _meta: {},
@@ -485,7 +485,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_player_stats",
     {
-      description: "Use this to pull a specific player's fantasy stats from Yahoo for any time period (season, lastweek, lastmonth, specific week, or date). Returns all scoring category stats. Use yahoo_compare instead when you want a side-by-side z-score comparison of two players, or yahoo_value for a full z-score breakdown.",
+      description: "Use this to pull a specific player's fantasy stats from Yahoo for any time period (season, lastweek, lastmonth, specific week, or date). Returns all scoring category stats.",
       inputSchema: {
         player_name: z.string().describe("Player name to look up"),
         period: z.string().describe("Stats period: season, average_season, lastweek, lastmonth, week, date").default("season"),
@@ -524,7 +524,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_waivers",
     {
-      description: "Use this to see which recently dropped players are currently in the waiver claim period and not yet free agents. Returns player names, positions, ownership %, and IDs needed for yahoo_waiver_claim. Use yahoo_free_agents instead when you want players already available for immediate pickup.",
+      description: "Use this to see which recently dropped players are currently in the waiver claim period and not yet free agents. Returns player names, positions, ownership %, and IDs needed for yahoo_waiver_claim.",
       inputSchema: {
         limit: z.number().default(20).describe("Max results to return (default 20, max 50)"),
         offset: z.number().default(0).describe("Offset for pagination"),
@@ -570,7 +570,7 @@ export function registerRosterTools(server: McpServer, distDir: string, writesEn
     server,
     "yahoo_all_rostered",
     {
-      description: "Use this to see every rostered player across all league teams, optionally filtered by position. Returns player names, owners, and ownership percentages. Use yahoo_positional_ranks instead when you want to see how teams rank at each position, or yahoo_free_agents to see only unowned players.",
+      description: "Use this to see every rostered player across all league teams, optionally filtered by position. Returns player names, owners, and ownership percentages.",
       inputSchema: {
         position: z.string().describe("Filter by position (e.g. OF, SP, C). Empty for all.").default(""),
         limit: z.number().default(25).describe("Max results to return (default 25, max 50)"),

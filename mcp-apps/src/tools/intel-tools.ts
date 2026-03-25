@@ -58,7 +58,7 @@ export function registerIntelTools(server: McpServer, distDir: string, enabledTo
     server,
     "fantasy_player_report",
     {
-      description: "Use this to get a deep-dive scouting report on a single player combining Statcast metrics, recent trends, plate discipline, and Reddit buzz. Returns exit velo, barrel rate, xwOBA percentiles, 14-day performance trends, and community sentiment. Use yahoo_player_intel instead when you want a broader qualitative briefing with news, injury severity, and role changes beyond just stats.",
+      description: "Use this to get a deep-dive scouting report on a single player combining Statcast metrics, recent trends, plate discipline, and Reddit buzz. Returns exit velo, barrel rate, xwOBA percentiles, 14-day performance trends, and community sentiment.",
       inputSchema: { player_name: z.string().describe("Player name to look up") },
       annotations: { readOnlyHint: true },
       _meta: {},
@@ -125,7 +125,7 @@ export function registerIntelTools(server: McpServer, distDir: string, enabledTo
     server,
     "fantasy_reddit_buzz",
     {
-      description: "Use this to see what r/fantasybaseball is talking about right now including hot posts, trending topics, and top discussions. Returns post titles, scores, comment counts, and flair tags. Use fantasy_trending_players instead when you want to see only player-specific posts with high engagement rather than general subreddit activity.",
+      description: "Use this to see what r/fantasybaseball is talking about right now including hot posts, trending topics, and top discussions. Returns post titles, scores, comment counts, and flair tags.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -153,7 +153,7 @@ export function registerIntelTools(server: McpServer, distDir: string, enabledTo
     server,
     "fantasy_trending_players",
     {
-      description: "Use this to see which players have rising buzz on Reddit via high-engagement posts mentioning specific player names. Returns trending player discussion posts with scores and comment counts. Use fantasy_reddit_buzz instead when you want a broader view of all subreddit activity beyond just player-specific posts.",
+      description: "Use this to see which players have rising buzz on Reddit via high-engagement posts mentioning specific player names. Returns trending player discussion posts with scores and comment counts.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -181,7 +181,7 @@ export function registerIntelTools(server: McpServer, distDir: string, enabledTo
     server,
     "fantasy_prospect_watch",
     {
-      description: "Use this to see recent MLB prospect call-ups and roster moves that could impact fantasy leagues. Returns transaction types, player names, and team info for recent promotions and demotions. Use fantasy_callup_wire instead when you want more detailed call-up analysis with prospect ranks and fantasy impact scores.",
+      description: "Use this to see recent MLB prospect call-ups and roster moves that could impact fantasy leagues. Returns transaction types, player names, and team info for recent promotions and demotions.",
       annotations: { readOnlyHint: true },
       _meta: {},
     },
@@ -209,7 +209,7 @@ export function registerIntelTools(server: McpServer, distDir: string, enabledTo
     server,
     "fantasy_transactions",
     {
-      description: "Use this to see recent fantasy-relevant MLB transactions including IL stints, call-ups, DFAs, and trades. Pass the days parameter to control how far back to look (default 7 days). Use fantasy_prospect_watch instead when you only care about prospect-specific roster moves rather than all transaction types.",
+      description: "Use this to see recent fantasy-relevant MLB transactions including IL stints, call-ups, DFAs, and trades. Pass the days parameter to control how far back to look (default 7 days).",
       inputSchema: { days: z.number().describe("Number of days to look back").default(7) },
       annotations: { readOnlyHint: true },
       _meta: {},
@@ -238,7 +238,7 @@ export function registerIntelTools(server: McpServer, distDir: string, enabledTo
     server,
     "yahoo_statcast_history",
     {
-      description: "Use this to compare a player's Statcast profile now versus 30 or 60 days ago to track changes in exit velo, barrel rate, xwOBA, sprint speed, and more over time. Returns a side-by-side comparison with delta values and directional arrows. Use fantasy_player_report instead when you want a current snapshot of a player's Statcast profile without the historical comparison.",
+      description: "Use this to compare a player's Statcast profile now versus 30 or 60 days ago to track changes in exit velo, barrel rate, xwOBA, sprint speed, and more over time. Returns a side-by-side comparison with delta values and directional arrows.",
       inputSchema: {
         player_name: z.string().describe("Player name to look up"),
         days_ago: z.number().describe("How many days back to compare (30 or 60)").default(30),
@@ -291,7 +291,7 @@ export function registerIntelTools(server: McpServer, distDir: string, enabledTo
     server,
     "fantasy_news_feed",
     {
-      description: "Use this to get a real-time fantasy baseball news feed aggregated from 16 sources including ESPN, FanGraphs, CBS, Yahoo, MLB.com, RotoWire, Pitcher List, Razzball, Google News, RotoBaller, Reddit, and Bluesky analyst feeds. Filter by source or search by player name. Use yahoo_player_intel instead when you want a synthesized intelligence briefing on one specific player rather than a raw news feed.",
+      description: "Use this to get a real-time fantasy baseball news feed aggregated from 16 sources including ESPN, FanGraphs, CBS, Yahoo, MLB.com, RotoWire, Pitcher List, Razzball, Google News, RotoBaller, Reddit, and Bluesky analyst feeds. Filter by source or search by player name.",
       inputSchema: {
         sources: z.string().optional().describe("Comma-separated source IDs to filter (e.g. 'espn,fangraphs,rotowire,reddit,bsky_pitcherlist'). Omit for all sources."),
         player: z.string().optional().describe("Player name to filter news for"),
@@ -334,7 +334,7 @@ export function registerIntelTools(server: McpServer, distDir: string, enabledTo
     server,
     "yahoo_player_intel",
     {
-      description: "Use this when you want the full qualitative picture on a player beyond just stats, combining recent news, injury severity, hot/cold streak, role changes, Reddit buzz, Statcast tier, and Yahoo ownership trends into one actionable briefing. Returns synthesized intelligence from 6+ sources with flags for dealbreakers and role changes. Use fantasy_player_report instead when you want a deeper dive into Statcast percentiles and plate discipline without the news and qualitative layers.",
+      description: "Use this when you want the full qualitative picture on a player beyond just stats, combining recent news, injury severity, hot/cold streak, role changes, Reddit buzz, Statcast tier, and Yahoo ownership trends into one actionable briefing. Returns synthesized intelligence from 6+ sources with flags for dealbreakers and role changes.",
       inputSchema: { player: z.string().describe("Player name to research") },
       annotations: { readOnlyHint: true },
       _meta: { ui: { resourceUri: INTEL_URI } },
