@@ -1,6 +1,6 @@
-import { Badge } from "@plexui/ui/components/Badge";
-import { Button } from "@plexui/ui/components/Button";
-import { LoadingIndicator } from "@plexui/ui/components/Indicator";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { LoadingIndicator } from "@/shared/loading-indicator";
 import { useCallTool } from "../shared/use-call-tool";
 
 interface WhoOwnsData {
@@ -11,10 +11,10 @@ interface WhoOwnsData {
 }
 
 function ownershipBadge(type: string) {
-  if (type === "team") return <Badge size="sm">Owned</Badge>;
-  if (type === "freeagents") return <Badge color="success" size="sm">Free Agent</Badge>;
-  if (type === "waivers") return <Badge color="warning" size="sm">Waivers</Badge>;
-  return <Badge color="secondary" size="sm">{type}</Badge>;
+  if (type === "team") return <Badge>Owned</Badge>;
+  if (type === "freeagents") return <Badge variant="secondary">Free Agent</Badge>;
+  if (type === "waivers") return <Badge variant="outline">Waivers</Badge>;
+  return <Badge variant="secondary">{type}</Badge>;
 }
 
 export function WhoOwnsView({ data, app, navigate }: { data: WhoOwnsData; app: any; navigate: (data: any) => void }) {
@@ -40,7 +40,7 @@ export function WhoOwnsView({ data, app, navigate }: { data: WhoOwnsData; app: a
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="outline" color="secondary" onClick={handleSearch} disabled={loading}>
+        <Button variant="outline" onClick={handleSearch} disabled={loading}>
           Search Players
         </Button>
         {loading && <LoadingIndicator size={16} />}

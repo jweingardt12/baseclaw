@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
-import { Badge } from "@plexui/ui/components/Badge";
-import { Button } from "@plexui/ui/components/Button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Subheading } from "../components/heading";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { useCallTool } from "../shared/use-call-tool";
 import { mlbHeadshotUrl } from "../shared/mlb-images";
 import { TeamLogo } from "../shared/team-logo";
@@ -164,7 +164,7 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
                   </span>
                   <div className="flex gap-1 flex-wrap">
                     {(data.add_player.positions || "").split(",").filter(Boolean).map(function (pos) {
-                      return <Badge key={pos.trim()} color="secondary" size="sm">{pos.trim()}</Badge>;
+                      return <Badge key={pos.trim()} variant="secondary">{pos.trim()}</Badge>;
                     })}
                   </div>
                 </div>
@@ -200,7 +200,7 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
                     </span>
                     <div className="flex gap-1 flex-wrap">
                       {(data.drop_player.positions || "").split(",").filter(Boolean).map(function (pos) {
-                        return <Badge key={pos.trim()} color="secondary" size="sm">{pos.trim()}</Badge>;
+                        return <Badge key={pos.trim()} variant="secondary">{pos.trim()}</Badge>;
                       })}
                     </div>
                   </div>
@@ -211,7 +211,7 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
         ) : (
           <Card className="border-dashed">
             <CardContent className="flex items-center justify-center h-full p-3">
-              <Button variant="outline" color="secondary" onClick={handleLoadRoster} disabled={loading}>
+              <Button variant="outline" onClick={handleLoadRoster} disabled={loading}>
                 Simulate Drop
               </Button>
             </CardContent>
@@ -221,16 +221,16 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
 
       {/* Impact Summary Badges */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Badge size="sm" className={netBadgeColor(netChange)}>
+        <Badge className={netBadgeColor(netChange)}>
           {"Net: " + (netChange > 0 ? "+" : "") + netChange}
         </Badge>
         {improved > 0 && (
-          <Badge color="secondary" size="sm" className="text-green-600 border-green-500/30">
+          <Badge variant="secondary" className="text-green-600 border-green-500/30">
             {improved + " improved"}
           </Badge>
         )}
         {regressed > 0 && (
-          <Badge color="secondary" size="sm" className="text-red-600 border-red-500/30">
+          <Badge variant="secondary" className="text-red-600 border-red-500/30">
             {regressed + " regressed"}
           </Badge>
         )}
@@ -243,44 +243,46 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         )}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Category</TableHead>
-              <TableHead className="text-center hidden sm:table-cell">Current</TableHead>
-              <TableHead className="text-center">Simulated</TableHead>
-              <TableHead className="text-center">Change</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(data.current_ranks || []).map(function (cr, idx) {
-              var sr = (data.simulated_ranks || [])[idx] || { name: cr.name, rank: cr.rank, total: cr.total, change: 0 };
-              var hasChange = sr.change !== 0;
-              var rowClass = "";
-              if (sr.change > 0) rowClass = "bg-sem-success-subtle";
-              if (sr.change < 0) rowClass = "bg-sem-risk-subtle";
-              return (
-                <TableRow key={cr.name + "-" + idx} className={rowClass}>
-                  <TableCell className="font-medium">{cr.name}</TableCell>
-                  <TableCell className="text-center hidden sm:table-cell">
-                    <span className="font-mono">{cr.rank}</span>
-                    <span className="text-muted-foreground text-xs">{"/" + cr.total}</span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span className={"font-mono " + (hasChange ? "font-semibold" : "")}>{sr.rank}</span>
-                    <span className="text-muted-foreground text-xs">{"/" + sr.total}</span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <ChangeIcon change={sr.change} />
-                      <ChangeText change={sr.change} />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <div className="w-full overflow-x-auto mcp-app-scroll-x">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Category</TableHead>
+                <TableHead className="text-center hidden sm:table-cell">Current</TableHead>
+                <TableHead className="text-center">Simulated</TableHead>
+                <TableHead className="text-center">Change</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(data.current_ranks || []).map(function (cr, idx) {
+                var sr = (data.simulated_ranks || [])[idx] || { name: cr.name, rank: cr.rank, total: cr.total, change: 0 };
+                var hasChange = sr.change !== 0;
+                var rowClass = "";
+                if (sr.change > 0) rowClass = "bg-sem-success-subtle";
+                if (sr.change < 0) rowClass = "bg-sem-risk-subtle";
+                return (
+                  <TableRow key={cr.name + "-" + idx} className={rowClass}>
+                    <TableCell className="font-medium">{cr.name}</TableCell>
+                    <TableCell className="text-center hidden sm:table-cell">
+                      <span className="font-mono">{cr.rank}</span>
+                      <span className="text-muted-foreground text-xs">{"/" + cr.total}</span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className={"font-mono " + (hasChange ? "font-semibold" : "")}>{sr.rank}</span>
+                      <span className="text-muted-foreground text-xs">{"/" + sr.total}</span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <ChangeIcon change={sr.change} />
+                        <ChangeText change={sr.change} />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Summary */}
@@ -303,7 +305,7 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
             className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring pl-8"
           />
         </div>
-        <Button color="secondary" onClick={handleSearch} disabled={loading || !searchInput.trim()}>
+        <Button variant="secondary" onClick={handleSearch} disabled={loading || !searchInput.trim()}>
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Simulate"}
         </Button>
       </div>
@@ -343,7 +345,7 @@ export function SimulateView({ data, app, navigate }: { data: SimulateData; app:
               </div>
             )}
             <div className="mt-2">
-              <Button variant="outline" color="secondary" onClick={function () { setShowDropPicker(false); }}>Cancel</Button>
+              <Button variant="outline" onClick={function () { setShowDropPicker(false); }}>Cancel</Button>
             </div>
           </CardContent>
         </Card>

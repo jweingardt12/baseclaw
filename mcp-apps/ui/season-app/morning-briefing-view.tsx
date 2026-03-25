@@ -1,9 +1,9 @@
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
-import { Badge } from "@plexui/ui/components/Badge";
-import { Button } from "@plexui/ui/components/Button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Subheading } from "../components/heading";
 import { Text } from "../components/text";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { useCallTool } from "../shared/use-call-tool";
 
 import { PlayerName } from "../shared/player-name";
@@ -153,13 +153,13 @@ function scoreLabel(wins: number, losses: number): string {
 function classificationIcon(cls: string) {
   switch (cls) {
     case "target":
-      return <Badge size="sm" className="bg-sem-info"><Target className="h-2.5 w-2.5 mr-0.5 inline" />Target</Badge>;
+      return <Badge className="bg-sem-info"><Target className="h-2.5 w-2.5 mr-0.5 inline" />Target</Badge>;
     case "protect":
-      return <Badge size="sm" className="bg-sem-warning"><Shield className="h-2.5 w-2.5 mr-0.5 inline" />Protect</Badge>;
+      return <Badge className="bg-sem-warning"><Shield className="h-2.5 w-2.5 mr-0.5 inline" />Protect</Badge>;
     case "concede":
-      return <Badge color="secondary" size="sm" className="text-muted-foreground"><XCircle className="h-2.5 w-2.5 mr-0.5 inline" />Concede</Badge>;
+      return <Badge variant="secondary" className="text-muted-foreground"><XCircle className="h-2.5 w-2.5 mr-0.5 inline" />Concede</Badge>;
     case "lock":
-      return <Badge size="sm" className="bg-sem-success"><Lock className="h-2.5 w-2.5 mr-0.5 inline" />Lock</Badge>;
+      return <Badge className="bg-sem-success"><Lock className="h-2.5 w-2.5 mr-0.5 inline" />Lock</Badge>;
     default:
       return null;
   }
@@ -228,10 +228,10 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
         <div className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-primary" />
           <Subheading>Morning Briefing</Subheading>
-          {matchup.week && <Badge color="secondary" size="sm">Week {matchup.week}</Badge>}
+          {matchup.week && <Badge variant="secondary">Week {matchup.week}</Badge>}
         </div>
         {app && (
-          <Button variant="outline" color="secondary" size="xs" onClick={handleRefresh} disabled={loading}>
+          <Button variant="outline" size="xs" onClick={handleRefresh} disabled={loading}>
             {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             Refresh
           </Button>
@@ -245,7 +245,7 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
             <div className="flex items-center gap-2">
               <CheckSquare className="h-4 w-4 text-primary" />
               <CardTitle className="text-base">Action Items</CardTitle>
-              <Badge color="secondary" size="sm">{actions.length}</Badge>
+              <Badge variant="secondary">{actions.length}</Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -253,7 +253,7 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
               {actions.map(function (item, idx) {
                 return (
                   <div key={idx} className="flex items-start gap-2">
-                    <Badge size="sm" className={"shrink-0 mt-0.5 " + priorityColor(item.priority)}>
+                    <Badge className={"shrink-0 mt-0.5 " + priorityColor(item.priority)}>
                       {priorityLabel(item.priority)}
                     </Badge>
                     <span className="text-sm">{item.message}</span>
@@ -354,19 +354,19 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-destructive" />
               <CardTitle className="text-base text-destructive">Injury Alerts</CardTitle>
-              <Badge color="danger">{(injury.injured_active || []).length}</Badge>
+              <Badge variant="destructive">{(injury.injured_active || []).length}</Badge>
             </div>
           </CardHeader>
           <CardContent>
             {(injury.injured_active || []).map(function (p: InjuredPlayer) {
               return (
                 <div key={p.name} className="flex items-center gap-2.5 py-2 border-b last:border-0">
-                  <Badge color="secondary" size="sm" className="w-8 justify-center">{p.position}</Badge>
+                  <Badge variant="secondary" className="w-8 justify-center">{p.position}</Badge>
                   <span className="font-medium text-sm flex-1">
                     <PlayerName name={p.name} mlbId={p.mlb_id} app={app} navigate={navigate} context="roster" />
                   </span>
                   {p.intel && <IntelBadge intel={p.intel} size="sm" />}
-                  <Badge color="danger" size="sm">{p.status}</Badge>
+                  <Badge variant="destructive">{p.status}</Badge>
                   {p.injury_description && <span className="text-xs text-muted-foreground hidden sm:inline">{p.injury_description}</span>}
                 </div>
               );
@@ -382,18 +382,18 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-sem-warning" />
               <CardTitle className="text-base text-sem-warning">Ready to Activate</CardTitle>
-              <Badge color="secondary">{(injury.healthy_il || []).length}</Badge>
+              <Badge variant="secondary">{(injury.healthy_il || []).length}</Badge>
             </div>
           </CardHeader>
           <CardContent>
             {(injury.healthy_il || []).map(function (p: InjuredPlayer) {
               return (
                 <div key={p.name} className="flex items-center gap-2.5 py-2 border-b last:border-0">
-                  <Badge color="secondary" size="sm" className="w-8 justify-center">{p.position}</Badge>
+                  <Badge variant="secondary" className="w-8 justify-center">{p.position}</Badge>
                   <span className="font-medium text-sm flex-1">
                     <PlayerName name={p.name} mlbId={p.mlb_id} app={app} navigate={navigate} context="roster" />
                   </span>
-                  <Badge size="sm" className="bg-sem-success">Ready</Badge>
+                  <Badge className="bg-sem-success">Ready</Badge>
                 </div>
               );
             })}
@@ -414,12 +414,12 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
             {(lineup.suggested_swaps || []).map(function (s: LineupSwap, i: number) {
               return (
                 <div key={i} className="flex items-center gap-2 py-1">
-                  <Badge color="danger" size="sm">Bench</Badge>
+                  <Badge variant="destructive">Bench</Badge>
                   <span className="text-sm"><PlayerName name={s.bench_player} context="roster" /></span>
                   <ArrowRightLeft size={14} className="text-muted-foreground" />
-                  <Badge size="sm">Start</Badge>
+                  <Badge>Start</Badge>
                   <span className="text-sm"><PlayerName name={s.start_player} context="roster" /></span>
-                  <Badge color="secondary" size="sm">{s.position}</Badge>
+                  <Badge variant="secondary">{s.position}</Badge>
                 </div>
               );
             })}
@@ -441,7 +441,7 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
               {(strategy.opp_transactions || []).map(function (tx: OppTransaction, idx: number) {
                 return (
                   <div key={idx} className="flex items-center gap-2 text-sm">
-                    <Badge color={tx.type === "add" ? undefined : "zinc"}  size="sm" className="w-12 justify-center">
+                    <Badge variant={tx.type === "add" ? "default" : "secondary"} className="w-12 justify-center">
                       {tx.type === "add" ? "ADD" : "DROP"}
                     </Badge>
                     <span>{tx.player}</span>
@@ -464,56 +464,58 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Player</TableHead>
-                  <TableHead className="hidden sm:table-cell">Team</TableHead>
-                  <TableHead className="text-center">Games</TableHead>
-                  <TableHead className="text-right">Own%</TableHead>
-                  <TableHead className="hidden sm:table-cell">Targets</TableHead>
-                  {app && <TableHead className="w-10"></TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(strategy.waiver_targets || []).slice(0, 5).map(function (wt: WaiverTarget, idx: number) {
-                  return (
-                    <TableRow key={idx}>
-                      <TableCell>
-                        <PlayerName name={wt.name} playerId={wt.pid} mlbId={wt.mlb_id} app={app} navigate={navigate} context="waivers" />
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <TeamLogo abbrev={wt.team} />
-                          {wt.team}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-center font-mono text-sm">{wt.games}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{wt.pct}%</TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <div className="flex flex-wrap gap-0.5">
-                          {(wt.categories || []).map(function (cat) {
-                            return <Badge key={cat} color="secondary" size="sm">{cat}</Badge>;
-                          })}
-                        </div>
-                      </TableCell>
-                      {app && (
+            <div className="w-full overflow-x-auto mcp-app-scroll-x">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Player</TableHead>
+                    <TableHead className="hidden sm:table-cell">Team</TableHead>
+                    <TableHead className="text-center">Games</TableHead>
+                    <TableHead className="text-right">Own%</TableHead>
+                    <TableHead className="hidden sm:table-cell">Targets</TableHead>
+                    {app && <TableHead className="w-10"></TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(strategy.waiver_targets || []).slice(0, 5).map(function (wt: WaiverTarget, idx: number) {
+                    return (
+                      <TableRow key={idx}>
                         <TableCell>
-                          <Button
-                            variant="ghost" color="secondary"
-                            uniform size="sm"
-                            onClick={function () { handleAdd(wt.pid); }}
-                            disabled={loading}
-                          >
-                            <UserPlus className="h-3 w-3" />
-                          </Button>
+                          <PlayerName name={wt.name} playerId={wt.pid} mlbId={wt.mlb_id} app={app} navigate={navigate} context="waivers" />
                         </TableCell>
-                      )}
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                        <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <TeamLogo abbrev={wt.team} />
+                            {wt.team}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center font-mono text-sm">{wt.games}</TableCell>
+                        <TableCell className="text-right font-mono text-sm">{wt.pct}%</TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <div className="flex flex-wrap gap-0.5">
+                            {(wt.categories || []).map(function (cat) {
+                              return <Badge key={cat} variant="secondary">{cat}</Badge>;
+                            })}
+                          </div>
+                        </TableCell>
+                        {app && (
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={function () { handleAdd(wt.pid); }}
+                              disabled={loading}
+                            >
+                              <UserPlus className="h-3 w-3" />
+                            </Button>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -558,7 +560,7 @@ export function MorningBriefingView({ data, app, navigate }: { data: MorningBrie
               {(whatsNew.league_activity || []).slice(0, 8).map(function (a: WhatsNewActivity, idx: number) {
                 return (
                   <div key={idx} className="flex items-center gap-2 text-sm">
-                    <Badge color={a.type === "add" ? undefined : "zinc"}  size="sm" className="w-12 justify-center">
+                    <Badge variant={a.type === "add" ? "default" : "secondary"} className="w-12 justify-center">
                       {a.type.toUpperCase()}
                     </Badge>
                     <span>{a.player}</span>

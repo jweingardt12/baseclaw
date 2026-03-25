@@ -1,9 +1,9 @@
 import { Fragment } from "react";
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "../components/card";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
-import { Tabs } from "@plexui/ui/components/Tabs";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart } from "@/charts";
 
 import { TeamLogo } from "../shared/team-logo";
 import { Subheading } from "../components/heading";
@@ -61,7 +61,7 @@ export function RankingsView({ data, app, navigate }: { data: RankingsData; app:
       <div className="flex items-center gap-2">
         <BarChart3 size={18} />
         <Subheading>{label} Rankings</Subheading>
-        <Badge color="secondary">{data.source}</Badge>
+        <Badge variant="secondary">{data.source}</Badge>
         <span className="text-xs text-muted-foreground">Top {data.count}</span>
       </div>
 
@@ -92,7 +92,7 @@ export function RankingsView({ data, app, navigate }: { data: RankingsData; app:
                 <PlayerCell player={topPlayer} app={app} navigate={navigate} context="default" />
               </p>
               <div className="flex items-center gap-2 mt-1">
-                {topPlayer.position && <Badge color="secondary" size="sm">{topPlayer.position}</Badge>}
+                {topPlayer.position && <Badge variant="secondary">{topPlayer.position}</Badge>}
               </div>
             </div>
             <VerdictBadge grade={formatFixed(topPlayer.z_score, 1, "0.0")} variant={topPlayer.z_score >= 2 ? "success" : topPlayer.z_score >= 1 ? "info" : "warning"} size="lg" />
@@ -102,9 +102,11 @@ export function RankingsView({ data, app, navigate }: { data: RankingsData; app:
 
       <ZScoreExplainer />
 
-      <Tabs value={data.pos_type || "B"} onChange={handleTabChange} aria-label="Player type">
-        <Tabs.Tab value="B">Batters</Tabs.Tab>
-        <Tabs.Tab value="P">Pitchers</Tabs.Tab>
+      <Tabs value={data.pos_type || "B"} onValueChange={handleTabChange}>
+        <TabsList>
+          <TabsTrigger value="B">Batters</TabsTrigger>
+          <TabsTrigger value="P">Pitchers</TabsTrigger>
+        </TabsList>
       </Tabs>
 
       <div className="relative">
@@ -115,62 +117,62 @@ export function RankingsView({ data, app, navigate }: { data: RankingsData; app:
         )}
 
         {chartData.length > 0 && (
-          <div className="h-36 sm:h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} angle={-35} textAnchor="end" height={60} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "6px", fontSize: "12px" }} />
-                <Bar dataKey="z_score" fill="var(--color-primary)" radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <BarChart
+            data={chartData.map(function (entry) {
+              return { label: entry.name, value: entry.z_score };
+            })}
+            height={192}
+            rotateLabels={true}
+            defaultColor="var(--color-primary)"
+          />
         )}
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">#</TableHead>
-              <TableHead>Player</TableHead>
-              <TableHead className="hidden sm:table-cell">Pos</TableHead>
-              <TableHead className="text-right">Z-Score</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {players.map(function (p) {
-              var tier = getTier(p.z_score);
-              var showDivider = lastTier !== "" && tier !== lastTier;
-              lastTier = tier;
-              return (
-                <Fragment key={p.rank}>
-                  {showDivider && (
+        <div className="w-full overflow-x-auto mcp-app-scroll-x">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12">#</TableHead>
+                <TableHead>Player</TableHead>
+                <TableHead className="hidden sm:table-cell">Pos</TableHead>
+                <TableHead className="text-right">Z-Score</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {players.map(function (p) {
+                var tier = getTier(p.z_score);
+                var showDivider = lastTier !== "" && tier !== lastTier;
+                lastTier = tier;
+                return (
+                  <Fragment key={p.rank}>
+                    {showDivider && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="py-0.5 px-0">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-0.5 bg-primary/30" />
+                            <VerdictBadge grade={tierGrade(p.z_score)} size="sm" />
+                            <div className="flex-1 h-0.5 bg-primary/30" />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
                     <TableRow>
-                      <TableCell colSpan={4} className="py-0.5 px-0">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-0.5 bg-primary/30" />
-                          <VerdictBadge grade={tierGrade(p.z_score)} size="sm" />
-                          <div className="flex-1 h-0.5 bg-primary/30" />
-                        </div>
+                      <TableCell className="font-mono text-xs">{p.rank}</TableCell>
+                      <TableCell className="font-medium">
+                        <PlayerCell player={p} app={app} navigate={navigate} context="default" />
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        {p.position && <Badge variant="secondary">{p.position}</Badge>}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <ZScoreBar z={p.z_score} />
                       </TableCell>
                     </TableRow>
-                  )}
-                  <TableRow>
-                    <TableCell className="font-mono text-xs">{p.rank}</TableCell>
-                    <TableCell className="font-medium">
-                      <PlayerCell player={p} app={app} navigate={navigate} context="default" />
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      {p.position && <Badge color="secondary" size="sm">{p.position}</Badge>}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <ZScoreBar z={p.z_score} />
-                    </TableCell>
-                  </TableRow>
-                </Fragment>
-              );
-            })}
-          </TableBody>
-        </Table>
+                  </Fragment>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );

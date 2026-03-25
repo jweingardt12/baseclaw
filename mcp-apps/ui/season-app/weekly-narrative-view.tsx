@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
-import { Badge } from "@plexui/ui/components/Badge";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { KpiTile } from "../shared/kpi-tile";
 import { AiInsight } from "../shared/ai-insight";
 import { TrendingUp, TrendingDown, Trophy, Target, BarChart3 } from "@/shared/icons";
@@ -51,12 +51,12 @@ function catResultBg(result: string): string {
 function standingsDirectionBadge(direction: string, from: string | number, to: string | number) {
   var d = (direction || "").toLowerCase();
   if (d === "up") {
-    return <Badge size="sm" className="bg-sem-success">{from + " -> " + to + " (up)"}</Badge>;
+    return <Badge className="bg-sem-success">{from + " -> " + to + " (up)"}</Badge>;
   }
   if (d === "down") {
-    return <Badge size="sm" className="bg-sem-risk">{from + " -> " + to + " (down)"}</Badge>;
+    return <Badge className="bg-sem-risk">{from + " -> " + to + " (down)"}</Badge>;
   }
-  return <Badge color="secondary" size="sm">{from + " -> " + to + " (hold)"}</Badge>;
+  return <Badge variant="secondary">{from + " -> " + to + " (hold)"}</Badge>;
 }
 
 export function WeeklyNarrativeView({ data, app, navigate }: { data: WeeklyNarrativeResponse; app?: any; navigate?: (data: any) => void }) {
@@ -146,36 +146,38 @@ export function WeeklyNarrativeView({ data, app, navigate }: { data: WeeklyNarra
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-right">You</TableHead>
-                  <TableHead className="hidden sm:table-cell text-right">Opp</TableHead>
-                  <TableHead className="text-center">Result</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {cats.map(function (c, idx) {
-                  return (
-                    <TableRow key={c.name + "-" + idx} className={catResultBg(c.result)}>
-                      <TableCell className="font-medium text-sm">{c.name}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{c.your_value}</TableCell>
-                      <TableCell className="hidden sm:table-cell text-right font-mono text-sm">{c.opp_value}</TableCell>
-                      <TableCell className="text-center">
-                        {(c.result || "").toLowerCase() === "win" || (c.result || "").toLowerCase() === "w" ? (
-                          <TrendingUp className="h-4 w-4 text-sem-success inline" />
-                        ) : (c.result || "").toLowerCase() === "loss" || (c.result || "").toLowerCase() === "l" ? (
-                          <TrendingDown className="h-4 w-4 text-sem-risk inline" />
-                        ) : (
-                          <span className="text-xs text-sem-warning font-medium">TIE</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <div className="w-full overflow-x-auto mcp-app-scroll-x">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Category</TableHead>
+                    <TableHead className="text-right">You</TableHead>
+                    <TableHead className="hidden sm:table-cell text-right">Opp</TableHead>
+                    <TableHead className="text-center">Result</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {cats.map(function (c, idx) {
+                    return (
+                      <TableRow key={c.name + "-" + idx} className={catResultBg(c.result)}>
+                        <TableCell className="font-medium text-sm">{c.name}</TableCell>
+                        <TableCell className="text-right font-mono text-sm">{c.your_value}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-right font-mono text-sm">{c.opp_value}</TableCell>
+                        <TableCell className="text-center">
+                          {(c.result || "").toLowerCase() === "win" || (c.result || "").toLowerCase() === "w" ? (
+                            <TrendingUp className="h-4 w-4 text-sem-success inline" />
+                          ) : (c.result || "").toLowerCase() === "loss" || (c.result || "").toLowerCase() === "l" ? (
+                            <TrendingDown className="h-4 w-4 text-sem-risk inline" />
+                          ) : (
+                            <span className="text-xs text-sem-warning font-medium">TIE</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}

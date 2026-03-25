@@ -1,4 +1,4 @@
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
 import { Subheading } from "../components/heading";
 import { DescriptionList, DescriptionTerm, DescriptionDetails } from "../components/description-list";
 import { AiInsight } from "../shared/ai-insight";
@@ -37,7 +37,7 @@ export function InfoView({ data }: { data: LeagueInfo }) {
       <div className="surface-card p-5">
         <div className="flex items-center gap-2 mb-3">
           <Subheading>{data.name}</Subheading>
-          <Badge color="secondary">{data.season}</Badge>
+          <Badge variant="secondary">{data.season}</Badge>
         </div>
         <DescriptionList>
           {rows.map(function (row) {

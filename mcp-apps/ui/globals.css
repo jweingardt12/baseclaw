@@ -1,6 +1,4 @@
 @import "tailwindcss";
-@import "@plexui/ui/css";
-@source "../node_modules/@plexui/ui";
 @import "tw-animate-css";
 @import "@fontsource-variable/geist";
 
@@ -42,11 +40,18 @@
   --color-accent-warning: light-dark(#f59e0b, #fbbf24);
   --color-accent-risk: light-dark(#dc2626, #f87171);
   --color-accent-neutral: light-dark(#64748b, #94a3b8);
+  --color-destructive: var(--color-accent-risk);
+  --color-destructive-foreground: #ffffff;
   --sem-info: var(--color-accent-info);
   --sem-success: var(--color-accent-success);
   --sem-warning: var(--color-accent-warning);
   --sem-risk: var(--color-accent-risk);
   --sem-neutral: var(--color-accent-neutral);
+  --chart-1: var(--color-primary);
+  --chart-2: var(--color-accent-info);
+  --chart-3: var(--color-accent-warning);
+  --chart-4: var(--color-accent-success);
+  --chart-5: var(--color-accent-risk);
   --safe-area-top: 0px;
   --safe-area-right: 0px;
   --safe-area-bottom: 0px;

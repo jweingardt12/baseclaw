@@ -1,4 +1,4 @@
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
 import { Subheading } from "../components/heading";
 import { AiInsight } from "../shared/ai-insight";
 
@@ -20,7 +20,7 @@ export function StatCategoriesView({ data }: { data: { categories: StatCategory[
         <Subheading level={3} className={"mb-3 " + colorClass}>{title}</Subheading>
         <div className="flex flex-wrap gap-2">
           {cats.map((c) => (
-            <Badge key={c.display_name} color="secondary" className="text-sm py-1 px-3 font-bold">
+            <Badge key={c.display_name} variant="secondary" className="text-sm py-1 px-3 font-bold">
               {c.display_name}
             </Badge>
           ))}

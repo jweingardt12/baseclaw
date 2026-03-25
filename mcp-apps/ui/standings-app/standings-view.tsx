@@ -1,9 +1,9 @@
 import * as React from "react";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { BarChart } from "@/charts";
 import { Card, CardContent } from "../components/card";
 import { Subheading } from "../components/heading";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, ReferenceLine } from "recharts";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 
@@ -24,7 +24,7 @@ function RankBadge({ rank }: { rank: number }) {
   if (rank === 1) return <Badge size="sm" className="bg-sem-warning">{rank}</Badge>;
   if (rank === 2) return <Badge size="sm" className="bg-sem-neutral">{rank}</Badge>;
   if (rank === 3) return <Badge size="sm" className="bg-sem-info">{rank}</Badge>;
-  return <Badge color="secondary" size="sm">{rank}</Badge>;
+  return <Badge variant="secondary">{rank}</Badge>;
 }
 
 function WinLossBar({ wins, losses }: { wins: number; losses: number }) {
@@ -63,48 +63,26 @@ function PointsDistributionChart({ standings, playoffLine }: { standings: Standi
     .filter((s) => s.points_for)
     .sort((a, b) => parseFloat(b.points_for || "0") - parseFloat(a.points_for || "0"));
 
-  var chartData = sorted.map((s) => ({
-    name: s.name.length > 18 ? s.name.slice(0, 16) + ".." : s.name,
-    points: parseFloat(s.points_for || "0"),
-    isMyTeam: s.name === MY_TEAM,
-    inPlayoffs: s.rank <= playoffLine,
-  }));
+  var chartData = sorted.map(function (s) {
+    var fill = s.rank <= playoffLine ? "var(--sem-success)" : "var(--sem-risk)";
+    if (s.name === MY_TEAM) fill = "hsl(var(--primary))";
+    return {
+      label: s.name.length > 18 ? s.name.slice(0, 16) + ".." : s.name,
+      value: parseFloat(s.points_for || "0"),
+      color: fill,
+    };
+  });
 
   var playoffCutoffTeam = standings.find((s) => s.rank === playoffLine);
   var cutoffPoints = playoffCutoffTeam ? parseFloat(playoffCutoffTeam.points_for || "0") : 0;
 
-  var chartHeight = Math.max(250, chartData.length * 32);
-
   return (
-    <div style={{ width: "100%", height: chartHeight }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
-          <XAxis type="number" tick={{ fontSize: 12 }} />
-          <YAxis
-            type="category"
-            dataKey="name"
-            width={130}
-            tick={{ fontSize: 12 }}
-          />
-          {cutoffPoints > 0 && (
-            <ReferenceLine
-              x={cutoffPoints}
-              stroke="var(--sem-neutral)"
-              strokeDasharray="4 4"
-              strokeWidth={1.5}
-              label={{ value: "Playoff line", position: "top", fontSize: 11, fill: "var(--sem-neutral)" }}
-            />
-          )}
-          <Bar dataKey="points" radius={[0, 4, 4, 0]} barSize={20}>
-            {chartData.map((entry, idx) => {
-              var fill = entry.inPlayoffs ? "var(--sem-success)" : "var(--sem-risk)";
-              if (entry.isMyTeam) fill = "hsl(var(--primary))";
-              return <Cell key={"cell-" + idx} fill={fill} fillOpacity={entry.isMyTeam ? 1 : 0.7} />;
-            })}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+    <BarChart
+      data={chartData}
+      horizontal
+      labelWidth={130}
+      referenceLine={cutoffPoints > 0 ? { value: cutoffPoints, label: "Playoff line", color: "var(--sem-neutral)" } : undefined}
+    />
   );
 }
 
@@ -136,6 +114,7 @@ export function StandingsView({ data }: { data: { standings: StandingsEntry[]; p
 
       <div>
         <Subheading className="mb-2">League Standings</Subheading>
+        <div className="w-full overflow-x-auto mcp-app-scroll-x">
         <Table>
           <TableHeader>
             <TableRow>
@@ -177,6 +156,7 @@ export function StandingsView({ data }: { data: { standings: StandingsEntry[]; p
             })}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {/* Points Distribution Chart (collapsible) */}

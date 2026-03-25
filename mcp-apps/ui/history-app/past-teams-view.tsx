@@ -1,5 +1,5 @@
-import { Button } from "@plexui/ui/components/Button";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
+import { Button } from "@/components/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { useCallTool } from "../shared/use-call-tool";
 
 import { ChevronLeft, ChevronRight, Loader2 } from "@/shared/icons";
@@ -29,11 +29,11 @@ export function PastTeamsView({ data, app, navigate }: { data: PastTeamsData; ap
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="flex items-center justify-between gap-2">
-        <Button variant="outline" color="secondary" disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
+        <Button variant="outline" disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <span className="flex-1 text-center text-sm font-bold">{"Teams - " + data.year}</span>
-        <Button variant="outline" color="secondary" disabled={data.year >= 2026 || loading} onClick={() => changeYear(data.year + 1)}>
+        <Button variant="outline" disabled={data.year >= 2026 || loading} onClick={() => changeYear(data.year + 1)}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
@@ -44,6 +44,7 @@ export function PastTeamsView({ data, app, navigate }: { data: PastTeamsData; ap
           </div>
         )}
         <div className="surface-card overflow-hidden">
+          <div className="w-full overflow-x-auto mcp-app-scroll-x">
           <Table>
             <TableHeader>
               <TableRow>
@@ -66,6 +67,7 @@ export function PastTeamsView({ data, app, navigate }: { data: PastTeamsData; ap
               })}
             </TableBody>
           </Table>
+          </div>
         </div>
       </div>
     </div>

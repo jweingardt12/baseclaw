@@ -1,6 +1,6 @@
 import { formatError } from "./errors.js";
 
-const API_BASE = process.env.PYTHON_API_URL || "http://localhost:8766";
+export var API_BASE = process.env.PYTHON_API_URL || "http://localhost:8766";
 
 export function toolError(e: unknown) {
   const msg = e instanceof Error ? e.message : String(e);

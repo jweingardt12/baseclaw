@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
-import { Badge } from "@plexui/ui/components/Badge";
-import { Button } from "@plexui/ui/components/Button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Subheading } from "../components/heading";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { useCallTool } from "../shared/use-call-tool";
 import { PlayerName } from "../shared/player-name";
 
@@ -85,15 +85,15 @@ function scoreLabel(wins: number, losses: number): string {
 function classificationBadge(cls: string) {
   switch (cls) {
     case "target":
-      return <Badge size="sm" className="bg-sem-info"><Target className="h-2.5 w-2.5 mr-0.5 inline" />Target</Badge>;
+      return <Badge className="bg-sem-info"><Target className="h-2.5 w-2.5 mr-0.5 inline" />Target</Badge>;
     case "protect":
-      return <Badge size="sm" className="bg-sem-warning"><Shield className="h-2.5 w-2.5 mr-0.5 inline" />Protect</Badge>;
+      return <Badge className="bg-sem-warning"><Shield className="h-2.5 w-2.5 mr-0.5 inline" />Protect</Badge>;
     case "concede":
-      return <Badge color="secondary" size="sm" className="text-muted-foreground"><XCircle className="h-2.5 w-2.5 mr-0.5 inline" />Concede</Badge>;
+      return <Badge variant="secondary" className="text-muted-foreground"><XCircle className="h-2.5 w-2.5 mr-0.5 inline" />Concede</Badge>;
     case "lock":
-      return <Badge size="sm" className="bg-sem-success"><Lock className="h-2.5 w-2.5 mr-0.5 inline" />Lock</Badge>;
+      return <Badge className="bg-sem-success"><Lock className="h-2.5 w-2.5 mr-0.5 inline" />Lock</Badge>;
     default:
-      return <Badge color="secondary" size="sm">{cls}</Badge>;
+      return <Badge variant="secondary">{cls}</Badge>;
   }
 }
 
@@ -151,7 +151,7 @@ export function MatchupStrategyView({ data, app, navigate }: { data: MatchupStra
           <Subheading>Matchup Strategy</Subheading>
         </div>
         {app && (
-          <Button variant="outline" color="secondary" size="xs" onClick={handleRefresh} disabled={loading}>
+          <Button variant="outline" size="xs" onClick={handleRefresh} disabled={loading}>
             {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             Refresh
           </Button>
@@ -243,34 +243,36 @@ export function MatchupStrategyView({ data, app, navigate }: { data: MatchupStra
           <CardTitle className="text-base">Category Breakdown</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">You</TableHead>
-                <TableHead className="text-right">Opp</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-center">Plan</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(d.categories || []).map(function (c, i) {
-                return (
-                  <TableRow key={i + "-" + c.name} className={rowBg(c.classification)} title={c.reason}>
-                    <TableCell className="font-medium text-sm">{c.name}</TableCell>
-                    <TableCell className="text-right font-mono text-sm">{c.my_value}</TableCell>
-                    <TableCell className="text-right font-mono text-sm">{c.opp_value}</TableCell>
-                    <TableCell className="text-center">
-                      {c.result === "win" && <TrendingUp className="h-4 w-4 text-sem-success inline" />}
-                      {c.result === "loss" && <TrendingDown className="h-4 w-4 text-sem-risk inline" />}
-                      {c.result === "tie" && <span className="text-xs text-sem-warning font-medium">TIE</span>}
-                    </TableCell>
-                    <TableCell className="text-center">{classificationBadge(c.classification)}</TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          <div className="w-full overflow-x-auto mcp-app-scroll-x">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Category</TableHead>
+                  <TableHead className="text-right">You</TableHead>
+                  <TableHead className="text-right">Opp</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-center">Plan</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(d.categories || []).map(function (c, i) {
+                  return (
+                    <TableRow key={i + "-" + c.name} className={rowBg(c.classification)} title={c.reason}>
+                      <TableCell className="font-medium text-sm">{c.name}</TableCell>
+                      <TableCell className="text-right font-mono text-sm">{c.my_value}</TableCell>
+                      <TableCell className="text-right font-mono text-sm">{c.opp_value}</TableCell>
+                      <TableCell className="text-center">
+                        {c.result === "win" && <TrendingUp className="h-4 w-4 text-sem-success inline" />}
+                        {c.result === "loss" && <TrendingDown className="h-4 w-4 text-sem-risk inline" />}
+                        {c.result === "tie" && <span className="text-xs text-sem-warning font-medium">TIE</span>}
+                      </TableCell>
+                      <TableCell className="text-center">{classificationBadge(c.classification)}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -288,7 +290,7 @@ export function MatchupStrategyView({ data, app, navigate }: { data: MatchupStra
               {(d.opp_transactions || []).map(function (tx, idx) {
                 return (
                   <div key={idx} className="flex items-center gap-2 text-sm">
-                    <Badge color={tx.type === "add" ? undefined : "zinc"}  size="sm" className="w-12 justify-center">
+                    <Badge variant={tx.type === "add" ? "default" : "secondary"} className="w-12 justify-center">
                       {tx.type === "add" ? "ADD" : "DROP"}
                     </Badge>
                     <span>{tx.player}</span>
@@ -311,58 +313,60 @@ export function MatchupStrategyView({ data, app, navigate }: { data: MatchupStra
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Player</TableHead>
-                  <TableHead className="hidden sm:table-cell">Team</TableHead>
-                  <TableHead className="text-center">Games</TableHead>
-                  <TableHead className="text-right">Own%</TableHead>
-                  <TableHead className="hidden sm:table-cell">Targets</TableHead>
-                  {app && <TableHead className="w-10"></TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(d.waiver_targets || []).map(function (wt, idx) {
-                  return (
-                    <TableRow key={idx}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <PlayerName name={wt.name} playerId={wt.pid} mlbId={wt.mlb_id} app={app} navigate={navigate} context="waivers" />
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <TeamLogo abbrev={wt.team} />
-                          {wt.team}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-center font-mono text-sm">{wt.games}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{wt.pct}%</TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <div className="flex flex-wrap gap-0.5">
-                          {(wt.categories || []).map(function (cat) {
-                            return <Badge key={cat} color="secondary" size="sm">{cat}</Badge>;
-                          })}
-                        </div>
-                      </TableCell>
-                      {app && (
+            <div className="w-full overflow-x-auto mcp-app-scroll-x">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Player</TableHead>
+                    <TableHead className="hidden sm:table-cell">Team</TableHead>
+                    <TableHead className="text-center">Games</TableHead>
+                    <TableHead className="text-right">Own%</TableHead>
+                    <TableHead className="hidden sm:table-cell">Targets</TableHead>
+                    {app && <TableHead className="w-10"></TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(d.waiver_targets || []).map(function (wt, idx) {
+                    return (
+                      <TableRow key={idx}>
                         <TableCell>
-                          <Button
-                            variant="ghost" color="secondary"
-                            uniform size="sm"
-                            onClick={function () { handleAdd(wt.pid); }}
-                            disabled={loading}
-                          >
-                            <UserPlus className="h-3 w-3" />
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <PlayerName name={wt.name} playerId={wt.pid} mlbId={wt.mlb_id} app={app} navigate={navigate} context="waivers" />
+                          </div>
                         </TableCell>
-                      )}
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                        <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <TeamLogo abbrev={wt.team} />
+                            {wt.team}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center font-mono text-sm">{wt.games}</TableCell>
+                        <TableCell className="text-right font-mono text-sm">{wt.pct}%</TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <div className="flex flex-wrap gap-0.5">
+                            {(wt.categories || []).map(function (cat) {
+                              return <Badge key={cat} variant="secondary">{cat}</Badge>;
+                            })}
+                          </div>
+                        </TableCell>
+                        {app && (
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={function () { handleAdd(wt.pid); }}
+                              disabled={loading}
+                            >
+                              <UserPlus className="h-3 w-3" />
+                            </Button>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}

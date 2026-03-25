@@ -1,11 +1,11 @@
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
-import { Badge } from "@plexui/ui/components/Badge";
-import { Button } from "@plexui/ui/components/Button";
 import { Subheading } from "../components/heading";
 import { Text } from "../components/text";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
-import { Dialog } from "@plexui/ui/components/Dialog";
 import { useCallTool } from "../shared/use-call-tool";
 
 import { PlayerCell } from "../shared/player-row";
@@ -38,23 +38,23 @@ interface LineupData {
 }
 
 export function LineupOptimizeView({ data, app, navigate }: { data: LineupData; app: any; navigate: (data: any) => void }) {
-  const { callTool, loading } = useCallTool(app);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const hasIssues = (data.active_off_day || []).length > 0 || (data.bench_playing || []).length > 0;
+  var { callTool, loading } = useCallTool(app);
+  var [confirmOpen, setConfirmOpen] = useState(false);
+  var [copied, setCopied] = useState(false);
+  var hasIssues = (data.active_off_day || []).length > 0 || (data.bench_playing || []).length > 0;
 
-  const handleCopySwaps = () => {
-    const lines = (data.swaps || []).map((s) => s.bench_player + " \u2192 " + s.position + " (replacing " + s.start_player + ")");
-    const text = "Lineup Swaps:\n" + lines.join("\n");
+  var handleCopySwaps = () => {
+    var lines = (data.swaps || []).map((s) => s.bench_player + " \u2192 " + s.position + " (replacing " + s.start_player + ")");
+    var text = "Lineup Swaps:\n" + lines.join("\n");
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => { setCopied(false); }, 2000);
     });
   };
 
-  const handleApply = async () => {
+  var handleApply = async () => {
     setConfirmOpen(false);
-    const result = await callTool("yahoo_lineup_optimize", { apply: true });
+    var result = await callTool("yahoo_lineup_optimize", { apply: true });
     if (result) {
       navigate(result.structuredContent);
     }
@@ -111,24 +111,26 @@ export function LineupOptimizeView({ data, app, navigate }: { data: LineupData; 
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16">Pos</TableHead>
-                  <TableHead>Player</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(data.active_off_day || []).map((p) => (
-                  <TableRow key={p.name}>
-                    <TableCell className="font-mono text-xs">{p.position || "?"}</TableCell>
-                    <TableCell className="font-medium">
-                      <PlayerCell player={p} app={app} navigate={navigate} context="roster" />
-                    </TableCell>
+            <div className="w-full overflow-x-auto mcp-app-scroll-x">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-16">Pos</TableHead>
+                    <TableHead>Player</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {(data.active_off_day || []).map((p) => (
+                    <TableRow key={p.name}>
+                      <TableCell className="font-mono text-xs">{p.position || "?"}</TableCell>
+                      <TableCell className="font-medium">
+                        <PlayerCell player={p} app={app} navigate={navigate} context="roster" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -139,24 +141,26 @@ export function LineupOptimizeView({ data, app, navigate }: { data: LineupData; 
             <CardTitle className="text-base text-primary">Bench Players - Have Game Today</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16">Pos</TableHead>
-                  <TableHead>Player</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(data.bench_playing || []).map((p) => (
-                  <TableRow key={p.name}>
-                    <TableCell className="font-mono text-xs">BN</TableCell>
-                    <TableCell className="font-medium">
-                      <PlayerCell player={p} app={app} navigate={navigate} context="roster" />
-                    </TableCell>
+            <div className="w-full overflow-x-auto mcp-app-scroll-x">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-16">Pos</TableHead>
+                    <TableHead>Player</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {(data.bench_playing || []).map((p) => (
+                    <TableRow key={p.name}>
+                      <TableCell className="font-mono text-xs">BN</TableCell>
+                      <TableCell className="font-medium">
+                        <PlayerCell player={p} app={app} navigate={navigate} context="roster" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -166,7 +170,7 @@ export function LineupOptimizeView({ data, app, navigate }: { data: LineupData; 
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               Suggested Swaps
-              <Button variant="ghost" color="secondary" uniform size="sm" onClick={handleCopySwaps}>
+              <Button variant="ghost" size="sm" onClick={handleCopySwaps}>
                 {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
               </Button>
             </CardTitle>
@@ -174,12 +178,12 @@ export function LineupOptimizeView({ data, app, navigate }: { data: LineupData; 
           <CardContent>
             {(data.swaps || []).map((s, i) => (
               <div key={i} className="flex items-center gap-2 py-1 flex-wrap">
-                <Badge color="danger" size="sm">Bench</Badge>
+                <Badge variant="destructive">Bench</Badge>
                 <span className="text-sm min-w-0"><PlayerName name={s.bench_player} context="roster" /></span>
                 <ArrowRightLeft size={14} className="text-muted-foreground shrink-0" />
-                <Badge size="sm">Start</Badge>
+                <Badge>Start</Badge>
                 <span className="text-sm min-w-0"><PlayerName name={s.start_player} context="roster" /></span>
-                <Badge color="secondary" size="sm">{s.position}</Badge>
+                <Badge variant="secondary">{s.position}</Badge>
               </div>
             ))}
           </CardContent>
@@ -200,13 +204,13 @@ export function LineupOptimizeView({ data, app, navigate }: { data: LineupData; 
                 <div className="space-y-1.5">
                   {(data.swaps || []).map((s, i) => (
                     <div key={"before-" + i} className="flex items-center gap-1.5 min-w-0">
-                      <Badge color="secondary" size="sm" className="min-w-[36px] justify-center shrink-0">{s.position}</Badge>
+                      <Badge variant="secondary" className="min-w-[36px] justify-center shrink-0">{s.position}</Badge>
                       <span className="text-sm truncate">{s.start_player}</span>
                     </div>
                   ))}
                   {(data.swaps || []).map((s, i) => (
                     <div key={"before-bn-" + i} className="flex items-center gap-1.5 min-w-0">
-                      <Badge color="secondary" size="sm" className="min-w-[36px] justify-center shrink-0">BN</Badge>
+                      <Badge variant="secondary" className="min-w-[36px] justify-center shrink-0">BN</Badge>
                       <span className="text-sm text-muted-foreground truncate">{s.bench_player}</span>
                     </div>
                   ))}
@@ -222,13 +226,13 @@ export function LineupOptimizeView({ data, app, navigate }: { data: LineupData; 
                 <div className="space-y-1.5">
                   {(data.swaps || []).map((s, i) => (
                     <div key={"after-" + i} className="flex items-center gap-1.5 min-w-0">
-                      <Badge size="sm" className="min-w-[36px] justify-center shrink-0">{s.position}</Badge>
+                      <Badge className="min-w-[36px] justify-center shrink-0">{s.position}</Badge>
                       <span className="text-sm font-medium truncate">{s.bench_player}</span>
                     </div>
                   ))}
                   {(data.swaps || []).map((s, i) => (
                     <div key={"after-bn-" + i} className="flex items-center gap-1.5 min-w-0">
-                      <Badge color="secondary" size="sm" className="min-w-[36px] justify-center shrink-0">BN</Badge>
+                      <Badge variant="secondary" className="min-w-[36px] justify-center shrink-0">BN</Badge>
                       <span className="text-sm text-muted-foreground truncate">{s.start_player}</span>
                     </div>
                   ))}
@@ -240,7 +244,7 @@ export function LineupOptimizeView({ data, app, navigate }: { data: LineupData; 
       )}
 
       {!data.applied && (data.swaps || []).length > 0 && (
-        <Button color="secondary" size="sm" block onClick={() => setConfirmOpen(true)} disabled={loading}>
+        <Button variant="secondary" size="sm" className="w-full" onClick={() => setConfirmOpen(true)} disabled={loading}>
           {loading ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
           Apply Swaps
         </Button>
@@ -248,34 +252,34 @@ export function LineupOptimizeView({ data, app, navigate }: { data: LineupData; 
 
       {/* Confirmation Dialog */}
       <Dialog open={confirmOpen} onOpenChange={function (open) { if (!open) setConfirmOpen(false); }}>
-        <Dialog.Content>
-          <Dialog.Header>
-            <Dialog.Title>Confirm Lineup Changes</Dialog.Title>
-            <Dialog.Description>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Lineup Changes</DialogTitle>
+            <DialogDescription>
               {"The following " + (data.swaps || []).length + " swap" + ((data.swaps || []).length === 1 ? "" : "s") + " will be applied:"}
-            </Dialog.Description>
-          </Dialog.Header>
+            </DialogDescription>
+          </DialogHeader>
           <div className="space-y-2 px-6 py-4">
             {(data.swaps || []).map((s, i) => (
               <div key={"confirm-" + i} className="text-sm flex items-center gap-1.5">
                 <span className="font-medium">{s.bench_player}</span>
                 <ArrowRight size={12} className="text-muted-foreground" />
-                <Badge color="secondary" size="sm">{s.position}</Badge>
+                <Badge variant="secondary">{s.position}</Badge>
                 <span className="text-muted-foreground mx-1">/</span>
                 <span className="font-medium">{s.start_player}</span>
                 <ArrowRight size={12} className="text-muted-foreground" />
-                <Badge color="secondary" size="sm">BN</Badge>
+                <Badge variant="secondary">BN</Badge>
               </div>
             ))}
           </div>
-          <Dialog.Footer>
-            <Button variant="outline" color="secondary" onClick={() => setConfirmOpen(false)}>Cancel</Button>
-            <Button color="secondary" onClick={handleApply} disabled={loading}>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={handleApply} disabled={loading}>
               {loading ? <Loader2 size={14} className="animate-spin" /> : null}
               <span>{loading ? "Applying..." : "Confirm"}</span>
             </Button>
-          </Dialog.Footer>
-        </Dialog.Content>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
 
       {!hasIssues && (

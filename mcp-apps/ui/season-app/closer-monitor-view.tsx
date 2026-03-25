@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Badge } from "@plexui/ui/components/Badge";
-import { Button } from "@plexui/ui/components/Button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Subheading } from "../components/heading";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
-import { Tabs } from "@plexui/ui/components/Tabs";
 import { useCallTool } from "../shared/use-call-tool";
 import { PlayerName } from "../shared/player-name";
 
@@ -61,10 +61,12 @@ export function CloserMonitorView({ data, app, navigate }: { data: CloserMonitor
         Closer Monitor
       </Subheading>
 
-      <Tabs value={tab} onChange={setTab} aria-label="Closer tabs">
-        <Tabs.Tab value="my">{"My Closers (" + myClosers.length + ")"}</Tabs.Tab>
-        <Tabs.Tab value="available">{"Available (" + available.length + ")"}</Tabs.Tab>
-        <Tabs.Tab value="leaders">Saves Leaders</Tabs.Tab>
+      <Tabs value={tab} onValueChange={setTab} aria-label="Closer tabs">
+        <TabsList>
+          <TabsTrigger value="my">{"My Closers (" + myClosers.length + ")"}</TabsTrigger>
+          <TabsTrigger value="available">{"Available (" + available.length + ")"}</TabsTrigger>
+          <TabsTrigger value="leaders">Saves Leaders</TabsTrigger>
+        </TabsList>
       </Tabs>
 
       <div className="relative">
@@ -75,6 +77,7 @@ export function CloserMonitorView({ data, app, navigate }: { data: CloserMonitor
         )}
 
         {tab === "my" && (
+          <div className="w-full overflow-x-auto mcp-app-scroll-x">
           <Table>
             <TableHeader>
               <TableRow>
@@ -93,14 +96,14 @@ export function CloserMonitorView({ data, app, navigate }: { data: CloserMonitor
                   <TableCell>
                     <div className="flex gap-1 flex-wrap">
                       {(p.positions || []).map((pos) => (
-                        <Badge key={pos} color="secondary" size="sm">{pos}</Badge>
+                        <Badge key={pos} variant="secondary">{pos}</Badge>
                       ))}
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs">{p.percent_owned}%</TableCell>
                   <TableCell className="hidden sm:table-cell">
                     {p.status && p.status !== "Healthy" && (
-                      <Badge color="danger" size="sm">{p.status}</Badge>
+                      <Badge variant="destructive">{p.status}</Badge>
                     )}
                   </TableCell>
                 </TableRow>
@@ -114,9 +117,11 @@ export function CloserMonitorView({ data, app, navigate }: { data: CloserMonitor
               )}
             </TableBody>
           </Table>
+          </div>
         )}
 
         {tab === "available" && (
+          <div className="w-full overflow-x-auto mcp-app-scroll-x">
           <Table>
             <TableHeader>
               <TableRow>
@@ -135,11 +140,11 @@ export function CloserMonitorView({ data, app, navigate }: { data: CloserMonitor
                   <TableCell className="text-right font-mono text-xs">{p.percent_owned}%</TableCell>
                   <TableCell className="hidden sm:table-cell">
                     {p.status && p.status !== "Healthy" && (
-                      <Badge color="danger" size="sm">{p.status}</Badge>
+                      <Badge variant="destructive">{p.status}</Badge>
                     )}
                   </TableCell>
                   <TableCell>
-                    <Button color="secondary" size="xs" uniform onClick={() => handleAdd(p.player_id)} disabled={loading} title="Add player">
+                    <Button variant="secondary" size="xs" onClick={() => handleAdd(p.player_id)} disabled={loading} title="Add player">
                       <UserPlus size={14} />
                     </Button>
                   </TableCell>
@@ -154,9 +159,11 @@ export function CloserMonitorView({ data, app, navigate }: { data: CloserMonitor
               )}
             </TableBody>
           </Table>
+          </div>
         )}
 
         {tab === "leaders" && (
+          <div className="w-full overflow-x-auto mcp-app-scroll-x">
           <Table>
             <TableHeader>
               <TableRow>
@@ -182,6 +189,7 @@ export function CloserMonitorView({ data, app, navigate }: { data: CloserMonitor
               )}
             </TableBody>
           </Table>
+          </div>
         )}
       </div>
     </div>

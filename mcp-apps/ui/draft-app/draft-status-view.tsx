@@ -1,8 +1,8 @@
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
 import { Progress } from "../components/progress";
 import { Text } from "../components/text";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { BarChart } from "@/charts";
 import { KpiTile } from "../shared/kpi-tile";
 
 interface DraftStatusData {
@@ -145,28 +145,14 @@ export function DraftStatusView({ data }: { data: DraftStatusData }) {
         <CardContent>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             {rosterData.length > 0 && (
-              <div className="w-24 h-24 flex-shrink-0 mx-auto sm:mx-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={rosterData}
-                      innerRadius={24}
-                      outerRadius={40}
-                      dataKey="value"
-                      strokeWidth={0}
-                    >
-                      {rosterData.map(function (entry, index) {
-                        return <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />;
-                      })}
-                    </Pie>
-                    <Tooltip
-                      formatter={function (value: number, name: string) {
-                        return [value + " players", name];
-                      }}
-                      contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "6px", fontSize: "12px" }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+              <div className="flex-shrink-0 mx-auto sm:mx-0" style={{ width: 120 }}>
+                <BarChart
+                  data={rosterData.map(function (d, i) {
+                    return { label: d.name, value: d.value, color: COLORS[i % COLORS.length] };
+                  })}
+                  height={96}
+                  showLabels
+                />
               </div>
             )}
             <div className="flex-1 space-y-2">
@@ -192,7 +178,7 @@ export function DraftStatusView({ data }: { data: DraftStatusData }) {
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Roster Fill</CardTitle>
-            <Badge color="secondary" size="sm" className="font-mono">
+            <Badge variant="secondary" className="font-mono">
               {filledCount + " / " + totalSlots}
             </Badge>
           </div>

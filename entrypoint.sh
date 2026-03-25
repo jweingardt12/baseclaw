@@ -31,8 +31,9 @@ if [ -f "$OAUTH_FILE" ]; then
 fi
 
 if [ "$HAS_TOKENS" = "true" ]; then
-  echo "Starting Python API server + MCP server..."
-  python3 /app/scripts/api-server.py &
+  echo "Starting Python API server (gunicorn) + MCP server..."
+  gunicorn --bind 0.0.0.0:8766 --workers 1 --threads 4 --timeout 120 \
+    --chdir /app/scripts "api-server:app" &
 else
   echo "Skipping Python API server (no Yahoo tokens yet — setup wizard mode)"
 fi

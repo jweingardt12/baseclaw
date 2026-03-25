@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/preact";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { EmptyState } from "../empty-state";
 
 describe("EmptyState", () => {

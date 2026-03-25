@@ -1,6 +1,6 @@
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Card, CardContent } from "../components/card";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { Subheading } from "../components/heading";
 import { mlbHeadshotUrl, teamLogoFromAbbrev } from "../shared/mlb-images";
 import { AiInsight } from "../shared/ai-insight";
@@ -57,6 +57,7 @@ function PercentBar({ value }: { value: number }) {
 
 function TrendTable({ players, direction }: { players: TrendPlayer[]; direction: "added" | "dropped" }) {
   return (
+    <div className="w-full overflow-x-auto mcp-app-scroll-x">
     <Table>
       <TableHeader>
         <TableRow>
@@ -95,7 +96,7 @@ function TrendTable({ players, direction }: { players: TrendPlayer[]; direction:
               <TableCell className="hidden sm:table-cell">
                 <div className="flex gap-1 flex-wrap">
                   {(p.position || "").split(",").filter(Boolean).map(function (pos) {
-                    return <Badge key={pos.trim()} color="secondary" size="sm">{pos.trim()}</Badge>;
+                    return <Badge key={pos.trim()} variant="secondary">{pos.trim()}</Badge>;
                   })}
                 </div>
               </TableCell>
@@ -110,6 +111,7 @@ function TrendTable({ players, direction }: { players: TrendPlayer[]; direction:
         })}
       </TableBody>
     </Table>
+    </div>
   );
 }
 
@@ -132,7 +134,7 @@ export function TransactionTrendsView({ data }: { data: TransactionTrendsData })
 
       <div className="flex gap-2 mb-1">
         <Badge size="sm">{added.length + " most added"}</Badge>
-        <Badge color="danger" size="sm">{dropped.length + " most dropped"}</Badge>
+        <Badge variant="destructive">{dropped.length + " most dropped"}</Badge>
       </div>
 
       {/* Most Added */}

@@ -6,10 +6,10 @@ import { PlayerName } from "../shared/player-name";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 import { VerdictBadge } from "../shared/verdict-badge";
-import { Button } from "@plexui/ui/components/Button";
+import { Button } from "@/components/ui/button";
 import { Copy, Check } from "@/shared/icons";
 import { Subheading } from "../components/heading";
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts";
+import { RadarChart } from "@/charts";
 
 // Data comes from /api/intel/player — it IS the PlayerIntel object with a name
 interface PlayerReportData extends PlayerIntel {
@@ -58,7 +58,7 @@ export function PlayerReportView({ data, app, navigate }: { data: PlayerReportDa
               </p>
               <div className="flex items-center gap-2 mt-1">
                 <IntelBadge intel={data} size="md" />
-                <Button variant="ghost" color="secondary" uniform size="sm" onClick={handleCopy}>
+                <Button variant="ghost" size="icon-sm" onClick={handleCopy}>
                   {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
                 </Button>
               </div>
@@ -111,25 +111,16 @@ export function PlayerReportView({ data, app, navigate }: { data: PlayerReportDa
           var key = entry[0];
           var val = entry[1];
           return {
-            metric: key.replace(/_/g, " "),
+            label: key.replace(/_/g, " "),
             value: typeof val === "number" ? val : (val && (val as any).percentile ? (val as any).percentile : 0),
-            fullMark: 100,
+            maxValue: 100,
           };
         });
         return (
           <Card>
             <CardContent className="p-4">
               <Subheading className="mb-2">Statcast Profile</Subheading>
-              <div className="h-48 sm:h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={radarData}>
-                    <PolarGrid />
-                    <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11 }} />
-                    <PolarRadiusAxis tick={{ fontSize: 9 }} domain={[0, 100]} />
-                    <Radar dataKey="value" stroke="var(--color-primary)" fill="var(--color-primary)" fillOpacity={0.3} />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
+              <RadarChart data={radarData} />
             </CardContent>
           </Card>
         );

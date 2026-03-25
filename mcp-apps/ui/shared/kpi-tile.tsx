@@ -1,4 +1,4 @@
-import { StatCard } from "@plexui/ui/components/StatCard";
+import { StatCard } from "@/shared/stat-card";
 import { cn } from "../lib/utils";
 
 var COLOR_MAP: Record<string, "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "discovery" | "caution"> = {

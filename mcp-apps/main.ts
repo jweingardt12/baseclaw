@@ -8,6 +8,7 @@ import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middlew
 import { YahooFantasyOAuthProvider } from "./src/auth/oauth-provider.js";
 import { isSetupComplete, getConfigValue, escapeHtml } from "./src/setup/config.js";
 import { createSetupRouter } from "./src/setup/wizard-routes.js";
+import { API_BASE } from "./src/api/python-client.js";
 import express, { Request, Response } from "express";
 import path from "path";
 import fs from "fs";
@@ -106,9 +107,19 @@ async function main() {
 
       app.use(express.json());
 
-      // Health check (unauthenticated)
-      app.get("/health", (_req, res) => {
-        res.json({ ok: true, mode: "mcp", writes_enabled: process.env.ENABLE_WRITE_OPS === "true" });
+      // Health check (unauthenticated) — Node is always ok if reachable, Python is a separate field
+      app.get("/health", async (_req, res) => {
+        var pythonOk = false;
+        try {
+          var resp = await fetch(API_BASE + "/api/health", { signal: AbortSignal.timeout(3000) });
+          pythonOk = resp.ok;
+        } catch { /* Python API not reachable yet */ }
+        res.json({
+          ok: true,
+          mode: "mcp",
+          python_api: pythonOk ? "up" : "down",
+          writes_enabled: process.env.ENABLE_WRITE_OPS === "true",
+        });
       });
 
       // Webhook endpoints — own auth via WEBHOOK_TOKEN, registered before MCP auth

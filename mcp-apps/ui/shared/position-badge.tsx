@@ -1,4 +1,4 @@
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "../lib/utils";
 
 const POS_COLORS: Record<string, string> = {
@@ -25,7 +25,7 @@ interface PositionBadgeProps {
 export function PositionBadge({ position, className }: PositionBadgeProps) {
   const colorClass = POS_COLORS[position] || "";
   return (
-    <Badge color="secondary" size="sm" className={cn("px-1.5 rounded-sm font-mono uppercase", colorClass, className)}>
+    <Badge variant="secondary" className={cn("px-1.5 rounded-sm font-mono uppercase", colorClass, className)}>
       {position}
     </Badge>
   );

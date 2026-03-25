@@ -1,7 +1,7 @@
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
 import { Subheading } from "../components/heading";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { AiInsight } from "../shared/ai-insight";
 import { EmptyState } from "../shared/empty-state";
 import { KpiTile } from "../shared/kpi-tile";
@@ -42,11 +42,10 @@ interface ILStashAdvisorResponse {
   summary: string;
 }
 
-function recColor(rec: string): "success" | "warning" | "danger" | "secondary" {
+function recVariant(rec: string): "default" | "destructive" | "secondary" {
   var lower = rec.toLowerCase();
-  if (lower === "stash" || lower === "hold" || lower === "keep") return "success";
-  if (lower === "monitor" || lower === "watch") return "warning";
-  if (lower === "drop" || lower === "cut") return "danger";
+  if (lower === "stash" || lower === "hold" || lower === "keep") return "default";
+  if (lower === "drop" || lower === "cut") return "destructive";
   return "secondary";
 }
 
@@ -82,45 +81,47 @@ export function ILStashAdvisorView({ data, app, navigate }: { data: ILStashAdvis
             <CardTitle className="text-base">Your IL Players</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Player</TableHead>
-                  <TableHead className="w-14">Pos</TableHead>
-                  <TableHead className="hidden sm:table-cell">Status</TableHead>
-                  <TableHead className="text-right">Z-Score</TableHead>
-                  <TableHead className="hidden sm:table-cell">Tier</TableHead>
-                  <TableHead className="text-center">Rec</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {yourPlayers.map(function (p, i) {
-                  return (
-                    <TableRow key={i + "-" + p.name}>
-                      <TableCell className="font-medium">
-                        <div>
-                          <PlayerName name={p.name} mlbId={p.mlb_id} app={app} navigate={navigate} context="roster" />
-                          {p.injury_description && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{p.injury_description}</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge color="secondary" size="sm">{p.position}</Badge>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <Badge color="danger" size="sm">{p.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-sm">{formatFixed(p.z_score, 2, "0.00")}</TableCell>
-                      <TableCell className={"hidden sm:table-cell text-xs font-medium " + tierColor(p.tier)}>{p.tier}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge color={recColor(p.recommendation)} size="sm">{p.recommendation}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <div className="w-full overflow-x-auto mcp-app-scroll-x">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Player</TableHead>
+                    <TableHead className="w-14">Pos</TableHead>
+                    <TableHead className="hidden sm:table-cell">Status</TableHead>
+                    <TableHead className="text-right">Z-Score</TableHead>
+                    <TableHead className="hidden sm:table-cell">Tier</TableHead>
+                    <TableHead className="text-center">Rec</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {yourPlayers.map(function (p, i) {
+                    return (
+                      <TableRow key={i + "-" + p.name}>
+                        <TableCell className="font-medium">
+                          <div>
+                            <PlayerName name={p.name} mlbId={p.mlb_id} app={app} navigate={navigate} context="roster" />
+                            {p.injury_description && (
+                              <p className="text-xs text-muted-foreground mt-0.5">{p.injury_description}</p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{p.position}</Badge>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <Badge variant="destructive">{p.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm">{formatFixed(p.z_score, 2, "0.00")}</TableCell>
+                        <TableCell className={"hidden sm:table-cell text-xs font-medium " + tierColor(p.tier)}>{p.tier}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={recVariant(p.recommendation)}>{p.recommendation}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -132,47 +133,49 @@ export function ILStashAdvisorView({ data, app, navigate }: { data: ILStashAdvis
             <CardTitle className="text-base">FA Stash Candidates</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Player</TableHead>
-                  <TableHead className="w-14">Pos</TableHead>
-                  <TableHead className="hidden sm:table-cell">Status</TableHead>
-                  <TableHead className="text-right">Z-Score</TableHead>
-                  <TableHead className="hidden sm:table-cell">Tier</TableHead>
-                  <TableHead className="text-right">Own%</TableHead>
-                  <TableHead className="text-center">Rec</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {candidates.map(function (p, i) {
-                  return (
-                    <TableRow key={i + "-" + p.name} className={i < 3 ? "bg-sem-success-subtle" : ""}>
-                      <TableCell className="font-medium">
-                        <div>
-                          <PlayerName name={p.name} mlbId={p.mlb_id} app={app} navigate={navigate} context="waivers" />
-                          {p.injury_description && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{p.injury_description}</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge color="secondary" size="sm">{p.position}</Badge>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <Badge color="danger" size="sm">{p.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-sm">{formatFixed(p.z_score, 2, "0.00")}</TableCell>
-                      <TableCell className={"hidden sm:table-cell text-xs font-medium " + tierColor(p.tier)}>{p.tier}</TableCell>
-                      <TableCell className="text-right font-mono text-xs">{p.percent_owned != null ? p.percent_owned + "%" : "-"}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge color={recColor(p.recommendation)} size="sm">{p.recommendation}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <div className="w-full overflow-x-auto mcp-app-scroll-x">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Player</TableHead>
+                    <TableHead className="w-14">Pos</TableHead>
+                    <TableHead className="hidden sm:table-cell">Status</TableHead>
+                    <TableHead className="text-right">Z-Score</TableHead>
+                    <TableHead className="hidden sm:table-cell">Tier</TableHead>
+                    <TableHead className="text-right">Own%</TableHead>
+                    <TableHead className="text-center">Rec</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {candidates.map(function (p, i) {
+                    return (
+                      <TableRow key={i + "-" + p.name} className={i < 3 ? "bg-sem-success-subtle" : ""}>
+                        <TableCell className="font-medium">
+                          <div>
+                            <PlayerName name={p.name} mlbId={p.mlb_id} app={app} navigate={navigate} context="waivers" />
+                            {p.injury_description && (
+                              <p className="text-xs text-muted-foreground mt-0.5">{p.injury_description}</p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{p.position}</Badge>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <Badge variant="destructive">{p.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm">{formatFixed(p.z_score, 2, "0.00")}</TableCell>
+                        <TableCell className={"hidden sm:table-cell text-xs font-medium " + tierColor(p.tier)}>{p.tier}</TableCell>
+                        <TableCell className="text-right font-mono text-xs">{p.percent_owned != null ? p.percent_owned + "%" : "-"}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={recVariant(p.recommendation)}>{p.recommendation}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}

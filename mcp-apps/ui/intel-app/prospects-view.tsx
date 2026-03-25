@@ -1,4 +1,4 @@
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
 import { Subheading } from "../components/heading";
 import { Text } from "../components/text";
 import { TeamLogo } from "../shared/team-logo";
@@ -56,7 +56,7 @@ export function ProspectsView({ data, app, navigate }: { data: ProspectsData; ap
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <Badge color="secondary" size="sm" className={typeColor(t.type)}>{t.type}</Badge>
+                    <Badge variant="secondary" className={typeColor(t.type)}>{t.type}</Badge>
                     <span className="text-xs text-muted-foreground">{t.team || ""}</span>
                   </div>
                   <p className="text-sm font-semibold truncate">{t.player}</p>

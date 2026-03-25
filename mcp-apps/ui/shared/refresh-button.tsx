@@ -1,4 +1,4 @@
-import { Button } from "@plexui/ui/components/Button";
+import { Button } from "@/components/ui/button";
 import { useCallTool } from "./use-call-tool";
 import { RefreshCw } from "@/shared/icons";
 
@@ -20,7 +20,7 @@ export function RefreshButton({ app, toolName, toolArgs, navigate }: RefreshButt
   };
 
   return (
-    <Button variant="ghost" color="secondary" onClick={handleRefresh} disabled={loading} uniform size="sm">
+    <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={loading}>
       <RefreshCw className={"h-3.5 w-3.5" + (loading ? " animate-spin" : "")} />
     </Button>
   );

@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
-import { Button } from "@plexui/ui/components/Button";
+import { Button } from "@/components/ui/button";
 import { useCallTool } from "../shared/use-call-tool";
 import { AiInsight } from "../shared/ai-insight";
 import { CheckCircle, XCircle, ArrowLeft, Loader2 } from "@/shared/icons";
@@ -48,7 +48,7 @@ export function TradeActionView({ data, app, navigate }: { data: TradeActionData
           <p className="text-xs text-muted-foreground mt-2">{"Transaction: " + data.transaction_key}</p>
         )}
         <div className="mt-4 flex items-center gap-2">
-          <Button variant="outline" color="secondary" onClick={handleViewTrades}>
+          <Button variant="outline" onClick={handleViewTrades}>
             <ArrowLeft size={14} />
             View Pending Trades
           </Button>

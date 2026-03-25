@@ -1,10 +1,10 @@
-import { Badge } from "@plexui/ui/components/Badge";
-import { Button } from "@plexui/ui/components/Button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Subheading } from "../components/heading";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { useCallTool } from "../shared/use-call-tool";
 
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from "recharts";
+import { BarChart } from "@/charts";
 
 import { ChevronLeft, ChevronRight, Loader2, Trophy, BarChart3 } from "@/shared/icons";
 
@@ -57,7 +57,7 @@ export function PastStandingsView({ data, app, navigate }: { data: PastStandings
       // Truncate long team names for chart labels
       var shortName = s.team_name.length > 14 ? s.team_name.slice(0, 13) + "\u2026" : s.team_name;
       return {
-        team: shortName,
+        label: shortName,
         rank: s.rank,
         wins: parsed.wins,
         losses: parsed.losses,
@@ -65,7 +65,7 @@ export function PastStandingsView({ data, app, navigate }: { data: PastStandings
       };
     })
     .filter(function (d) { return d !== null; }) as Array<{
-      team: string;
+      label: string;
       rank: number;
       wins: number;
       losses: number;
@@ -75,11 +75,11 @@ export function PastStandingsView({ data, app, navigate }: { data: PastStandings
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="flex items-center justify-between gap-2">
-        <Button variant="outline" color="secondary" disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
+        <Button variant="outline" disabled={data.year <= 2011 || loading} onClick={() => changeYear(data.year - 1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <span className="flex-1 text-center text-sm font-bold">{"Standings - " + data.year}</span>
-        <Button variant="outline" color="secondary" disabled={data.year >= 2026 || loading} onClick={() => changeYear(data.year + 1)}>
+        <Button variant="outline" disabled={data.year >= 2026 || loading} onClick={() => changeYear(data.year + 1)}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
@@ -90,6 +90,7 @@ export function PastStandingsView({ data, app, navigate }: { data: PastStandings
           </div>
         )}
         <div className="surface-card overflow-hidden">
+          <div className="w-full overflow-x-auto mcp-app-scroll-x">
           <Table>
             <TableHeader>
               <TableRow>
@@ -105,7 +106,7 @@ export function PastStandingsView({ data, app, navigate }: { data: PastStandings
                   <TableRow key={s.rank}>
                     <TableCell>
                       <span className="flex items-center gap-1">
-                        <Badge color={s.rank <= 3 ? "primary" : "secondary"}  size="sm" className="font-bold">{s.rank}</Badge>
+                        <Badge variant={s.rank <= 3 ? "default" : "secondary"} className="font-bold">{s.rank}</Badge>
                         {s.rank <= 3 && <Trophy size={14} className="text-amber-500" />}
                       </span>
                     </TableCell>
@@ -117,6 +118,7 @@ export function PastStandingsView({ data, app, navigate }: { data: PastStandings
               })}
             </TableBody>
           </Table>
+          </div>
         </div>
         {/* Win/Loss Chart */}
         {standingsChartData.length > 1 && (
@@ -125,42 +127,15 @@ export function PastStandingsView({ data, app, navigate }: { data: PastStandings
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
               <Subheading>Win-Loss Breakdown</Subheading>
             </div>
-            <div style={{ height: Math.max(standingsChartData.length * 26, 120) + "px" }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={standingsChartData} layout="vertical" margin={{ top: 5, right: 10, bottom: 5, left: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
-                  <XAxis
-                    type="number"
-                    tick={{ fontSize: 11 }}
-                    tickLine={false}
-                    axisLine={false}
-                    allowDecimals={false}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="team"
-                    tick={{ fontSize: 10 }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={90}
-                  />
-                  <Tooltip
-                    formatter={function (value: number, name: string) {
-                      var label = name === "wins" ? "Wins" : name === "losses" ? "Losses" : "Ties";
-                      return [value, label];
-                    }}
-                    contentStyle={{
-                      background: "var(--color-card)",
-                      border: "1px solid var(--color-border)",
-                      borderRadius: "6px",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Bar dataKey="wins" stackId="record" fill="var(--sem-success)" radius={[0, 0, 0, 0]} maxBarSize={18} name="wins" />
-                  <Bar dataKey="losses" stackId="record" fill="var(--sem-risk)" radius={[0, 4, 4, 0]} maxBarSize={18} name="losses" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <BarChart
+              data={standingsChartData}
+              series={[
+                { key: "wins", color: "var(--sem-success)" },
+                { key: "losses", color: "var(--sem-risk)" },
+              ]}
+              horizontal
+              labelWidth={90}
+            />
             <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <div className="w-2.5 h-2.5 rounded-sm bg-green-500" />

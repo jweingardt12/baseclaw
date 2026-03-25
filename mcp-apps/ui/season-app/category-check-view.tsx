@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadarChart as RadarChartComponent, BarChart as BarChartComponent } from "@/charts";
 import { Card, CardContent } from "../components/card";
 import { Subheading } from "../components/heading";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
-import { Tabs } from "@plexui/ui/components/Tabs";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, ReferenceLine } from "recharts";
 
 interface CategoryRank {
   category?: string;
@@ -98,7 +98,7 @@ export function CategoryCheckView({ data }: { data: CategoryCheckData }) {
               <p className="text-xs text-muted-foreground mb-1.5">Strongest</p>
               <div className="flex flex-wrap gap-1">
                 {(data.strongest || []).map((s) => (
-                  <Badge key={s}  size="sm" className="bg-sem-success">{s}</Badge>
+                  <Badge key={s} className="bg-sem-success">{s}</Badge>
                 ))}
               </div>
             </CardContent>
@@ -110,7 +110,7 @@ export function CategoryCheckView({ data }: { data: CategoryCheckData }) {
               <p className="text-xs text-muted-foreground mb-1.5">Weakest</p>
               <div className="flex flex-wrap gap-1">
                 {(data.weakest || []).map((s) => (
-                  <Badge key={s} color="danger" size="sm">{s}</Badge>
+                  <Badge key={s} variant="destructive">{s}</Badge>
                 ))}
               </div>
             </CardContent>
@@ -119,52 +119,42 @@ export function CategoryCheckView({ data }: { data: CategoryCheckData }) {
       </div>
 
       {/* Batting / Pitching filter */}
-      <Tabs value={catFilter} onChange={setCatFilter} aria-label="Category filter">
-        <Tabs.Tab value="all">{"All (" + (data.categories || []).length + ")"}</Tabs.Tab>
-        <Tabs.Tab value="batting">{"Batting (" + batting.length + ")"}</Tabs.Tab>
-        <Tabs.Tab value="pitching">{"Pitching (" + pitching.length + ")"}</Tabs.Tab>
+      <Tabs value={catFilter} onValueChange={setCatFilter} aria-label="Category filter">
+        <TabsList>
+          <TabsTrigger value="all">{"All (" + (data.categories || []).length + ")"}</TabsTrigger>
+          <TabsTrigger value="batting">{"Batting (" + batting.length + ")"}</TabsTrigger>
+          <TabsTrigger value="pitching">{"Pitching (" + pitching.length + ")"}</TabsTrigger>
+        </TabsList>
       </Tabs>
 
       {/* Chart Tabs */}
       {chartData.length > 0 && (
         <>
-          <Tabs value={chartMode} onChange={setChartMode} aria-label="Chart mode">
-            <Tabs.Tab value="radar">Radar</Tabs.Tab>
-            <Tabs.Tab value="bars">Bars</Tabs.Tab>
+          <Tabs value={chartMode} onValueChange={setChartMode} aria-label="Chart mode">
+            <TabsList>
+              <TabsTrigger value="radar">Radar</TabsTrigger>
+              <TabsTrigger value="bars">Bars</TabsTrigger>
+            </TabsList>
           </Tabs>
           {chartMode === "radar" && (
-            <div className="h-48 sm:h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={chartData}>
-                  <PolarGrid />
-                  <PolarAngleAxis dataKey="category" tick={{ fontSize: 12 }} />
-                  <PolarRadiusAxis tick={{ fontSize: 9 }} domain={[0, "dataMax"]} />
-                  <Radar dataKey="rank" stroke="var(--color-primary)" fill="var(--color-primary)" fillOpacity={0.3} />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
+            <RadarChartComponent
+              data={chartData.map(function (d) { return { label: d.category, value: d.rank, maxValue: d.fullMark }; })}
+              size={260}
+            />
           )}
           {chartMode === "bars" && (
-            <div className="h-48 sm:h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barData} layout="vertical" margin={{ left: 40, right: 10, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" strokeOpacity={0.5} vertical={false} />
-                  <XAxis type="number" domain={[0, "dataMax"]} tick={{ fontSize: 12 }} />
-                  <YAxis type="category" dataKey="category" tick={{ fontSize: 12 }} width={40} />
-                  <ReferenceLine x={medianValue} stroke="#94a3b8" strokeDasharray="3 3" label={{ value: "Median", fontSize: 9, fill: "#94a3b8" }} />
-                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                    {barData.map((entry) => (
-                      <Cell key={entry.category} fill={barFill(entry.strength)} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <BarChartComponent
+              data={barData.map(function (d) { return { label: d.category, value: d.value, color: barFill(d.strength) }; })}
+              horizontal
+              referenceLine={{ value: medianValue, label: "Median", color: "#94a3b8" }}
+              labelWidth={40}
+            />
           )}
         </>
       )}
 
       {/* Category Table */}
+      <div className="w-full overflow-x-auto mcp-app-scroll-x">
       <Table>
         <TableHeader>
           <TableRow>
@@ -193,13 +183,14 @@ export function CategoryCheckView({ data }: { data: CategoryCheckData }) {
                 </div>
               </TableCell>
               <TableCell className="hidden sm:table-cell">
-                {c.strength === "strong" && <Badge size="sm" className="bg-green-600">Strong</Badge>}
-                {c.strength === "weak" && <Badge color="danger" size="sm">Weak</Badge>}
+                {c.strength === "strong" && <Badge className="bg-green-600">Strong</Badge>}
+                {c.strength === "weak" && <Badge variant="destructive">Weak</Badge>}
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }

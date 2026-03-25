@@ -1,11 +1,11 @@
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LineChart as LineChartComponent } from "@/charts";
 import { Card, CardContent } from "../components/card";
-import { Badge } from "@plexui/ui/components/Badge";
 import { Subheading } from "../components/heading";
-import { Tabs } from "@plexui/ui/components/Tabs";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface CategoryHistoryEntry {
   week: number;
@@ -71,9 +71,9 @@ function getColor(name: string): string {
 }
 
 function trendBadge(trend: string) {
-  if (trend === "improving") return <Badge size="sm" className="bg-green-600">Improving</Badge>;
-  if (trend === "declining") return <Badge color="danger" size="sm">Declining</Badge>;
-  return <Badge color="secondary" size="sm">Stable</Badge>;
+  if (trend === "improving") return <Badge className="bg-green-600">Improving</Badge>;
+  if (trend === "declining") return <Badge variant="destructive">Declining</Badge>;
+  return <Badge variant="secondary">Stable</Badge>;
 }
 
 export function CategoryTrendView({ data }: { data: CategoryTrendData }) {
@@ -140,25 +140,6 @@ export function CategoryTrendView({ data }: { data: CategoryTrendData }) {
     }
   }
 
-  // Custom tooltip
-  function CustomTooltip({ active, payload, label }: any) {
-    if (!active || !payload || payload.length === 0) return null;
-    return (
-      <div className="rounded-md border bg-background p-2 shadow-md text-xs">
-        <p className="font-semibold mb-1">{label}</p>
-        {payload.map(function (entry: any) {
-          return (
-            <div key={entry.dataKey} className="flex items-center gap-2">
-              <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-              <span>{entry.dataKey}:</span>
-              <span className="font-mono font-semibold">#{entry.value}</span>
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-2">
       <AiInsight recommendation={data.ai_recommendation} />
@@ -179,7 +160,7 @@ export function CategoryTrendView({ data }: { data: CategoryTrendData }) {
               <p className="text-xs text-muted-foreground mb-1.5">Improving</p>
               <div className="flex flex-wrap gap-1">
                 {improving.map(function (c) {
-                  return <Badge key={c.name}  size="sm" className="bg-sem-success">{c.name}</Badge>;
+                  return <Badge key={c.name} className="bg-sem-success">{c.name}</Badge>;
                 })}
               </div>
             </CardContent>
@@ -191,7 +172,7 @@ export function CategoryTrendView({ data }: { data: CategoryTrendData }) {
               <p className="text-xs text-muted-foreground mb-1.5">Declining</p>
               <div className="flex flex-wrap gap-1">
                 {declining.map(function (c) {
-                  return <Badge key={c.name} color="danger" size="sm">{c.name}</Badge>;
+                  return <Badge key={c.name} variant="destructive">{c.name}</Badge>;
                 })}
               </div>
             </CardContent>
@@ -200,56 +181,27 @@ export function CategoryTrendView({ data }: { data: CategoryTrendData }) {
       </div>
 
       {/* Batting / Pitching filter */}
-      <Tabs value={catFilter} onChange={setCatFilter} aria-label="Category filter">
-        <Tabs.Tab value="all">{"All (" + categories.length + ")"}</Tabs.Tab>
-        <Tabs.Tab value="batting">{"Batting (" + batting.length + ")"}</Tabs.Tab>
-        <Tabs.Tab value="pitching">{"Pitching (" + pitching.length + ")"}</Tabs.Tab>
+      <Tabs value={catFilter} onValueChange={setCatFilter}>
+        <TabsList>
+          <TabsTrigger value="all">{"All (" + categories.length + ")"}</TabsTrigger>
+          <TabsTrigger value="batting">{"Batting (" + batting.length + ")"}</TabsTrigger>
+          <TabsTrigger value="pitching">{"Pitching (" + pitching.length + ")"}</TabsTrigger>
+        </TabsList>
       </Tabs>
 
       {/* Line Chart */}
       {chartData.length > 1 && (
         <Card>
           <CardContent className="p-4">
-            <div className="h-64 sm:h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" strokeOpacity={0.5} />
-                  <XAxis
-                    dataKey="week"
-                    tick={{ fontSize: 11 }}
-                    stroke="var(--color-muted-foreground)"
-                  />
-                  <YAxis
-                    reversed
-                    domain={[1, maxRank]}
-                    tick={{ fontSize: 11 }}
-                    stroke="var(--color-muted-foreground)"
-                    label={{ value: "Rank", angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "var(--color-muted-foreground)" } }}
-                    allowDecimals={false}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend
-                    wrapperStyle={{ fontSize: 11 }}
-                    iconType="circle"
-                    iconSize={8}
-                  />
-                  {filtered.map(function (cat) {
-                    return (
-                      <Line
-                        key={cat.name}
-                        type="monotone"
-                        dataKey={cat.name}
-                        stroke={getColor(cat.name)}
-                        strokeWidth={2}
-                        dot={{ r: 3 }}
-                        activeDot={{ r: 5 }}
-                        connectNulls
-                      />
-                    );
-                  })}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <LineChartComponent
+              data={chartData.map(function (d) { var out: Record<string, any> = { label: d.week }; for (var k in d) { if (k !== "week") out[k] = d[k]; } return out; })}
+              series={filtered.map(function (cat) { return { key: cat.name, color: getColor(cat.name) }; })}
+              reversed
+              yDomain={[1, maxRank]}
+              yLabel="Rank"
+              connectNulls
+              height={320}
+            />
           </CardContent>
         </Card>
       )}

@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
-import { Badge } from "@plexui/ui/components/Badge";
-import { Button } from "@plexui/ui/components/Button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Subheading } from "../components/heading";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { useCallTool } from "../shared/use-call-tool";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
@@ -85,7 +85,7 @@ export function ScoutView({ data, app, navigate }: { data: ScoutOpponentData; ap
           <Subheading>Opponent Scout Report</Subheading>
         </div>
         {app && (
-          <Button variant="outline" color="secondary" size="xs" onClick={handleRefresh} disabled={loading}>
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
             {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             Refresh
           </Button>
@@ -130,36 +130,38 @@ export function ScoutView({ data, app, navigate }: { data: ScoutOpponentData; ap
           <CardTitle className="text-base">Category Breakdown</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">You</TableHead>
-                <TableHead className="text-right">Opp</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-center hidden sm:table-cell">Margin</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(d.categories || []).map((c, i) => (
-                <TableRow key={i + "-" + c.name} className={rowBg(c.result, c.margin)}>
-                  <TableCell className="font-medium text-sm">{c.name}</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{c.my_value}</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{c.opp_value}</TableCell>
-                  <TableCell className="text-center">
-                    {c.result === "win" && <TrendingUp className="h-4 w-4 text-sem-success inline" />}
-                    {c.result === "loss" && <TrendingDown className="h-4 w-4 text-sem-risk inline" />}
-                    {c.result === "tie" && <span className="text-xs text-sem-warning font-medium">TIE</span>}
-                  </TableCell>
-                  <TableCell className="text-center hidden sm:table-cell">
-                    {c.margin === "close" && <Badge color="secondary" size="sm" className="border-yellow-500 text-sem-warning">Close</Badge>}
-                    {c.margin === "comfortable" && <Badge color="secondary" size="sm">Comf.</Badge>}
-                    {c.margin === "dominant" && <Badge color="secondary" size="sm" className="border-red-500 text-sem-risk">Dom.</Badge>}
-                  </TableCell>
+          <div className="w-full overflow-x-auto mcp-app-scroll-x">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Category</TableHead>
+                  <TableHead className="text-right">You</TableHead>
+                  <TableHead className="text-right">Opp</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-center hidden sm:table-cell">Margin</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {(d.categories || []).map((c, i) => (
+                  <TableRow key={i + "-" + c.name} className={rowBg(c.result, c.margin)}>
+                    <TableCell className="font-medium text-sm">{c.name}</TableCell>
+                    <TableCell className="text-right font-mono text-sm">{c.my_value}</TableCell>
+                    <TableCell className="text-right font-mono text-sm">{c.opp_value}</TableCell>
+                    <TableCell className="text-center">
+                      {c.result === "win" && <TrendingUp className="h-4 w-4 text-sem-success inline" />}
+                      {c.result === "loss" && <TrendingDown className="h-4 w-4 text-sem-risk inline" />}
+                      {c.result === "tie" && <span className="text-xs text-sem-warning font-medium">TIE</span>}
+                    </TableCell>
+                    <TableCell className="text-center hidden sm:table-cell">
+                      {c.margin === "close" && <Badge variant="secondary" className="border-yellow-500 text-sem-warning">Close</Badge>}
+                      {c.margin === "comfortable" && <Badge variant="secondary">Comf.</Badge>}
+                      {c.margin === "dominant" && <Badge variant="secondary" className="border-red-500 text-sem-risk">Dom.</Badge>}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -174,7 +176,7 @@ export function ScoutView({ data, app, navigate }: { data: ScoutOpponentData; ap
               </div>
               <div className="flex flex-wrap gap-1">
                 {(d.opp_strengths || []).map((s) => (
-                  <Badge key={s} color="danger" size="sm">{s}</Badge>
+                  <Badge key={s} variant="destructive">{s}</Badge>
                 ))}
               </div>
             </CardContent>
@@ -189,7 +191,7 @@ export function ScoutView({ data, app, navigate }: { data: ScoutOpponentData; ap
               </div>
               <div className="flex flex-wrap gap-1">
                 {(d.opp_weaknesses || []).map((s) => (
-                  <Badge key={s}  size="sm" className="bg-sem-success">{s}</Badge>
+                  <Badge key={s} className="bg-sem-success">{s}</Badge>
                 ))}
               </div>
             </CardContent>

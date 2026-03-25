@@ -1,5 +1,5 @@
-import { render } from "preact";
-import { useState, useEffect, useCallback } from "preact/hooks";
+import { createRoot } from "react-dom/client";
+import { useState, useEffect, useCallback } from "react";
 import "./setup-wizard.css";
 
 interface SetupStatus {
@@ -249,10 +249,10 @@ function SetupWizard() {
 
   if (loading) {
     return (
-      <div class="wizard-container">
-        <div class="wizard-card">
-          <div class="wizard-loading">
-            <div class="spinner" />
+      <div className="wizard-container">
+        <div className="wizard-card">
+          <div className="wizard-loading">
+            <div className="spinner" />
             <p>Loading setup...</p>
           </div>
         </div>
@@ -261,10 +261,10 @@ function SetupWizard() {
   }
 
   return (
-    <div class="wizard-container">
-      <div class="wizard-card">
-        <div class="wizard-header">
-          <div class="wizard-logo">
+    <div className="wizard-container">
+      <div className="wizard-card">
+        <div className="wizard-header">
+          <div className="wizard-logo">
             <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
               <rect width="32" height="32" rx="8" fill="#1e293b" />
               <path d="M8 16L14 10L20 16L14 22Z" fill="#3b82f6" opacity="0.6" />
@@ -272,60 +272,60 @@ function SetupWizard() {
             </svg>
           </div>
           <h1>BaseClaw Setup</h1>
-          <p class="wizard-subtitle">Configure your Yahoo Fantasy Baseball MCP server</p>
+          <p className="wizard-subtitle">Configure your Yahoo Fantasy Baseball MCP server</p>
         </div>
 
-        <div class="progress-bar">
-          <div class="progress-steps">
+        <div className="progress-bar">
+          <div className="progress-steps">
             {(["yahoo", "league", "password", "complete"] as Step[]).map(function (step, i) {
               var isActive = step === currentStep;
               var isDone = getStepIndex(currentStep) > i;
               var labels = ["Yahoo API", "League", "Password", "Done"];
               return (
-                <div key={step} class={"progress-step" + (isActive ? " active" : "") + (isDone ? " done" : "")}>
-                  <div class="step-dot">
+                <div key={step} className={"progress-step" + (isActive ? " active" : "") + (isDone ? " done" : "")}>
+                  <div className="step-dot">
                     {isDone ? (
                       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <path d="M3 7L6 10L11 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M3 7L6 10L11 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     ) : (
                       <span>{i + 1}</span>
                     )}
                   </div>
-                  <span class="step-label">{labels[i]}</span>
+                  <span className="step-label">{labels[i]}</span>
                 </div>
               );
             })}
           </div>
-          <div class="progress-track">
-            <div class="progress-fill" style={{ width: (getStepIndex(currentStep) / 3 * 100) + "%" }} />
+          <div className="progress-track">
+            <div className="progress-fill" style={{ width: (getStepIndex(currentStep) / 3 * 100) + "%" }} />
           </div>
         </div>
 
         {error && (
-          <div class="wizard-error">
+          <div className="wizard-error">
             <span>{error}</span>
-            <button class="error-dismiss" onClick={function () { setError(""); }}>Dismiss</button>
+            <button className="error-dismiss" onClick={function () { setError(""); }}>Dismiss</button>
           </div>
         )}
 
-        <div class="wizard-body">
+        <div className="wizard-body">
           {currentStep === "yahoo" && (
-            <div class="step-content">
+            <div className="step-content">
               <h2>Connect Yahoo Developer App</h2>
-              <div class="instructions">
+              <div className="instructions">
                 <p>Create a Yahoo Developer app to connect BaseClaw to your fantasy league.</p>
                 <ol>
                   <li>Go to <a href="https://developer.yahoo.com/apps/create/" target="_blank" rel="noopener">developer.yahoo.com/apps</a> and create a new app</li>
                   <li>Set <strong>Application Type</strong> to "Installed Application"</li>
-                  <li>Set <strong>Redirect URI</strong> to: <code class="callback-url">{window.location.origin + "/setup/yahoo-callback"}</code></li>
+                  <li>Set <strong>Redirect URI</strong> to: <code className="callback-url">{window.location.origin + "/setup/yahoo-callback"}</code></li>
                   <li>Under API Permissions, check <strong>Fantasy Sports (Read)</strong> (and Write if you want roster moves)</li>
                   <li>Copy the Consumer Key and Consumer Secret below</li>
                 </ol>
               </div>
               <form onSubmit={handleSubmitCredentials}>
-                <div class="form-field">
-                  <label for="consumer-key">Consumer Key</label>
+                <div className="form-field">
+                  <label htmlFor="consumer-key">Consumer Key</label>
                   <input
                     id="consumer-key"
                     type="text"
@@ -336,8 +336,8 @@ function SetupWizard() {
                     autoFocus
                   />
                 </div>
-                <div class="form-field">
-                  <label for="consumer-secret">Consumer Secret</label>
+                <div className="form-field">
+                  <label htmlFor="consumer-secret">Consumer Secret</label>
                   <input
                     id="consumer-secret"
                     type="password"
@@ -347,7 +347,7 @@ function SetupWizard() {
                     required
                   />
                 </div>
-                <button type="submit" class="btn-primary" disabled={submittingCreds || !consumerKey || !consumerSecret}>
+                <button type="submit" className="btn-primary" disabled={submittingCreds || !consumerKey || !consumerSecret}>
                   {submittingCreds ? "Connecting..." : "Connect to Yahoo"}
                 </button>
               </form>
@@ -355,29 +355,29 @@ function SetupWizard() {
           )}
 
           {currentStep === "league" && (
-            <div class="step-content">
+            <div className="step-content">
               <h2>Select Your League</h2>
               {loadingLeagues ? (
-                <div class="wizard-loading">
-                  <div class="spinner" />
+                <div className="wizard-loading">
+                  <div className="spinner" />
                   <p>Loading your leagues from Yahoo...</p>
                 </div>
               ) : leagues.length === 0 ? (
-                <p class="empty-state">No fantasy baseball leagues found. Make sure you're in a Yahoo Fantasy Baseball league for the current season.</p>
+                <p className="empty-state">No fantasy baseball leagues found. Make sure you're in a Yahoo Fantasy Baseball league for the current season.</p>
               ) : (
                 <div>
-                  <div class="form-field">
+                  <div className="form-field">
                     <label>League</label>
-                    <div class="league-cards">
+                    <div className="league-cards">
                       {leagues.map(function (league) {
                         return (
                           <button
                             key={league.league_key}
-                            class={"league-card" + (selectedLeague === league.league_key ? " selected" : "")}
+                            className={"league-card" + (selectedLeague === league.league_key ? " selected" : "")}
                             onClick={function () { handleSelectLeague(league.league_key); }}
                           >
-                            <span class="league-name">{league.name}</span>
-                            <span class="league-meta">{league.season} &middot; {league.num_teams} teams</span>
+                            <span className="league-name">{league.name}</span>
+                            <span className="league-meta">{league.season} &middot; {league.num_teams} teams</span>
                           </button>
                         );
                       })}
@@ -385,28 +385,28 @@ function SetupWizard() {
                   </div>
 
                   {selectedLeague && (
-                    <div class="form-field">
+                    <div className="form-field">
                       <label>Your Team</label>
                       {loadingTeams ? (
-                        <div class="wizard-loading small">
-                          <div class="spinner" />
+                        <div className="wizard-loading small">
+                          <div className="spinner" />
                           <p>Loading teams...</p>
                         </div>
                       ) : teams.length === 0 ? (
-                        <p class="empty-state">No teams found in this league.</p>
+                        <p className="empty-state">No teams found in this league.</p>
                       ) : (
-                        <div class="team-cards">
+                        <div className="team-cards">
                           {teams.map(function (team) {
                             return (
                               <button
                                 key={team.team_key}
-                                class={"team-card" + (selectedTeam === team.team_key ? " selected" : "")}
+                                className={"team-card" + (selectedTeam === team.team_key ? " selected" : "")}
                                 onClick={function () { setSelectedTeam(team.team_key); }}
                               >
-                                <span class="team-name">{team.name}</span>
-                                <span class="team-meta">
+                                <span className="team-name">{team.name}</span>
+                                <span className="team-meta">
                                   {team.manager}
-                                  {team.is_owned_by_current_login && <span class="you-badge">You</span>}
+                                  {team.is_owned_by_current_login && <span className="you-badge">You</span>}
                                 </span>
                               </button>
                             );
@@ -417,7 +417,7 @@ function SetupWizard() {
                   )}
 
                   <button
-                    class="btn-primary"
+                    className="btn-primary"
                     disabled={!selectedLeague || !selectedTeam || savingLeague}
                     onClick={handleSaveLeague}
                   >
@@ -429,15 +429,15 @@ function SetupWizard() {
           )}
 
           {currentStep === "password" && (
-            <div class="step-content">
+            <div className="step-content">
               <h2>Set MCP Password</h2>
-              <p class="step-description">
+              <p className="step-description">
                 This password protects your MCP server. You'll use it when connecting from Claude.ai or other MCP clients.
               </p>
               <form onSubmit={handleSavePassword}>
-                <div class="form-field">
-                  <label for="mcp-password">Password (8+ characters)</label>
-                  <div class="password-row">
+                <div className="form-field">
+                  <label htmlFor="mcp-password">Password (8+ characters)</label>
+                  <div className="password-row">
                     <input
                       id="mcp-password"
                       type="text"
@@ -448,12 +448,12 @@ function SetupWizard() {
                       minLength={8}
                       autoFocus
                     />
-                    <button type="button" class="btn-secondary" onClick={handleGeneratePassword}>
+                    <button type="button" className="btn-secondary" onClick={handleGeneratePassword}>
                       Generate
                     </button>
                   </div>
                 </div>
-                <button type="submit" class="btn-primary" disabled={savingPassword || password.length < 8}>
+                <button type="submit" className="btn-primary" disabled={savingPassword || password.length < 8}>
                   {savingPassword ? "Saving..." : "Continue"}
                 </button>
               </form>
@@ -461,49 +461,49 @@ function SetupWizard() {
           )}
 
           {currentStep === "complete" && (
-            <div class="step-content">
+            <div className="step-content">
               <h2>You're All Set!</h2>
-              <div class="completion-summary">
-                <div class="check-list">
-                  <div class="check-item done">
+              <div className="completion-summary">
+                <div className="check-list">
+                  <div className="check-item done">
                     <CheckIcon />
                     <span>Yahoo API connected</span>
                   </div>
-                  <div class="check-item done">
+                  <div className="check-item done">
                     <CheckIcon />
                     <span>League &amp; team selected</span>
                   </div>
-                  <div class="check-item done">
+                  <div className="check-item done">
                     <CheckIcon />
                     <span>MCP password set</span>
                   </div>
                 </div>
 
                 {serverUrl ? (
-                  <div class="restart-notice">
-                    <div class="spinner" />
+                  <div className="restart-notice">
+                    <div className="spinner" />
                     <p>Server is restarting into MCP mode...</p>
-                    <p class="hint">This page will stop responding. Use the MCP URL below to connect.</p>
+                    <p className="hint">This page will stop responding. Use the MCP URL below to connect.</p>
                   </div>
                 ) : (
                   <div>
-                    <p class="step-description">
+                    <p className="step-description">
                       Click below to finalize setup and restart the server into MCP mode.
                     </p>
-                    <button class="btn-primary" onClick={handleComplete} disabled={completing}>
+                    <button className="btn-primary" onClick={handleComplete} disabled={completing}>
                       {completing ? "Finalizing..." : "Launch BaseClaw"}
                     </button>
                   </div>
                 )}
 
-                <div class="connection-info">
+                <div className="connection-info">
                   <h3>Connection Details</h3>
                   <p>Add this MCP server in your Claude client:</p>
-                  <div class="info-row">
-                    <span class="info-label">Server URL</span>
+                  <div className="info-row">
+                    <span className="info-label">Server URL</span>
                     <code>{window.location.origin + "/mcp"}</code>
                   </div>
-                  <p class="hint">
+                  <p className="hint">
                     In Claude.ai, go to Settings &rarr; MCP Servers &rarr; Add Server, paste the URL, and enter your password when prompted.
                   </p>
                 </div>
@@ -520,9 +520,9 @@ function CheckIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
       <circle cx="9" cy="9" r="9" fill="#22c55e" opacity="0.15" />
-      <path d="M5 9L8 12L13 6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M5 9L8 12L13 6" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
-render(<SetupWizard />, document.getElementById("root")!);
+createRoot(document.getElementById("root")!).render(<SetupWizard />);

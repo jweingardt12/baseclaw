@@ -1,8 +1,8 @@
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Subheading } from "../components/heading";
 import { Text } from "../components/text";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { KpiTile } from "../shared/kpi-tile";
 import { AiInsight } from "../shared/ai-insight";
 import { Users, Trophy, Shield } from "@/shared/icons";
@@ -51,12 +51,12 @@ type RivalHistoryData = RivalHistoryOverviewResponse & RivalHistoryDetailRespons
 function dominanceBadge(dominance: string) {
   var d = (dominance || "").toLowerCase();
   if (d === "dominant" || d === "strong") {
-    return <Badge size="sm" className="bg-sem-success">{dominance}</Badge>;
+    return <Badge className="bg-sem-success">{dominance}</Badge>;
   }
   if (d === "dominated" || d === "weak") {
-    return <Badge size="sm" className="bg-sem-risk">{dominance}</Badge>;
+    return <Badge className="bg-sem-risk">{dominance}</Badge>;
   }
-  return <Badge size="sm" className="bg-sem-warning">{dominance}</Badge>;
+  return <Badge className="bg-sem-warning">{dominance}</Badge>;
 }
 
 function resultRowBg(result: string): string {
@@ -66,9 +66,9 @@ function resultRowBg(result: string): string {
 }
 
 function resultBadge(result: string) {
-  if (result === "win") return <Badge size="sm" className="bg-sem-success">W</Badge>;
-  if (result === "loss") return <Badge size="sm" className="bg-sem-risk">L</Badge>;
-  return <Badge size="sm" className="bg-sem-warning">T</Badge>;
+  if (result === "win") return <Badge className="bg-sem-success">W</Badge>;
+  if (result === "loss") return <Badge className="bg-sem-risk">L</Badge>;
+  return <Badge className="bg-sem-warning">T</Badge>;
 }
 
 export function RivalHistoryView({ data, app, navigate }: { data: RivalHistoryData; app?: any; navigate?: (data: any) => void }) {
@@ -108,13 +108,14 @@ function RivalOverviewView({ data }: { data: RivalHistoryOverviewResponse }) {
         <div className="flex items-center gap-1 flex-wrap">
           <span className="text-xs text-muted-foreground">Seasons:</span>
           {data.seasons_scanned.map(function (s) {
-            return <Badge key={s} color="secondary" size="sm">{s}</Badge>;
+            return <Badge key={s} variant="secondary">{s}</Badge>;
           })}
         </div>
       )}
 
       <Card>
         <CardContent className="p-0">
+          <div className="w-full overflow-x-auto mcp-app-scroll-x">
           <Table>
             <TableHeader>
               <TableRow>
@@ -140,6 +141,7 @@ function RivalOverviewView({ data }: { data: RivalHistoryOverviewResponse }) {
               })}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -224,7 +226,7 @@ function RivalDetailView({ data }: { data: RivalHistoryDetailResponse }) {
                 <p className="text-xs font-semibold text-sem-success mb-1.5">You Dominate</p>
                 <div className="flex flex-wrap gap-1">
                   {youDom.map(function (cat) {
-                    return <Badge key={cat}  size="sm" className="bg-sem-success">{cat}</Badge>;
+                    return <Badge key={cat} className="bg-sem-success">{cat}</Badge>;
                   })}
                 </div>
               </CardContent>
@@ -236,7 +238,7 @@ function RivalDetailView({ data }: { data: RivalHistoryDetailResponse }) {
                 <p className="text-xs font-semibold text-sem-risk mb-1.5">They Dominate</p>
                 <div className="flex flex-wrap gap-1">
                   {theyDom.map(function (cat) {
-                    return <Badge key={cat} color="danger" size="sm">{cat}</Badge>;
+                    return <Badge key={cat} variant="destructive">{cat}</Badge>;
                   })}
                 </div>
               </CardContent>
@@ -252,6 +254,7 @@ function RivalDetailView({ data }: { data: RivalHistoryDetailResponse }) {
             <CardTitle className="text-base">Matchup History</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
+            <div className="w-full overflow-x-auto mcp-app-scroll-x">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -276,6 +279,7 @@ function RivalDetailView({ data }: { data: RivalHistoryDetailResponse }) {
                 })}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       )}

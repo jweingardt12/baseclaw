@@ -1,6 +1,6 @@
-import { Button } from "@plexui/ui/components/Button";
-import { Alert } from "@plexui/ui/components/Alert";
-import { LoadingIndicator } from "@plexui/ui/components/Indicator";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { LoadingIndicator } from "@/shared/loading-indicator";
 import { useCallTool } from "../shared/use-call-tool";
 
 interface ActionData {
@@ -27,19 +27,17 @@ export function ActionView({ data, app, navigate }: { data: ActionData; app: any
 
   return (
     <div className="space-y-4">
-      <Alert
-        color={data.success ? "success" : "danger"}
-        variant="soft"
-        title={title}
-        description={data.message}
-      />
+      <Alert variant={data.success ? "default" : "destructive"}>
+        <AlertTitle>{title}</AlertTitle>
+        <AlertDescription>{data.message}</AlertDescription>
+      </Alert>
 
       {data.player_id && <p className="text-xs text-muted-foreground">{"Player ID: " + data.player_id}</p>}
       {data.add_id && <p className="text-xs text-muted-foreground">{"Added ID: " + data.add_id}</p>}
       {data.drop_id && <p className="text-xs text-muted-foreground">{"Dropped ID: " + data.drop_id}</p>}
 
       <div className="flex items-center gap-2">
-        <Button variant="outline" color="secondary" onClick={handleBackToRoster} disabled={loading}>
+        <Button variant="outline" onClick={handleBackToRoster} disabled={loading}>
           Back to Roster
         </Button>
         {loading && <LoadingIndicator size={16} />}

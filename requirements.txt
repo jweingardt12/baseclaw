@@ -16,6 +16,7 @@ playwright>=1.40.0
 
 # API server
 flask>=3.0.0
+gunicorn>=22.0.0
 
 # Automation config
 PyYAML>=6.0

@@ -1,5 +1,5 @@
 import { Card, CardContent } from "../components/card";
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
 import { Subheading } from "../components/heading";
 import { AiInsight } from "../shared/ai-insight";
 import { RefreshButton } from "../shared/refresh-button";
@@ -64,7 +64,7 @@ export function MatchupsView({ data, app, navigate, toolName }: { data: Matchups
                     </p>
                   </div>
                   <div className="px-3 flex flex-col items-center flex-shrink-0">
-                    <Badge color="secondary" className="text-sm font-bold px-3 py-1">vs</Badge>
+                    <Badge variant="secondary" className="text-sm font-bold px-3 py-1">vs</Badge>
                     {m.status && <span className="text-xs text-muted-foreground mt-0.5">{m.status}</span>}
                   </div>
                   <div className="flex-1 min-w-0 text-right">

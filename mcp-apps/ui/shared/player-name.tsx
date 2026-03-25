@@ -1,8 +1,8 @@
 import * as React from "react";
 import { MessageSquare, ExternalLink, Search, FileText } from "@/shared/icons";
 import { mlbHeadshotUrl } from "./mlb-images";
-import { Avatar } from "@plexui/ui/components/Avatar";
-import { Menu } from "@plexui/ui/components/Menu";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 interface PlayerNameProps {
   name: string;
@@ -35,7 +35,7 @@ function getAskPrompt(name: string, context?: string): string {
 
 export function PlayerName({ name, playerId, mlbId, app, navigate, context, showHeadshot }: PlayerNameProps) {
   var headshot = mlbId && showHeadshot !== false
-    ? <Avatar imageUrl={mlbHeadshotUrl(mlbId)} size={28} />
+    ? <Avatar className="size-7"><AvatarImage src={mlbHeadshotUrl(mlbId)} /><AvatarFallback>{name.charAt(0)}</AvatarFallback></Avatar>
     : null;
 
   if (!app) {
@@ -48,54 +48,54 @@ export function PlayerName({ name, playerId, mlbId, app, navigate, context, show
   var fangraphsSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
   return (
-    <Menu>
-      <Menu.Trigger>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <span className="inline-flex items-center gap-1.5 min-w-0 cursor-pointer hover:opacity-80">
           {headshot}
           <span className="truncate border-b border-dashed border-muted-foreground/50">{name}</span>
         </span>
-      </Menu.Trigger>
-      <Menu.Content>
-        <Menu.Item
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem
           onSelect={function () { app.sendMessage(getAskPrompt(name, context)); }}
         >
           <MessageSquare className="w-3.5 h-3.5" /> Ask Claude
-        </Menu.Item>
+        </DropdownMenuItem>
 
-        <Menu.Separator />
+        <DropdownMenuSeparator />
 
         {playerId && (
-          <Menu.Item
+          <DropdownMenuItem
             onSelect={function () { app.openLink("https://sports.yahoo.com/mlb/players/" + playerId); }}
           >
             <ExternalLink className="w-3.5 h-3.5" /> View on Yahoo
-          </Menu.Item>
+          </DropdownMenuItem>
         )}
 
-        <Menu.Item
+        <DropdownMenuItem
           onSelect={function () { app.openLink("https://www.fangraphs.com/players/" + fangraphsSlug); }}
         >
           <ExternalLink className="w-3.5 h-3.5" /> View on FanGraphs
-        </Menu.Item>
+        </DropdownMenuItem>
 
         {mlbId && (
-          <Menu.Item
+          <DropdownMenuItem
             onSelect={function () { app.openLink("https://baseballsavant.mlb.com/savant-player/" + mlbId); }}
           >
             <ExternalLink className="w-3.5 h-3.5" /> View on Savant
-          </Menu.Item>
+          </DropdownMenuItem>
         )}
 
-        <Menu.Item
+        <DropdownMenuItem
           onSelect={function () { app.openLink("https://www.reddit.com/r/fantasybaseball/search/?q=" + encodeURIComponent(name)); }}
         >
           <Search className="w-3.5 h-3.5" /> Search Reddit
-        </Menu.Item>
+        </DropdownMenuItem>
 
         {navigate && (
           <>
-            <Menu.Separator />
-            <Menu.Item
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
               onSelect={async function () {
                 var result = await app.callServerTool("fantasy_player_report", { player_name: name });
                 if (result) {
@@ -104,10 +104,10 @@ export function PlayerName({ name, playerId, mlbId, app, navigate, context, show
               }}
             >
               <FileText className="w-3.5 h-3.5" /> Get Full Report
-            </Menu.Item>
+            </DropdownMenuItem>
           </>
         )}
-      </Menu.Content>
-    </Menu>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

@@ -1,6 +1,6 @@
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
-import { Badge } from "@plexui/ui/components/Badge";
-import { Tabs } from "@plexui/ui/components/Tabs";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Subheading } from "../components/heading";
 import { Text } from "../components/text";
 import { useCallTool } from "../shared/use-call-tool";
@@ -70,9 +70,11 @@ export function BreakoutsView({ data, app, navigate }: { data: BreakoutsData; ap
 
       <AiInsight recommendation={data.ai_recommendation} />
 
-      <Tabs value={data.pos_type || "B"} onChange={handleTabChange} aria-label="Player type">
-        <Tabs.Tab value="B">Hitters</Tabs.Tab>
-        <Tabs.Tab value="P">Pitchers</Tabs.Tab>
+      <Tabs value={data.pos_type || "B"} onValueChange={handleTabChange}>
+        <TabsList>
+          <TabsTrigger value="B">Hitters</TabsTrigger>
+          <TabsTrigger value="P">Pitchers</TabsTrigger>
+        </TabsList>
       </Tabs>
 
       <div className="relative">
@@ -81,6 +83,7 @@ export function BreakoutsView({ data, app, navigate }: { data: BreakoutsData; ap
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         )}
+        <div className="w-full overflow-x-auto mcp-app-scroll-x">
         <Table>
           <TableHeader>
             <TableRow>
@@ -108,6 +111,7 @@ export function BreakoutsView({ data, app, navigate }: { data: BreakoutsData; ap
             })}
           </TableBody>
         </Table>
+        </div>
       </div>
       <Text>
         {isBreakouts

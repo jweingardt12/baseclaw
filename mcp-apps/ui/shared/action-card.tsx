@@ -1,6 +1,6 @@
 import { cn } from "../lib/utils";
-import { Button } from "@plexui/ui/components/Button";
-import { LoadingIndicator } from "@plexui/ui/components/Indicator";
+import { Button } from "@/components/ui/button";
+import { LoadingIndicator } from "@/shared/loading-indicator";
 
 var URGENCY_BORDER: Record<string, string> = {
   urgent: "border-l-[var(--sem-risk)]",
@@ -31,7 +31,7 @@ export function ActionCard({ icon, title, description, buttonText, onClick, urge
           {children}
         </div>
         {buttonText && onClick && (
-          <Button color="secondary" onClick={onClick} disabled={loading} className="shrink-0">
+          <Button variant="secondary" onClick={onClick} disabled={loading} className="shrink-0">
             {loading && <LoadingIndicator size={14} className="mr-1" />}
             {buttonText}
           </Button>

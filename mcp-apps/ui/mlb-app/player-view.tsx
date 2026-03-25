@@ -1,4 +1,4 @@
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
 import { mlbHeadshotUrl } from "../shared/mlb-images";
 import { TeamLogo } from "../shared/team-logo";
 import { IntelBadge } from "../shared/intel-badge";

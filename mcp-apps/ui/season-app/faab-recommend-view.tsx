@@ -1,9 +1,9 @@
-import { Badge } from "@plexui/ui/components/Badge";
-import { Avatar } from "@plexui/ui/components/Avatar";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "../components/card";
 import { Subheading } from "../components/heading";
 import { Text } from "../components/text";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { KpiTile } from "../shared/kpi-tile";
 import { formatFixed } from "../shared/number-format";
 import { mlbHeadshotUrl } from "../shared/mlb-images";
@@ -36,11 +36,11 @@ interface FaabRecommendData {
   improving_categories: string[];
 }
 
-function tierBadgeColor(tier: string): "warning" | "success" | "primary" | "danger" {
-  if (tier === "Elite") return "warning";
-  if (tier === "Strong") return "success";
-  if (tier === "Solid") return "primary";
-  return "danger";
+function tierBadgeVariant(tier: string): "default" | "secondary" | "destructive" {
+  if (tier === "Elite") return "default";
+  if (tier === "Strong") return "default";
+  if (tier === "Solid") return "secondary";
+  return "destructive";
 }
 
 function directionArrow(direction: string): string {
@@ -74,17 +74,17 @@ export function FaabRecommendView({ data }: { data: FaabRecommendData; app?: any
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {player.mlb_id && <Avatar imageUrl={mlbHeadshotUrl(player.mlb_id)} size={40} />}
+              {player.mlb_id && <Avatar><AvatarImage src={mlbHeadshotUrl(player.mlb_id)} /><AvatarFallback>{(player.name || "?").charAt(0)}</AvatarFallback></Avatar>}
               <div>
                 <Subheading>{player.name}</Subheading>
                 <div className="flex items-center gap-2 mt-1">
-                  <Badge color="secondary" size="sm">{player.pos}</Badge>
+                  <Badge variant="secondary">{player.pos}</Badge>
                   <span className="text-sm text-muted-foreground">{player.team}</span>
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <Badge color={tierBadgeColor(player.tier)}  size="sm" className="mb-1">{player.tier}</Badge>
+              <Badge variant={tierBadgeVariant(player.tier)} className="mb-1">{player.tier}</Badge>
               <p className="font-mono text-sm text-muted-foreground">z={formatFixed(player.z_final, 2, "0.00")}</p>
             </div>
           </div>
@@ -144,13 +144,14 @@ export function FaabRecommendView({ data }: { data: FaabRecommendData; app?: any
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-muted-foreground">Improves:</span>
           {improving.map(function (cat) {
-            return <Badge key={cat} color="success" size="sm">{cat}</Badge>;
+            return <Badge key={cat}>{cat}</Badge>;
           })}
         </div>
       )}
 
       {/* Category impact table */}
       {Object.keys(impact).length > 0 && (
+        <div className="w-full overflow-x-auto mcp-app-scroll-x">
         <Table>
           <TableHeader>
             <TableRow>
@@ -180,6 +181,7 @@ export function FaabRecommendView({ data }: { data: FaabRecommendData; app?: any
             })}
           </TableBody>
         </Table>
+        </div>
       )}
     </div>
   );

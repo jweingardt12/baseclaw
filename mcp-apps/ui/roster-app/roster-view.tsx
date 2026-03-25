@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Badge } from "@plexui/ui/components/Badge";
-import { Button } from "@plexui/ui/components/Button";
-import { Tabs } from "@plexui/ui/components/Tabs";
-import { Dialog } from "@plexui/ui/components/Dialog";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
-import { LoadingIndicator } from "@plexui/ui/components/Indicator";
-import { EmptyMessage } from "@plexui/ui/components/EmptyMessage";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { LoadingIndicator } from "@/shared/loading-indicator";
+import { EmptyMessage } from "@/shared/empty-message";
 import { useCallTool } from "../shared/use-call-tool";
 import { PlayerRowData } from "../shared/player-row";
 import { TeamLogo } from "../shared/team-logo";
@@ -14,22 +14,11 @@ import { mlbHeadshotUrl } from "../shared/mlb-images";
 
 /* ── Position color map ──────────────────────────────────── */
 
-var POS_COLOR: Record<string, "warning" | "info" | "success" | "discovery" | "secondary" | "danger" | "caution"> = {
-  C: "warning", "1B": "info", "2B": "info", SS: "info", "3B": "info",
-  OF: "success", Util: "discovery", BN: "secondary",
-  SP: "danger", RP: "caution", P: "danger",
-  IL: "secondary", "IL+": "secondary",
-};
-
-var TIER_COLOR: Record<string, "primary" | "success" | "secondary" | "warning" | "danger"> = {
-  elite: "primary", strong: "success", average: "secondary", below: "warning", poor: "danger",
-};
-
-var TREND_DISPLAY: Record<string, { label: string; color: "danger" | "caution" | "info" | "secondary" }> = {
-  hot:  { label: "\u{1F525} Hot",   color: "danger" },
-  warm: { label: "\u2191 Warm",     color: "caution" },
-  cold: { label: "\u2744\uFE0F Cold", color: "info" },
-  ice:  { label: "\u2744\uFE0F Ice",  color: "info" },
+var TREND_DISPLAY: Record<string, { label: string; variant: "destructive" | "outline" | "secondary" }> = {
+  hot:  { label: "\u{1F525} Hot",   variant: "destructive" },
+  warm: { label: "\u2191 Warm",     variant: "outline" },
+  cold: { label: "\u2744\uFE0F Cold", variant: "secondary" },
+  ice:  { label: "\u2744\uFE0F Ice",  variant: "secondary" },
 };
 
 /* ── Pitcher detection ───────────────────────────────────── */
@@ -78,12 +67,14 @@ export function RosterView({ data, app, navigate }: { data: RosterData; app: any
   return (
     <div style={{ display: "grid", gap: 16 }}>
       {/* Section tabs */}
-      <Tabs value={activeTab} onChange={setActiveTab} variant="segmented" size="md" aria-label="Roster sections">
-        <Tabs.Tab value="batters" badge={batters.length}>Batters</Tabs.Tab>
-        <Tabs.Tab value="pitchers" badge={pitchers.length}>Pitchers</Tabs.Tab>
-        {ilPlayers.length > 0 && (
-          <Tabs.Tab value="il" badge={{ content: ilPlayers.length, color: "danger" }}>IL</Tabs.Tab>
-        )}
+      <Tabs value={activeTab} onValueChange={setActiveTab} aria-label="Roster sections">
+        <TabsList>
+          <TabsTrigger value="batters">{"Batters (" + batters.length + ")"}</TabsTrigger>
+          <TabsTrigger value="pitchers">{"Pitchers (" + pitchers.length + ")"}</TabsTrigger>
+          {ilPlayers.length > 0 && (
+            <TabsTrigger value="il">{"IL (" + ilPlayers.length + ")"}</TabsTrigger>
+          )}
+        </TabsList>
       </Tabs>
 
       {/* Table */}
@@ -93,90 +84,89 @@ export function RosterView({ data, app, navigate }: { data: RosterData; app: any
         {displayed.length === 0 ? (
           <EmptyMessage title="No players" description="This section is empty." />
         ) : (
-          <Table className="w-full">
-            <TableHeader>
-              <TableRow>
-                <TableHead style={{ width: 60, paddingLeft: 12, paddingRight: 8 }}>Pos</TableHead>
-                <TableHead style={{ paddingLeft: 8, paddingRight: 8 }}>Player</TableHead>
-                <TableHead style={{ width: 88, paddingLeft: 8, paddingRight: 8 }}>Today</TableHead>
-                <TableHead style={{ width: 96, paddingLeft: 8, paddingRight: 8 }}>Signal</TableHead>
-                <TableHead style={{ width: 88, paddingLeft: 8, paddingRight: 12 }}>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {displayed.map(function (p) {
-                var pos = p.position || "?";
-                var hasStatus = p.status && p.status !== "Healthy";
-                var elig = (p.eligible_positions || []).filter(function (e) {
-                  return e !== pos && e !== "Util" && e !== "BN" && e !== "IL" && e !== "IL+" && e !== "DL";
-                });
-                var tier = p.intel && p.intel.statcast && p.intel.statcast.quality_tier || null;
-                var hotCold = p.intel && p.intel.trends && p.intel.trends.hot_cold || null;
-                var trendInfo = hotCold && TREND_DISPLAY[hotCold] ? TREND_DISPLAY[hotCold] : null;
+          <div className="w-full overflow-x-auto mcp-app-scroll-x">
+            <Table className="w-full">
+              <TableHeader>
+                <TableRow>
+                  <TableHead style={{ width: 60, paddingLeft: 12, paddingRight: 8 }}>Pos</TableHead>
+                  <TableHead style={{ paddingLeft: 8, paddingRight: 8 }}>Player</TableHead>
+                  <TableHead style={{ width: 88, paddingLeft: 8, paddingRight: 8 }}>Today</TableHead>
+                  <TableHead style={{ width: 96, paddingLeft: 8, paddingRight: 8 }}>Signal</TableHead>
+                  <TableHead style={{ width: 88, paddingLeft: 8, paddingRight: 12 }}>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {displayed.map(function (p) {
+                  var pos = p.position || "?";
+                  var hasStatus = p.status && p.status !== "Healthy";
+                  var elig = (p.eligible_positions || []).filter(function (e) {
+                    return e !== pos && e !== "Util" && e !== "BN" && e !== "IL" && e !== "IL+" && e !== "DL";
+                  });
+                  var tier = p.intel && p.intel.statcast && p.intel.statcast.quality_tier || null;
+                  var hotCold = p.intel && p.intel.trends && p.intel.trends.hot_cold || null;
+                  var trendInfo = hotCold && TREND_DISPLAY[hotCold] ? TREND_DISPLAY[hotCold] : null;
 
-                return (
-                  <TableRow
-                    key={p.player_id || p.name}
-                    style={{ minHeight: 52, cursor: "pointer" }}
-                    onClick={function () { setSelectedPlayer(p); }}
-                    className="hover:bg-[var(--color-surface-2)] transition-colors"
-                  >
-                    <TableCell style={{ paddingLeft: 12, paddingRight: 8, verticalAlign: "middle" }}>
-                      <Badge
-                        color={POS_COLOR[pos] || "secondary"}
-                        size="md"
-                        variant="soft"
-                        className="font-mono font-bold"
-                        style={{ minWidth: 40, justifyContent: "center", display: "inline-flex" }}
-                      >
-                        {pos}
-                      </Badge>
-                    </TableCell>
+                  return (
+                    <TableRow
+                      key={p.player_id || p.name}
+                      style={{ minHeight: 52, cursor: "pointer" }}
+                      onClick={function () { setSelectedPlayer(p); }}
+                      className="hover:bg-[var(--color-surface-2)] transition-colors"
+                    >
+                      <TableCell style={{ paddingLeft: 12, paddingRight: 8, verticalAlign: "middle" }}>
+                        <Badge
+                          variant="secondary"
+                          className="font-mono font-bold inline-flex justify-center min-w-[40px]"
+                        >
+                          {pos}
+                        </Badge>
+                      </TableCell>
 
-                    <TableCell style={{ paddingLeft: 8, paddingRight: 8, verticalAlign: "middle" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 44 }}>
-                        {p.team && <TeamLogo abbrev={p.team} size={20} />}
-                        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                          <span style={{ fontWeight: 500 }}>{p.name}</span>
-                          {elig.length > 0 && (
-                            <span style={{ fontSize: 11, color: "var(--color-text-tertiary)", lineHeight: 1 }}>
-                              {elig.join(", ")}
-                            </span>
+                      <TableCell style={{ paddingLeft: 8, paddingRight: 8, verticalAlign: "middle" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 44 }}>
+                          {p.team && <TeamLogo abbrev={p.team} size={20} />}
+                          <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                            <span style={{ fontWeight: 500 }}>{p.name}</span>
+                            {elig.length > 0 && (
+                              <span style={{ fontSize: 11, color: "var(--color-text-tertiary)", lineHeight: 1 }}>
+                                {elig.join(", ")}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      <TableCell style={{ paddingLeft: 8, paddingRight: 8, verticalAlign: "middle" }}>
+                        <OpponentDisplay opponent={p.opponent} />
+                      </TableCell>
+
+                      <TableCell style={{ paddingLeft: 8, paddingRight: 8, verticalAlign: "middle" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                          {tier && (
+                            <Badge variant="secondary" className="font-mono uppercase">
+                              {tier}
+                            </Badge>
+                          )}
+                          {trendInfo && (
+                            <Badge variant={trendInfo.variant}>
+                              {trendInfo.label}
+                            </Badge>
                           )}
                         </div>
-                      </div>
-                    </TableCell>
+                      </TableCell>
 
-                    <TableCell style={{ paddingLeft: 8, paddingRight: 8, verticalAlign: "middle" }}>
-                      <OpponentDisplay opponent={p.opponent} />
-                    </TableCell>
-
-                    <TableCell style={{ paddingLeft: 8, paddingRight: 8, verticalAlign: "middle" }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                        {tier && (
-                          <Badge color={TIER_COLOR[tier] || "secondary"} size="sm" variant="soft" className="font-mono uppercase">
-                            {tier}
-                          </Badge>
-                        )}
-                        {trendInfo && (
-                          <Badge color={trendInfo.color} size="sm" variant="outline">
-                            {trendInfo.label}
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-
-                    <TableCell style={{ paddingLeft: 8, paddingRight: 12, verticalAlign: "middle" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
-                        {hasStatus ? <Badge color="danger" size="md">{p.status}</Badge> : <span />}
-                        <span style={{ color: "var(--color-text-quaternary)", fontSize: 14 }}>{"\u203A"}</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                      <TableCell style={{ paddingLeft: 8, paddingRight: 12, verticalAlign: "middle" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
+                          {hasStatus ? <Badge variant="destructive">{p.status}</Badge> : <span />}
+                          <span style={{ color: "var(--color-text-quaternary)", fontSize: 14 }}>{"\u203A"}</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </div>
 
@@ -190,10 +180,9 @@ export function RosterView({ data, app, navigate }: { data: RosterData; app: any
       <Dialog
         open={selectedPlayer !== null}
         onOpenChange={function (open) { if (!open) setSelectedPlayer(null); }}
-        width={520}
       >
         {selectedPlayer && (
-          <Dialog.Content>
+          <DialogContent className="max-w-[520px]">
             <PlayerCard
               player={selectedPlayer}
               app={app}
@@ -203,29 +192,29 @@ export function RosterView({ data, app, navigate }: { data: RosterData; app: any
               }}
               loading={loading}
             />
-          </Dialog.Content>
+          </DialogContent>
         )}
       </Dialog>
 
       {/* Drop confirmation */}
       <Dialog open={dropTarget !== null} onOpenChange={function (open) { if (!open) setDropTarget(null); }}>
-        <Dialog.Content>
-          <Dialog.Header>
-            <Dialog.Title>Drop Player</Dialog.Title>
-          </Dialog.Header>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Drop Player</DialogTitle>
+          </DialogHeader>
           <p style={{ padding: "0 24px 16px" }}>
             {"Are you sure you want to drop " + (dropTarget ? dropTarget.name : "") + "? This cannot be undone."}
           </p>
-          <Dialog.Footer>
-            <Dialog.Close>
-              <Button color="secondary" variant="soft" size="md">Cancel</Button>
-            </Dialog.Close>
-            <Button color="danger" size="md" onClick={handleDrop} disabled={loading}>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="ghost">Cancel</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={handleDrop} disabled={loading}>
               {loading ? <LoadingIndicator size={16} /> : null}
               Drop Player
             </Button>
-          </Dialog.Footer>
-        </Dialog.Content>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   );
@@ -278,7 +267,7 @@ function PlayerCard({ player, app, navigate, onDrop, loading }: {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{ fontSize: 18, fontWeight: 700 }}>{player.name}</span>
-            {hasStatus && <Badge color="danger" size="md">{player.status}</Badge>}
+            {hasStatus && <Badge variant="destructive">{player.status}</Badge>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
             {player.team && <TeamLogo abbrev={player.team} size={16} />}
@@ -286,7 +275,7 @@ function PlayerCard({ player, app, navigate, onDrop, loading }: {
               {player.team || ""}
             </span>
             <span style={{ fontSize: 13, color: "var(--color-text-tertiary)" }}>{"\u00B7"}</span>
-            <Badge color={POS_COLOR[pos] || "secondary"} size="sm" variant="soft" className="font-mono font-bold">
+            <Badge variant="secondary" className="font-mono font-bold">
               {pos}
             </Badge>
             {elig.length > 0 && (
@@ -298,17 +287,17 @@ function PlayerCard({ player, app, navigate, onDrop, loading }: {
           {/* Signal badges */}
           <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
             {tier && (
-              <Badge color={TIER_COLOR[tier] || "secondary"} size="md" variant="soft" className="font-mono uppercase">
+              <Badge variant="secondary" className="font-mono uppercase">
                 {tier}
               </Badge>
             )}
             {trendInfo && (
-              <Badge color={trendInfo.color} size="md" variant="outline">
+              <Badge variant={trendInfo.variant}>
                 {trendInfo.label}
               </Badge>
             )}
             {player.opponent && (
-              <Badge color="secondary" size="md" variant="outline">
+              <Badge variant="outline">
                 {player.opponent}
               </Badge>
             )}
@@ -387,9 +376,8 @@ function PlayerCard({ player, app, navigate, onDrop, loading }: {
       <div style={{ padding: "0 24px 20px", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         {app && app.sendMessage && (
           <Button
-            color="primary"
+            variant="secondary"
             size="sm"
-            variant="soft"
             onClick={function () {
               app.sendMessage("Tell me about " + player.name + " — Statcast, trends, and fantasy outlook");
             }}
@@ -399,9 +387,8 @@ function PlayerCard({ player, app, navigate, onDrop, loading }: {
         )}
         {app && app.openLink && player.player_id && (
           <Button
-            color="secondary"
-            size="sm"
             variant="outline"
+            size="sm"
             onClick={function () {
               app.openLink("https://sports.yahoo.com/mlb/players/" + player.player_id);
             }}
@@ -411,9 +398,8 @@ function PlayerCard({ player, app, navigate, onDrop, loading }: {
         )}
         {app && app.openLink && player.mlb_id && (
           <Button
-            color="secondary"
-            size="sm"
             variant="outline"
+            size="sm"
             onClick={function () {
               app.openLink("https://baseballsavant.mlb.com/savant-player/" + player.mlb_id);
             }}
@@ -422,7 +408,7 @@ function PlayerCard({ player, app, navigate, onDrop, loading }: {
           </Button>
         )}
         <div style={{ flex: 1 }} />
-        <Button color="danger" size="sm" variant="ghost" onClick={onDrop} disabled={loading}>
+        <Button variant="ghost" size="sm" onClick={onDrop} disabled={loading}>
           {loading ? <LoadingIndicator size={14} /> : null}
           Drop
         </Button>

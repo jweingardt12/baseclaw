@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
 import { Subheading } from "../components/heading";
 import { PlayerName } from "../shared/player-name";
 import { AlertTriangle } from "@/shared/icons";

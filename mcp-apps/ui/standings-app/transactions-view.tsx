@@ -1,6 +1,6 @@
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Card, CardContent } from "../components/card";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { Subheading } from "../components/heading";
 import { mlbHeadshotUrl } from "../shared/mlb-images";
 import { TeamLogo } from "../shared/team-logo";
@@ -32,8 +32,8 @@ function TypeIcon({ type }: { type: string }) {
 }
 
 var typeColors: Record<string, string> = {
-  add: "success",
-  drop: "danger",
+  add: "default",
+  drop: "destructive",
   trade: "secondary",
 };
 
@@ -100,7 +100,7 @@ export function TransactionsView({ data }: { data: TransactionsData }) {
         <div className="flex flex-wrap gap-2 mb-2">
           {typeKeys.map(function (type) {
             return (
-              <Badge key={type} color={typeColors[type] || "secondary"}  size="sm" className="font-bold">
+              <Badge key={type} variant={(typeColors[type] || "secondary") as any} className="font-bold">
                 {typeCounts[type] + " " + type + (typeCounts[type] === 1 ? "" : "s")}
               </Badge>
             );
@@ -119,54 +119,56 @@ export function TransactionsView({ data }: { data: TransactionsData }) {
             )}
             <Card>
               <CardContent className="p-0">
-                <Table>
-                  {!hasDateField && (
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-24">Type</TableHead>
-                        <TableHead>Player</TableHead>
-                        <TableHead className="hidden sm:table-cell">Team</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                  )}
-                  <TableBody>
-                    {group.map(function (t, i) {
-                      return (
-                        <TableRow key={dateKey + "-" + i}>
-                          <TableCell className="w-24">
-                            <div className="flex items-center gap-1.5">
-                              <TypeIcon type={t.type} />
-                              <Badge color={typeColors[t.type] || "secondary"}  size="sm" className="font-bold">{t.type}</Badge>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {t.mlb_id && (
-                                <img
-                                  src={mlbHeadshotUrl(t.mlb_id)}
-                                  alt=""
-                                  className="w-7 h-7 rounded-full bg-muted object-cover flex-shrink-0"
-                                />
-                              )}
-                              <div>
-                                <div className="font-medium text-sm">{t.player}</div>
-                                {t.fantasy_team && (
-                                  <div className="text-xs text-muted-foreground">{t.fantasy_team}</div>
-                                )}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <TeamLogo abbrev={t.team} />
-                              {t.team || "-"}
-                            </span>
-                          </TableCell>
+                <div className="w-full overflow-x-auto mcp-app-scroll-x">
+                  <Table>
+                    {!hasDateField && (
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-24">Type</TableHead>
+                          <TableHead>Player</TableHead>
+                          <TableHead className="hidden sm:table-cell">Team</TableHead>
                         </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                      </TableHeader>
+                    )}
+                    <TableBody>
+                      {group.map(function (t, i) {
+                        return (
+                          <TableRow key={dateKey + "-" + i}>
+                            <TableCell className="w-24">
+                              <div className="flex items-center gap-1.5">
+                                <TypeIcon type={t.type} />
+                                <Badge variant={(typeColors[t.type] || "secondary") as any} className="font-bold">{t.type}</Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {t.mlb_id && (
+                                  <img
+                                    src={mlbHeadshotUrl(t.mlb_id)}
+                                    alt=""
+                                    className="w-7 h-7 rounded-full bg-muted object-cover flex-shrink-0"
+                                  />
+                                )}
+                                <div>
+                                  <div className="font-medium text-sm">{t.player}</div>
+                                  {t.fantasy_team && (
+                                    <div className="text-xs text-muted-foreground">{t.fantasy_team}</div>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <TeamLogo abbrev={t.team} />
+                                {t.team || "-"}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </div>

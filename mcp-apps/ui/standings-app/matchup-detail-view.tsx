@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Card, CardContent } from "../components/card";
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
 import { Subheading } from "../components/heading";
 import { AiInsight } from "../shared/ai-insight";
 import { RefreshButton } from "../shared/refresh-button";
@@ -152,7 +152,7 @@ export function MatchupDetailView({ data, app, navigate }: { data: MatchupDetail
                 <td colSpan={4} className="px-3 pt-3 pb-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Batting</span>
-                    <Badge color="secondary" size="sm" className="font-mono h-5">
+                    <Badge variant="secondary" className="font-mono h-5">
                       {battingWins + "-" + battingLosses + (battingTies > 0 ? "-" + battingTies : "")}
                     </Badge>
                   </div>
@@ -166,7 +166,7 @@ export function MatchupDetailView({ data, app, navigate }: { data: MatchupDetail
                 <td colSpan={4} className="px-3 pt-4 pb-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pitching</span>
-                    <Badge color="secondary" size="sm" className="font-mono h-5">
+                    <Badge variant="secondary" className="font-mono h-5">
                       {pitchingWins + "-" + pitchingLosses + (pitchingTies > 0 ? "-" + pitchingTies : "")}
                     </Badge>
                   </div>
@@ -193,7 +193,7 @@ export function MatchupDetailView({ data, app, navigate }: { data: MatchupDetail
                 ? "border-sem-risk text-sem-risk"
                 : "border-sem-warning text-sem-warning";
             return (
-              <Badge key={name} color="secondary" size="sm" className={badgeColor}>
+              <Badge key={name} variant="secondary" className={badgeColor}>
                 {name} {cat.my_value + " v " + cat.opp_value}
               </Badge>
             );

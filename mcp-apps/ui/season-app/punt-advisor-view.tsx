@@ -1,7 +1,7 @@
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Card, CardContent } from "../components/card";
 import { Subheading } from "../components/heading";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 import { AlertTriangle } from "@/shared/icons";
@@ -28,10 +28,10 @@ interface PuntAdvisorResponse {
   strategy_summary: string;
 }
 
-function recommendationColor(rec: string): "danger" | "success" | "secondary" {
+function recommendationVariant(rec: string): "destructive" | "default" | "secondary" {
   var lower = rec.toLowerCase();
-  if (lower === "punt") return "danger";
-  if (lower === "target") return "success";
+  if (lower === "punt") return "destructive";
+  if (lower === "target") return "default";
   return "secondary";
 }
 
@@ -69,7 +69,7 @@ export function PuntAdvisorView({ data }: { data: PuntAdvisorResponse; app?: any
               <p className="text-xs text-muted-foreground mb-1.5">Punt Candidates</p>
               <div className="flex flex-wrap gap-1">
                 {puntCandidates.map(function (cat) {
-                  return <Badge key={cat} color="danger" size="sm">{cat}</Badge>;
+                  return <Badge key={cat} variant="destructive">{cat}</Badge>;
                 })}
               </div>
             </CardContent>
@@ -81,7 +81,7 @@ export function PuntAdvisorView({ data }: { data: PuntAdvisorResponse; app?: any
               <p className="text-xs text-muted-foreground mb-1.5">Target Categories</p>
               <div className="flex flex-wrap gap-1">
                 {targetCategories.map(function (cat) {
-                  return <Badge key={cat} color="success" size="sm">{cat}</Badge>;
+                  return <Badge key={cat}>{cat}</Badge>;
                 })}
               </div>
             </CardContent>
@@ -90,39 +90,41 @@ export function PuntAdvisorView({ data }: { data: PuntAdvisorResponse; app?: any
       </div>
 
       {/* Category table */}
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Category</TableHead>
-            <TableHead className="text-right">Value</TableHead>
-            <TableHead className="text-center">Rank</TableHead>
-            <TableHead className="text-center">Rec</TableHead>
-            <TableHead className="hidden sm:table-cell">Cost</TableHead>
-            <TableHead className="hidden sm:table-cell">Reasoning</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {categories.map(function (c, i) {
-            return (
-              <TableRow key={i + "-" + c.name} className={rankBg(c.rank, c.total)}>
-                <TableCell className="font-medium text-sm">{c.name}</TableCell>
-                <TableCell className="text-right font-mono text-sm">{c.value}</TableCell>
-                <TableCell className="text-center">
-                  <span className="font-mono">{c.rank}</span>
-                  <span className="text-muted-foreground text-xs">/{c.total}</span>
-                </TableCell>
-                <TableCell className="text-center">
-                  <Badge color={recommendationColor(c.recommendation)} size="sm">
-                    {c.recommendation}
-                  </Badge>
-                </TableCell>
-                <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">{c.cost_to_compete}</TableCell>
-                <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">{c.reasoning}</TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+      <div className="w-full overflow-x-auto mcp-app-scroll-x">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Category</TableHead>
+              <TableHead className="text-right">Value</TableHead>
+              <TableHead className="text-center">Rank</TableHead>
+              <TableHead className="text-center">Rec</TableHead>
+              <TableHead className="hidden sm:table-cell">Cost</TableHead>
+              <TableHead className="hidden sm:table-cell">Reasoning</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {categories.map(function (c, i) {
+              return (
+                <TableRow key={i + "-" + c.name} className={rankBg(c.rank, c.total)}>
+                  <TableCell className="font-medium text-sm">{c.name}</TableCell>
+                  <TableCell className="text-right font-mono text-sm">{c.value}</TableCell>
+                  <TableCell className="text-center">
+                    <span className="font-mono">{c.rank}</span>
+                    <span className="text-muted-foreground text-xs">/{c.total}</span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant={recommendationVariant(c.recommendation)}>
+                      {c.recommendation}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">{c.cost_to_compete}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">{c.reasoning}</TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
 
       {/* Correlation warnings */}
       {warnings.length > 0 && (

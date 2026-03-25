@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
-import { Badge } from "@plexui/ui/components/Badge";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { Badge } from "@/components/ui/badge";
+import { BarChart } from "@/charts";
 import { BarChart3 } from "@/shared/icons";
 import { ZScoreExplainer, tierTextColor, tierColor } from "../shared/z-score";
 import { IntelBadge } from "../shared/intel-badge";
@@ -69,7 +69,7 @@ export function ValueView({ data, app, navigate }: { data: ValueData; app?: any;
               </p>
               <div className="flex items-center gap-2 mt-1">
                 {details.length > 0 && (
-                  <Badge color="secondary" size="sm">{details.join(" - ")}</Badge>
+                  <Badge variant="secondary">{details.join(" - ")}</Badge>
                 )}
                 {data.intel && <IntelBadge intel={data.intel} size="md" />}
               </div>
@@ -86,20 +86,17 @@ export function ValueView({ data, app, navigate }: { data: ValueData; app?: any;
       {data.intel && <IntelPanel intel={data.intel} />}
 
       {chartData.length > 0 && (
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} angle={-35} textAnchor="end" height={60} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "6px", fontSize: "12px" }} />
-              <Bar dataKey="z_score" radius={[3, 3, 0, 0]}>
-                {chartData.map(function (entry, i) {
-                  return <Cell key={i} fill={entry.z_score >= 0 ? "var(--color-primary)" : "var(--color-destructive)"} />;
-                })}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <BarChart
+          data={chartData.map(function (entry) {
+            return {
+              label: entry.name,
+              value: entry.z_score,
+              color: entry.z_score >= 0 ? "var(--color-primary)" : "var(--color-destructive)",
+            };
+          })}
+          height={256}
+          rotateLabels={true}
+        />
       )}
 
       <div className="space-y-1.5">

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, act } from "@testing-library/preact";
-import { Suspense } from "preact/compat";
+import { render, act } from "@testing-library/react";
+import { Suspense } from "react";
 import { MOCK_DATA } from "../preview-app/mock-data";
 import { VIEW_GROUPS } from "../preview-app/view-registry";
 

@@ -1,5 +1,5 @@
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Subheading } from "../components/heading";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
@@ -71,65 +71,67 @@ export function PitcherMatchupView({ data, app }: { data: PitcherMatchupData; ap
         </p>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Pitcher</TableHead>
-            <TableHead className="hidden sm:table-cell">Team</TableHead>
-            <TableHead>Next Start</TableHead>
-            <TableHead>Opponent</TableHead>
-            <TableHead className="hidden sm:table-cell text-right">AVG</TableHead>
-            <TableHead className="hidden sm:table-cell text-right">OBP</TableHead>
-            <TableHead className="hidden sm:table-cell text-right">K%</TableHead>
-            <TableHead className="text-center">Grade</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {pitchers.map((p) => (
-            <TableRow key={p.player_id + "-" + p.next_start_date}>
-              <TableCell className="font-medium">
-                <span className="flex items-center gap-1.5">
-                  <PlayerName name={p.name} playerId={p.player_id} mlbId={p.mlb_id} app={app} context="roster" />
-                  {p.two_start && <Badge size="sm" className="bg-purple-600 text-white">2S</Badge>}
-                </span>
-              </TableCell>
-              <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <TeamLogo abbrev={p.mlb_team} />
-                  {p.mlb_team}
-                </span>
-              </TableCell>
-              <TableCell className="font-mono text-xs">{p.next_start_date}</TableCell>
-              <TableCell>
-                <span className="text-sm flex items-center gap-1">
-                  {p.home_away === "home" ? "vs " : "@ "}
-                  <TeamLogo abbrev={p.opponent} />
-                  {p.opponent}
-                </span>
-              </TableCell>
-              <TableCell className="hidden sm:table-cell text-right font-mono text-xs">
-                {typeof p.opp_avg === "number" ? formatFixed(p.opp_avg, 3, "-") : "-"}
-              </TableCell>
-              <TableCell className="hidden sm:table-cell text-right font-mono text-xs">
-                {typeof p.opp_obp === "number" ? formatFixed(p.opp_obp, 3, "-") : "-"}
-              </TableCell>
-              <TableCell className="hidden sm:table-cell text-right font-mono text-xs">
-                {typeof p.opp_k_pct === "number" ? formatFixed(p.opp_k_pct * 100, 1, "-") + "%" : "-"}
-              </TableCell>
-              <TableCell className="text-center">
-                <Badge size="sm" className={gradeColor(p.matchup_grade)}>{p.matchup_grade}</Badge>
-              </TableCell>
-            </TableRow>
-          ))}
-          {pitchers.length === 0 && (
+      <div className="w-full overflow-x-auto mcp-app-scroll-x">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={8} className="text-center text-muted-foreground py-6">
-                No pitcher matchup data available
-              </TableCell>
+              <TableHead>Pitcher</TableHead>
+              <TableHead className="hidden sm:table-cell">Team</TableHead>
+              <TableHead>Next Start</TableHead>
+              <TableHead>Opponent</TableHead>
+              <TableHead className="hidden sm:table-cell text-right">AVG</TableHead>
+              <TableHead className="hidden sm:table-cell text-right">OBP</TableHead>
+              <TableHead className="hidden sm:table-cell text-right">K%</TableHead>
+              <TableHead className="text-center">Grade</TableHead>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {pitchers.map((p) => (
+              <TableRow key={p.player_id + "-" + p.next_start_date}>
+                <TableCell className="font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <PlayerName name={p.name} playerId={p.player_id} mlbId={p.mlb_id} app={app} context="roster" />
+                    {p.two_start && <Badge className="bg-purple-600 text-white">2S</Badge>}
+                  </span>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <TeamLogo abbrev={p.mlb_team} />
+                    {p.mlb_team}
+                  </span>
+                </TableCell>
+                <TableCell className="font-mono text-xs">{p.next_start_date}</TableCell>
+                <TableCell>
+                  <span className="text-sm flex items-center gap-1">
+                    {p.home_away === "home" ? "vs " : "@ "}
+                    <TeamLogo abbrev={p.opponent} />
+                    {p.opponent}
+                  </span>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell text-right font-mono text-xs">
+                  {typeof p.opp_avg === "number" ? formatFixed(p.opp_avg, 3, "-") : "-"}
+                </TableCell>
+                <TableCell className="hidden sm:table-cell text-right font-mono text-xs">
+                  {typeof p.opp_obp === "number" ? formatFixed(p.opp_obp, 3, "-") : "-"}
+                </TableCell>
+                <TableCell className="hidden sm:table-cell text-right font-mono text-xs">
+                  {typeof p.opp_k_pct === "number" ? formatFixed(p.opp_k_pct * 100, 1, "-") + "%" : "-"}
+                </TableCell>
+                <TableCell className="text-center">
+                  <Badge className={gradeColor(p.matchup_grade)}>{p.matchup_grade}</Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+            {pitchers.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-6">
+                  No pitcher matchup data available
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

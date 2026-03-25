@@ -1,5 +1,5 @@
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Subheading } from "../components/heading";
 import { formatFixed } from "../shared/number-format";
 import { AiInsight } from "../shared/ai-insight";
@@ -22,7 +22,7 @@ function RankBadge({ rank }: { rank: number }) {
   if (rank === 1) return <Badge size="sm" className="bg-sem-warning">{rank}</Badge>;
   if (rank === 2) return <Badge size="sm" className="bg-sem-neutral">{rank}</Badge>;
   if (rank === 3) return <Badge size="sm" className="bg-sem-info">{rank}</Badge>;
-  return <Badge color="secondary" size="sm">{rank}</Badge>;
+  return <Badge variant="secondary">{rank}</Badge>;
 }
 
 function OwnershipBar({ pct }: { pct: number }) {
@@ -45,6 +45,7 @@ export function PowerRankingsView({ data }: { data: { rankings: PowerRankingTeam
 
       <AiInsight recommendation={data.ai_recommendation} />
 
+      <div className="w-full overflow-x-auto mcp-app-scroll-x">
       <Table>
         <TableHeader>
           <TableRow>
@@ -75,6 +76,7 @@ export function PowerRankingsView({ data }: { data: { rankings: PowerRankingTeam
           ))}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }

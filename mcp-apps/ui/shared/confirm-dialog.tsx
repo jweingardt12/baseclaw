@@ -1,6 +1,6 @@
-import { Dialog } from "@plexui/ui/components/Dialog";
-import { Button } from "@plexui/ui/components/Button";
-import { LoadingIndicator } from "@plexui/ui/components/Indicator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { LoadingIndicator } from "@/shared/loading-indicator";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -27,25 +27,25 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <Dialog open={open} onOpenChange={function (o) { if (!o) onClose(); }}>
-      <Dialog.Content>
-        <Dialog.Header>
-          <Dialog.Title>{title}</Dialog.Title>
-          <Dialog.Description>{description}</Dialog.Description>
-        </Dialog.Header>
-        <Dialog.Footer>
-          <Button variant="ghost" color="secondary" onClick={onClose} disabled={loading}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={loading}>
             {cancelLabel}
           </Button>
           <Button
-            color={variant === "destructive" ? "danger" : "secondary"}
+            variant={variant === "destructive" ? "destructive" : "default"}
             onClick={onConfirm}
             disabled={loading}
           >
             {loading ? <LoadingIndicator size={16} className="mr-1" /> : null}
             {confirmLabel}
           </Button>
-        </Dialog.Footer>
-      </Dialog.Content>
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
   );
 }

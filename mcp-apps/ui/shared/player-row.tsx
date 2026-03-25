@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Badge } from "@plexui/ui/components/Badge";
-import { TableRow, TableCell } from "@plexui/ui/components/Table";
+import { Badge } from "@/components/ui/badge";
+import { TableRow, TableCell } from "@/components/ui/table";
 import { PlayerName } from "./player-name";
 import { TeamLogo } from "./team-logo";
 import { IntelBadge } from "./intel-badge";
@@ -141,7 +141,7 @@ export function PlayerRow({ player, columns, statKeys, app, navigate, context, a
 
         {player.position !== undefined && (
           <TableCell className="w-14">
-            <Badge color="secondary" size="sm" className="font-mono font-bold">{player.position || "?"}</Badge>
+            <Badge variant="secondary" className="font-mono font-bold">{player.position || "?"}</Badge>
           </TableCell>
         )}
 
@@ -154,7 +154,7 @@ export function PlayerRow({ player, columns, statKeys, app, navigate, context, a
             <div className="flex gap-1 flex-wrap">
               {posDisplay.split(",").map(function (pos) {
                 var p = pos.trim();
-                return p ? <Badge key={p} color="secondary" size="sm">{p}</Badge> : null;
+                return p ? <Badge key={p} variant="secondary">{p}</Badge> : null;
               })}
             </div>
           </TableCell>
@@ -206,7 +206,7 @@ export function PlayerRow({ player, columns, statKeys, app, navigate, context, a
 
         {hasStatus ? (
           <TableCell>
-            <Badge color="danger" size="sm">{player.status}</Badge>
+            <Badge variant="destructive">{player.status}</Badge>
           </TableCell>
         ) : cols.length > 0 ? (
           <TableCell></TableCell>

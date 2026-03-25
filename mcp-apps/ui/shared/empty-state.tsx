@@ -1,5 +1,5 @@
-import { EmptyMessage } from "@plexui/ui/components/EmptyMessage";
-import { Button } from "@plexui/ui/components/Button";
+import { Button } from "@/components/ui/button";
+import { EmptyMessage } from "@/shared/empty-message";
 import { cn } from "../lib/utils";
 import type { AppIcon } from "@/shared/icons";
 
@@ -23,7 +23,7 @@ export function EmptyState({ icon: Icon, title, description, action, className }
       {description && <EmptyMessage.Description>{description}</EmptyMessage.Description>}
       {action && (
         <EmptyMessage.ActionRow>
-          <Button variant="outline" color="secondary" onClick={action.onClick}>
+          <Button variant="outline" onClick={action.onClick}>
             {action.label}
           </Button>
         </EmptyMessage.ActionRow>

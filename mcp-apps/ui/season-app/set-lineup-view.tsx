@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
-import { Button } from "@plexui/ui/components/Button";
+import { Button } from "@/components/ui/button";
 import { useCallTool } from "../shared/use-call-tool";
 import { AiInsight } from "../shared/ai-insight";
 import { CheckCircle, XCircle, ArrowLeft, Loader2 } from "@/shared/icons";
@@ -60,7 +60,7 @@ export function SetLineupView({ data, app, navigate }: { data: SetLineupData; ap
         </div>
         {data.message && <p className="text-xs text-muted-foreground">{data.message}</p>}
         <div className="flex items-center gap-2 pt-2">
-          <Button variant="outline" color="secondary" onClick={handleViewRoster}>
+          <Button variant="outline" onClick={handleViewRoster}>
             <ArrowLeft size={14} />
             View Roster
           </Button>

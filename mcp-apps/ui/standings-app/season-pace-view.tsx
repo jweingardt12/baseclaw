@@ -1,5 +1,5 @@
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Progress } from "../components/progress";
 import { Info } from "@/shared/icons";
 import { formatFixed } from "../shared/number-format";
@@ -35,8 +35,8 @@ interface SeasonPaceData {
 function StatusBadge({ status }: { status: string }) {
   if (status === "in") return <Badge size="sm" className="bg-sem-success">In</Badge>;
   if (status === "bubble") return <Badge size="sm" className="bg-sem-warning">Bubble</Badge>;
-  if (status === "out") return <Badge color="danger" size="sm">Out</Badge>;
-  return <Badge color="secondary" size="sm">{status}</Badge>;
+  if (status === "out") return <Badge variant="destructive">Out</Badge>;
+  return <Badge variant="secondary">{status}</Badge>;
 }
 
 export function SeasonPaceView({ data }: { data: SeasonPaceData }) {
@@ -59,8 +59,8 @@ export function SeasonPaceView({ data }: { data: SeasonPaceData }) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Badge color="secondary" size="sm">Week {data.current_week}/{data.end_week}</Badge>
-        <Badge color="secondary" size="sm">{data.playoff_teams} playoff spots</Badge>
+        <Badge variant="secondary">Week {data.current_week}/{data.end_week}</Badge>
+        <Badge variant="secondary">{data.playoff_teams} playoff spots</Badge>
       </div>
 
       <div className="space-y-1">
@@ -71,6 +71,7 @@ export function SeasonPaceView({ data }: { data: SeasonPaceData }) {
         <Progress value={progressPct} className="h-2" />
       </div>
 
+      <div className="w-full overflow-x-auto mcp-app-scroll-x">
       <Table>
         <TableHeader>
           <TableRow>
@@ -120,6 +121,7 @@ export function SeasonPaceView({ data }: { data: SeasonPaceData }) {
           })}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }

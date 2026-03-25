@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Badge } from "@plexui/ui/components/Badge";
-import { Button } from "@plexui/ui/components/Button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
-import { Dialog } from "@plexui/ui/components/Dialog";
 import { Subheading } from "../components/heading";
 import { useCallTool } from "../shared/use-call-tool";
 import { RefreshButton } from "../shared/refresh-button";
@@ -100,7 +100,7 @@ export function TradeFinderView({ data, app, navigate }: { data: TradeFinderData
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs text-muted-foreground">Weak:</span>
             {data.weak_categories.map((c) => (
-              <Badge key={c} color="danger" size="sm">{c}</Badge>
+              <Badge key={c} variant="destructive">{c}</Badge>
             ))}
           </div>
         )}
@@ -108,7 +108,7 @@ export function TradeFinderView({ data, app, navigate }: { data: TradeFinderData
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs text-muted-foreground">Strong:</span>
             {data.strong_categories.map((c) => (
-              <Badge key={c}  size="sm" className="bg-sem-success">{c}</Badge>
+              <Badge key={c} className="bg-sem-success">{c}</Badge>
             ))}
           </div>
         )}
@@ -128,14 +128,14 @@ export function TradeFinderView({ data, app, navigate }: { data: TradeFinderData
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               {partner.team_name}
-              <Badge color="secondary" size="sm">
+              <Badge variant="secondary">
                 Score: {formatFixed(partner.score, 1, "0.0")}
               </Badge>
             </CardTitle>
             <div className="flex items-center gap-1 flex-wrap mt-1">
               <span className="text-xs text-muted-foreground">Complementary:</span>
               {(partner.complementary_categories || []).map((c) => (
-                <Badge key={c} color="secondary" size="sm">{c}</Badge>
+                <Badge key={c} variant="secondary">{c}</Badge>
               ))}
             </div>
           </CardHeader>
@@ -164,11 +164,11 @@ export function TradeFinderView({ data, app, navigate }: { data: TradeFinderData
                   <p className="text-xs text-muted-foreground italic">{pkg.rationale}</p>
                 )}
                 <div className="flex gap-2 pt-1">
-                  <Button variant="outline" color="secondary" size="xs" onClick={() => handleEvaluate(pkg)} disabled={loading}>
+                  <Button variant="outline" size="xs" onClick={() => handleEvaluate(pkg)} disabled={loading}>
                     <BarChart3 size={14} />
                     Evaluate
                   </Button>
-                  <Button color="secondary" size="xs" onClick={() => setProposePkg({ partner, pkg })} disabled={loading}>
+                  <Button variant="secondary" size="xs" onClick={() => setProposePkg({ partner, pkg })} disabled={loading}>
                     <Send size={14} />
                     Propose
                   </Button>
@@ -180,20 +180,20 @@ export function TradeFinderView({ data, app, navigate }: { data: TradeFinderData
       ))}
 
       <Dialog open={proposePkg !== null} onOpenChange={function (open) { if (!open) setProposePkg(null); }}>
-        <Dialog.Content>
-          <Dialog.Header>
-            <Dialog.Title>Propose Trade?</Dialog.Title>
-            <Dialog.Description>{proposePkg ? (
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Propose Trade?</DialogTitle>
+            <DialogDescription>{proposePkg ? (
               "Send trade proposal to " + proposePkg.partner.team_name + "? "
               + "Give: " + (proposePkg.pkg.give || []).map((p) => p.name).join(", ")
               + " — Get: " + (proposePkg.pkg.get || []).map((p) => p.name).join(", ")
-            ) : ""}</Dialog.Description>
-          </Dialog.Header>
-          <Dialog.Footer>
-            <Button variant="ghost" color="secondary" onClick={() => setProposePkg(null)}>Cancel</Button>
-            <Button color="secondary" onClick={handlePropose}>Send Proposal</Button>
-          </Dialog.Footer>
-        </Dialog.Content>
+            ) : ""}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setProposePkg(null)}>Cancel</Button>
+            <Button variant="secondary" onClick={handlePropose}>Send Proposal</Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   );

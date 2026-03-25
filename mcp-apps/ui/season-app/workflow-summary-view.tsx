@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
 import { AiInsight } from "../shared/ai-insight";
 import { EmptyState } from "../shared/empty-state";
 import { FileText } from "@/shared/icons";
@@ -25,14 +25,14 @@ function isScalar(value: unknown): boolean {
 }
 
 export function WorkflowSummaryView({ data }: { data: WorkflowSummaryData }) {
-  const title = titleFromType(data.type);
-  const actionItems = data.action_items || [];
+  var title = titleFromType(data.type);
+  var actionItems = data.action_items || [];
 
-  const scalarEntries = Object.entries(data)
+  var scalarEntries = Object.entries(data)
     .filter(([k, v]) => !["type", "ai_recommendation", "action_items"].includes(k) && isScalar(v))
     .slice(0, 8);
 
-  const listEntries = Object.entries(data)
+  var listEntries = Object.entries(data)
     .filter(([k, v]) => !["action_items"].includes(k) && Array.isArray(v) && (v as any[]).length > 0)
     .slice(0, 6);
 
@@ -68,7 +68,7 @@ export function WorkflowSummaryView({ data }: { data: WorkflowSummaryData }) {
               <p className="text-xs text-muted-foreground font-semibold">Action Items</p>
               {actionItems.map((item, idx) => (
                 <div key={idx} className="flex items-start gap-2">
-                  <Badge color="secondary" size="sm">P{item.priority || 3}</Badge>
+                  <Badge variant="secondary">P{item.priority || 3}</Badge>
                   <span className="text-sm">{item.message || item.type || "Action"}</span>
                 </div>
               ))}

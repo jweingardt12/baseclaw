@@ -1,6 +1,6 @@
-import { Button } from "@plexui/ui/components/Button";
+import { Button } from "@/components/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Subheading } from "../components/heading";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { useCallTool } from "../shared/use-call-tool";
 import { PlayerCell, OwnershipCell } from "../shared/player-row";
 import { AiInsight } from "../shared/ai-insight";
@@ -58,40 +58,42 @@ export function StreamingView({ data, app, navigate }: { data: StreamingData; ap
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         )}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Pitcher</TableHead>
-              <TableHead className="text-center">Games</TableHead>
-              <TableHead className="hidden sm:table-cell text-right">Own%</TableHead>
-              <TableHead className="text-right">Rec</TableHead>
-              <TableHead className="w-16">2-Start</TableHead>
-              <TableHead className="w-16"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(data.pitchers || []).map((p, i) => (
-              <TableRow key={p.player_id} className={i === 0 ? "bg-primary/5" : ""}>
-                <TableCell className="font-medium">
-                  <PlayerCell player={p} app={app} navigate={navigate} context="free-agents" />
-                </TableCell>
-                <TableCell className="text-center font-mono">{p.games}</TableCell>
-                <TableCell className="hidden sm:table-cell text-right font-mono text-xs">
-                  <OwnershipCell player={p} />
-                </TableCell>
-                <TableCell className="text-right font-mono font-medium">{formatFixed(p.score, 1, "0.0")}</TableCell>
-                <TableCell>
-                  {p.two_start && <Zap size={14} className="text-amber-500" />}
-                </TableCell>
-                <TableCell>
-                  <Button color="secondary" size="xs" uniform onClick={() => handleAdd(p.player_id)}>
-                    <UserPlus size={14} />
-                  </Button>
-                </TableCell>
+        <div className="w-full overflow-x-auto mcp-app-scroll-x">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Pitcher</TableHead>
+                <TableHead className="text-center">Games</TableHead>
+                <TableHead className="hidden sm:table-cell text-right">Own%</TableHead>
+                <TableHead className="text-right">Rec</TableHead>
+                <TableHead className="w-16">2-Start</TableHead>
+                <TableHead className="w-16"></TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {(data.pitchers || []).map((p, i) => (
+                <TableRow key={p.player_id} className={i === 0 ? "bg-primary/5" : ""}>
+                  <TableCell className="font-medium">
+                    <PlayerCell player={p} app={app} navigate={navigate} context="free-agents" />
+                  </TableCell>
+                  <TableCell className="text-center font-mono">{p.games}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-right font-mono text-xs">
+                    <OwnershipCell player={p} />
+                  </TableCell>
+                  <TableCell className="text-right font-mono font-medium">{formatFixed(p.score, 1, "0.0")}</TableCell>
+                  <TableCell>
+                    {p.two_start && <Zap size={14} className="text-amber-500" />}
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="secondary" size="sm" onClick={() => handleAdd(p.player_id)}>
+                      <UserPlus size={14} />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );

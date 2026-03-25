@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
-import { Badge } from "@plexui/ui/components/Badge";
-import { Avatar } from "@plexui/ui/components/Avatar";
-import { Button } from "@plexui/ui/components/Button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Subheading } from "../components/heading";
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Legend } from "recharts";
+import { RadarChart } from "@/charts";
 import { ArrowRightLeft, TrendingUp, TrendingDown, Users, Loader2, Check } from "@/shared/icons";
 import { useCallTool } from "../shared/use-call-tool";
 import { ZScoreBadge, ZScoreExplainer } from "../shared/z-score";
@@ -115,7 +115,7 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
 
       {/* Compare from Roster button */}
       {app && (
-        <Button variant="outline" color="secondary" onClick={handleLoadRoster} disabled={loading || rosterLoading}>
+        <Button variant="outline" onClick={handleLoadRoster} disabled={loading || rosterLoading}>
           {rosterLoading ? <Loader2 size={14} className="animate-spin" /> : <Users size={14} />}
           <span className="ml-1.5">Compare from Roster</span>
         </Button>
@@ -144,9 +144,9 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
                         className={"w-full text-left px-2 py-1.5 rounded text-sm flex items-center gap-2 " + (isSelected ? "bg-primary text-primary-foreground" : isOther ? "opacity-40 cursor-not-allowed" : "hover:bg-muted")}
                       >
                         {isSelected && <Check size={12} />}
-                        {p.mlb_id && <Avatar imageUrl={mlbHeadshotUrl(p.mlb_id)} size={24} />}
+                        {p.mlb_id && <Avatar className="h-6 w-6"><AvatarImage src={mlbHeadshotUrl(p.mlb_id)} /><AvatarFallback>?</AvatarFallback></Avatar>}
                         <span className="font-medium">{p.name}</span>
-                        {p.position && <Badge color="secondary" size="sm" className="ml-auto">{p.position}</Badge>}
+                        {p.position && <Badge variant="secondary" className="ml-auto">{p.position}</Badge>}
                       </button>
                     );
                   })}
@@ -167,9 +167,9 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
                         className={"w-full text-left px-2 py-1.5 rounded text-sm flex items-center gap-2 " + (isSelected ? "bg-primary text-primary-foreground" : isOther ? "opacity-40 cursor-not-allowed" : "hover:bg-muted")}
                       >
                         {isSelected && <Check size={12} />}
-                        {p.mlb_id && <Avatar imageUrl={mlbHeadshotUrl(p.mlb_id)} size={24} />}
+                        {p.mlb_id && <Avatar className="h-6 w-6"><AvatarImage src={mlbHeadshotUrl(p.mlb_id)} /><AvatarFallback>?</AvatarFallback></Avatar>}
                         <span className="font-medium">{p.name}</span>
-                        {p.position && <Badge color="secondary" size="sm" className="ml-auto">{p.position}</Badge>}
+                        {p.position && <Badge variant="secondary" className="ml-auto">{p.position}</Badge>}
                       </button>
                     );
                   })}
@@ -177,7 +177,7 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
               </div>
             </div>
             <div className="mt-3">
-              <Button color="secondary" onClick={handleCompare} disabled={!selectedPlayer1 || !selectedPlayer2 || loading}>
+              <Button variant="secondary" onClick={handleCompare} disabled={!selectedPlayer1 || !selectedPlayer2 || loading}>
                 {loading ? <Loader2 size={14} className="animate-spin" /> : <ArrowRightLeft size={14} />}
                 <span className="ml-1.5">Compare</span>
               </Button>
@@ -225,18 +225,21 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
       </div>
 
       {chartData.length > 0 && (
-        <div className="h-48 sm:h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={chartData}>
-              <PolarGrid />
-              <PolarAngleAxis dataKey="category" tick={{ fontSize: 12 }} />
-              <PolarRadiusAxis tick={{ fontSize: 9 }} />
-              <Radar name={data.player1.name} dataKey={data.player1.name} stroke="var(--color-primary)" fill="var(--color-primary)" fillOpacity={0.3} />
-              <Radar name={data.player2.name} dataKey={data.player2.name} stroke="var(--color-destructive)" fill="var(--color-destructive)" fillOpacity={0.3} />
-              <Legend />
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
+        <RadarChart
+          data={chartData.map(function (d) {
+            return { label: d.category, value: d[data.player1.name] || 0 };
+          })}
+          overlays={[{
+            data: chartData.map(function (d) {
+              return { label: d.category, value: d[data.player2.name] || 0 };
+            }),
+            color: "var(--color-destructive)",
+            name: data.player2.name,
+          }]}
+          fillColor="var(--color-primary)"
+          strokeColor="var(--color-primary)"
+          className="h-48 sm:h-72"
+        />
       )}
 
       <div className="mcp-app-scroll-x">

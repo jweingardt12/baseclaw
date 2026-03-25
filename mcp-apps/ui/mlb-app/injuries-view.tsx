@@ -1,5 +1,5 @@
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 import { TeamLogo } from "../shared/team-logo";
 
@@ -23,31 +23,33 @@ export function InjuriesView({ data }: { data: { injuries: MlbInjury[] } }) {
   return (
     <div className="space-y-4">
       <div className="surface-card overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="font-bold">Player</TableHead>
-              <TableHead className="font-bold">Team</TableHead>
-              <TableHead className="hidden sm:table-cell font-bold">Description</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(data.injuries || []).map(function (inj, i) {
-              return (
-                <TableRow key={i}>
-                  <TableCell className="font-semibold">{inj.player}</TableCell>
-                  <TableCell>
-                    <span className="flex items-center gap-1">
-                      <TeamLogo name={inj.team} />
-                      <Badge color="secondary" size="sm" className="font-bold">{inj.team}</Badge>
-                    </span>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{inj.description}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <div className="w-full overflow-x-auto mcp-app-scroll-x">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="font-bold">Player</TableHead>
+                <TableHead className="font-bold">Team</TableHead>
+                <TableHead className="hidden sm:table-cell font-bold">Description</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(data.injuries || []).map(function (inj, i) {
+                return (
+                  <TableRow key={i}>
+                    <TableCell className="font-semibold">{inj.player}</TableCell>
+                    <TableCell>
+                      <span className="flex items-center gap-1">
+                        <TeamLogo name={inj.team} />
+                        <Badge variant="secondary" className="font-bold">{inj.team}</Badge>
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{inj.description}</TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );

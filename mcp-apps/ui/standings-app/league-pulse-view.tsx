@@ -1,6 +1,6 @@
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
-import { Badge } from "@plexui/ui/components/Badge";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { BarChart } from "@/charts";
 import { Card, CardContent } from "../components/card";
 import { Subheading } from "../components/heading";
 import { AiInsight } from "../shared/ai-insight";
@@ -69,9 +69,10 @@ export function LeaguePulseView({ data }: { data: { teams: LeaguePulseTeam[]; ai
 
       <div className="flex gap-2 flex-wrap">
         {mostActive && <Badge size="sm" className="bg-sem-success">Most Active: {mostActive.name} ({mostActive.total})</Badge>}
-        {leastActive && <Badge color="secondary" size="sm">Least Active: {leastActive.name} ({leastActive.total})</Badge>}
+        {leastActive && <Badge variant="secondary">Least Active: {leastActive.name} ({leastActive.total})</Badge>}
       </div>
 
+      <div className="w-full overflow-x-auto mcp-app-scroll-x">
       <Table>
         <TableHeader>
           <TableRow>
@@ -104,6 +105,7 @@ export function LeaguePulseView({ data }: { data: { teams: LeaguePulseTeam[]; ai
           })}
         </TableBody>
       </Table>
+      </div>
 
       <Card>
         <CardContent className="p-4">
@@ -120,16 +122,16 @@ export function LeaguePulseView({ data }: { data: { teams: LeaguePulseTeam[]; ai
             <ChevronIcon open={showChart} />
           </button>
           {showChart && (
-            <div className="mt-3" style={{ width: "100%", height: Math.max(250, chartData.length * 32) }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
-                  <XAxis type="number" tick={{ fontSize: 12 }} />
-                  <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar dataKey="moves" stackId="a" fill="#3b82f6" barSize={20} />
-                  <Bar dataKey="trades" stackId="a" fill="#f59e0b" barSize={20} radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="mt-3">
+              <BarChart
+                data={chartData}
+                horizontal
+                labelWidth={100}
+                series={[
+                  { key: "moves", color: "#3b82f6" },
+                  { key: "trades", color: "#f59e0b" },
+                ]}
+              />
             </div>
           )}
         </CardContent>

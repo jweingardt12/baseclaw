@@ -1,7 +1,7 @@
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/card";
 import { Subheading } from "../components/heading";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
 
@@ -37,10 +37,10 @@ interface PlayoffPlannerResponse {
   summary: string;
 }
 
-function priorityColor(priority: string): "danger" | "warning" | "secondary" {
+function priorityVariant(priority: string): "destructive" | "default" | "secondary" {
   var lower = priority.toLowerCase();
-  if (lower === "high" || lower === "critical") return "danger";
-  if (lower === "medium") return "warning";
+  if (lower === "high" || lower === "critical") return "destructive";
+  if (lower === "medium") return "default";
   return "secondary";
 }
 
@@ -104,7 +104,7 @@ export function PlayoffPlannerView({ data }: { data: PlayoffPlannerResponse; app
               <p className="text-xs text-muted-foreground mb-1.5">Target Categories</p>
               <div className="flex flex-wrap gap-1">
                 {targetCats.map(function (cat) {
-                  return <Badge key={cat} color="success" size="sm">{cat}</Badge>;
+                  return <Badge key={cat}>{cat}</Badge>;
                 })}
               </div>
             </CardContent>
@@ -116,7 +116,7 @@ export function PlayoffPlannerView({ data }: { data: PlayoffPlannerResponse; app
               <p className="text-xs text-muted-foreground mb-1.5">Punt Categories</p>
               <div className="flex flex-wrap gap-1">
                 {puntCats.map(function (cat) {
-                  return <Badge key={cat} color="danger" size="sm">{cat}</Badge>;
+                  return <Badge key={cat} variant="destructive">{cat}</Badge>;
                 })}
               </div>
             </CardContent>
@@ -131,34 +131,36 @@ export function PlayoffPlannerView({ data }: { data: PlayoffPlannerResponse; app
             <CardTitle className="text-base">Category Gaps</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-center">Current</TableHead>
-                  <TableHead className="text-center">Target</TableHead>
-                  <TableHead className="text-center">Gap</TableHead>
-                  <TableHead className="text-center">Priority</TableHead>
-                  <TableHead className="hidden sm:table-cell">Cost</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {gaps.map(function (g, i) {
-                  return (
-                    <TableRow key={i + "-" + g.category}>
-                      <TableCell className="font-medium text-sm">{g.category}</TableCell>
-                      <TableCell className="text-center font-mono text-sm">{g.current_rank}</TableCell>
-                      <TableCell className="text-center font-mono text-sm">{g.target_rank}</TableCell>
-                      <TableCell className="text-center font-mono text-sm">{g.gap}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge color={priorityColor(g.priority)} size="sm">{g.priority}</Badge>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">{g.cost_to_compete}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <div className="w-full overflow-x-auto mcp-app-scroll-x">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Category</TableHead>
+                    <TableHead className="text-center">Current</TableHead>
+                    <TableHead className="text-center">Target</TableHead>
+                    <TableHead className="text-center">Gap</TableHead>
+                    <TableHead className="text-center">Priority</TableHead>
+                    <TableHead className="hidden sm:table-cell">Cost</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {gaps.map(function (g, i) {
+                    return (
+                      <TableRow key={i + "-" + g.category}>
+                        <TableCell className="font-medium text-sm">{g.category}</TableCell>
+                        <TableCell className="text-center font-mono text-sm">{g.current_rank}</TableCell>
+                        <TableCell className="text-center font-mono text-sm">{g.target_rank}</TableCell>
+                        <TableCell className="text-center font-mono text-sm">{g.gap}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={priorityVariant(g.priority)}>{g.priority}</Badge>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">{g.cost_to_compete}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -174,11 +176,11 @@ export function PlayoffPlannerView({ data }: { data: PlayoffPlannerResponse; app
               {actions.map(function (a, i) {
                 return (
                   <div key={i} className="flex items-start gap-2.5 py-2 border-b last:border-0">
-                    <Badge color={priorityColor(a.priority)}  size="sm" className="mt-0.5 shrink-0">{a.priority}</Badge>
+                    <Badge variant={priorityVariant(a.priority)} className="mt-0.5 shrink-0">{a.priority}</Badge>
                     <div className="flex-1">
                       <p className="text-sm font-medium">{a.description}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <Badge color="secondary" size="sm">{a.action_type}</Badge>
+                        <Badge variant="secondary">{a.action_type}</Badge>
                         <span className="text-xs text-muted-foreground">{a.impact}</span>
                       </div>
                     </div>

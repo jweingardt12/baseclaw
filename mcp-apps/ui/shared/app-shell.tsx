@@ -1,9 +1,8 @@
 import { useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { useApp, useHostStyles } from "@modelcontextprotocol/ext-apps/react";
-import { Skeleton } from "@plexui/ui/components/Skeleton";
-import { Button } from "@plexui/ui/components/Button";
-import { Alert } from "@plexui/ui/components/Alert";
-import { LoadingIndicator } from "@plexui/ui/components/Indicator";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { LoadingIndicator } from "@/shared/loading-indicator";
 import { Maximize2, Minimize2 } from "@/shared/icons";
 import { useHostLayout } from "./use-host-layout";
 
@@ -195,17 +194,13 @@ export function AppShell({ name, version = "1.0.0", children }: AppShellProps) {
   if (error) {
     return (
       <div className="mcp-app-root mcp-app-content">
-        <Alert
-          color="danger"
-          variant="soft"
-          title="Connection Error"
-          description={String(error)}
-          actions={
-            <Button variant="outline" color="secondary" onClick={function () { window.location.reload(); }}>
-              Retry
-            </Button>
-          }
-        />
+        <Alert variant="destructive">
+          <AlertTitle>Connection Error</AlertTitle>
+          <AlertDescription>{String(error)}</AlertDescription>
+          <Button variant="outline" className="mt-2" onClick={function () { window.location.reload(); }}>
+            Retry
+          </Button>
+        </Alert>
       </div>
     );
   }
@@ -243,12 +238,10 @@ export function AppShell({ name, version = "1.0.0", children }: AppShellProps) {
     if (errorMsg) {
       return (
         <div className="mcp-app-root mcp-app-content p-4">
-          <Alert
-            color="danger"
-            variant="soft"
-            title="Something went wrong"
-            description={errorMsg}
-          />
+          <Alert variant="destructive">
+            <AlertTitle>Something went wrong</AlertTitle>
+            <AlertDescription>{errorMsg}</AlertDescription>
+          </Alert>
           <p className="text-xs text-muted-foreground text-center">Ask Claude to try again.</p>
         </div>
       );
@@ -292,8 +285,7 @@ export function AppShell({ name, version = "1.0.0", children }: AppShellProps) {
         <div className="mcp-app-shell-controls">
           <Button
             variant="ghost"
-            color="secondary"
-            uniform size="sm"
+            size="sm"
             onClick={function () {
               var newMode = displayMode === "fullscreen" ? "inline" : "fullscreen";
               if (!layout.availableDisplayModes.includes(newMode as any)) return;

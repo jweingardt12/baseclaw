@@ -1,10 +1,11 @@
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
 import { Subheading } from "../components/heading";
 import { Text } from "../components/text";
 import { Trophy, TrendingUp } from "@/shared/icons";
 import { KpiTile } from "../shared/kpi-tile";
 
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from "recharts";
+import { LineChart } from "@/charts";
+import { BarChart } from "@/charts";
 
 interface SeasonResult {
   year: number;
@@ -40,10 +41,10 @@ function parseFinish(finish: string): number | null {
   return isNaN(num) ? null : num;
 }
 
-function getFinishBadgeColor(finish: string | undefined): "primary" | "secondary" {
+function getFinishBadgeColor(finish: string | undefined): "default" | "secondary" {
   var rank = parseFinish(finish || "");
   if (rank === 1) {
-    return "primary";
+    return "default";
   }
   return "secondary";
 }
@@ -122,6 +123,27 @@ export function LeagueHistoryView({ data }: { data: { seasons: SeasonResult[] } 
     return s.your_finish && s.your_finish !== "-";
   }).length;
 
+  // Prepare LineChart data for finish position
+  var finishLineData = sortedFinishData.map(function (d) {
+    return { label: String(d.year), finish: d.finish };
+  });
+
+  // Prepare BarChart data for win %
+  var winPctBarData = sortedChartData.map(function (entry) {
+    var finish = parseFinish(entry.finish);
+    var color = "var(--sem-neutral)";
+    if (finish === 1) {
+      color = "var(--sem-warning)";
+    } else if (finish !== null && finish <= 3) {
+      color = "var(--sem-info)";
+    } else if (entry.pct >= 60) {
+      color = "var(--sem-success)";
+    } else if (entry.pct < 40) {
+      color = "var(--sem-risk)";
+    }
+    return { label: String(entry.year), value: entry.pct, color: color };
+  });
+
   return (
     <div className="space-y-4">
       {/* Summary Stats */}
@@ -140,63 +162,13 @@ export function LeagueHistoryView({ data }: { data: { seasons: SeasonResult[] } 
             <Trophy className="h-4 w-4 text-muted-foreground" />
             <Subheading>Finish by Season</Subheading>
           </div>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={sortedFinishData} margin={{ top: 5, right: 10, bottom: 5, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                <XAxis
-                  dataKey="year"
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  reversed
-                  domain={[1, maxFinish]}
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={function (v: number) { return "#" + v; }}
-                  allowDecimals={false}
-                />
-                <Tooltip
-                  formatter={function (value: number) {
-                    return ["#" + value, "Finish"];
-                  }}
-                  labelFormatter={function (label: number) { return "Season " + label; }}
-                  contentStyle={{
-                    background: "var(--color-card)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="finish"
-                  stroke="var(--sem-info)"
-                  strokeWidth={2}
-                  dot={function (props: any) {
-                    var entry = sortedFinishData[props.index];
-                    if (!entry) return <circle key={props.key} />;
-                    var isChamp = entry.isChampion;
-                    return (
-                      <circle
-                        key={props.key}
-                        cx={props.cx}
-                        cy={props.cy}
-                        r={isChamp ? 6 : 4}
-                        fill={isChamp ? "var(--sem-warning)" : "var(--sem-info)"}
-                        stroke={isChamp ? "var(--sem-warning)" : "var(--sem-info)"}
-                        strokeWidth={isChamp ? 2 : 1}
-                      />
-                    );
-                  }}
-                  activeDot={{ r: 6, fill: "var(--sem-info)" }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <LineChart
+            data={finishLineData}
+            series={[{ key: "finish", color: "var(--sem-info)" }]}
+            reversed
+            yDomain={[1, maxFinish]}
+            height={192}
+          />
           <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
@@ -246,7 +218,7 @@ export function LeagueHistoryView({ data }: { data: { seasons: SeasonResult[] } 
                 {/* Your finish */}
                 <div className="flex items-center gap-1.5 shrink-0">
                   {s.your_finish && s.your_finish !== "-" ? (
-                    <Badge color={getFinishBadgeColor(s.your_finish)}  size="sm" className="font-bold">
+                    <Badge variant={getFinishBadgeColor(s.your_finish)} className="font-bold">
                       {s.your_finish}
                     </Badge>
                   ) : (
@@ -266,53 +238,11 @@ export function LeagueHistoryView({ data }: { data: { seasons: SeasonResult[] } 
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
             <Subheading>Win % by Season</Subheading>
           </div>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={sortedChartData} margin={{ top: 5, right: 5, bottom: 5, left: -10 }}>
-                <XAxis
-                  dataKey="year"
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  domain={[0, 100]}
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={function (v: number) { return v + "%"; }}
-                />
-                <Tooltip
-                  formatter={function (value: number, name: string) {
-                    return [value + "%", "Win %"];
-                  }}
-                  labelFormatter={function (label: number) { return "Season " + label; }}
-                  contentStyle={{
-                    background: "var(--color-card)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                  }}
-                />
-                <Bar dataKey="pct" radius={[4, 4, 0, 0]} maxBarSize={32}>
-                  {sortedChartData.map(function (entry) {
-                    var finish = parseFinish(entry.finish);
-                    var color = "var(--sem-neutral)";
-                    if (finish === 1) {
-                      color = "var(--sem-warning)";
-                    } else if (finish !== null && finish <= 3) {
-                      color = "var(--sem-info)";
-                    } else if (entry.pct >= 60) {
-                      color = "var(--sem-success)";
-                    } else if (entry.pct < 40) {
-                      color = "var(--sem-risk)";
-                    }
-                    return <Cell key={entry.year} fill={color} />;
-                  })}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <BarChart
+            data={winPctBarData}
+            maxValue={100}
+            height={192}
+          />
           <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <div className="w-2.5 h-2.5 rounded-sm bg-amber-500" />

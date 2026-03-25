@@ -1,8 +1,8 @@
-import { Badge } from "@plexui/ui/components/Badge";
-import { Button } from "@plexui/ui/components/Button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
 import { Subheading } from "../components/heading";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { useCallTool } from "../shared/use-call-tool";
 import { RefreshButton } from "../shared/refresh-button";
 import { PlayerName } from "../shared/player-name";
@@ -105,36 +105,38 @@ export function WhatsNewView({ data, app, navigate }: { data: WhatsNewData; app:
             <CardTitle className="text-sm flex items-center gap-2">
               <AlertTriangle size={14} className="text-destructive" />
               Injuries
-              <Badge color="danger" size="sm">{data.injuries.length}</Badge>
+              <Badge variant="destructive">{data.injuries.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Player</TableHead>
-                  <TableHead>Pos</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden sm:table-cell">Section</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(data.injuries || []).map((p, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-medium">
-                      <PlayerName name={p.name} app={app} navigate={navigate} context="roster" />
-                    </TableCell>
-                    <TableCell>
-                      <Badge color="secondary" size="sm">{p.position}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge color="danger" size="sm">{p.status}</Badge>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">{p.section}</TableCell>
+            <div className="w-full overflow-x-auto mcp-app-scroll-x">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Player</TableHead>
+                    <TableHead>Pos</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="hidden sm:table-cell">Section</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {(data.injuries || []).map((p, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">
+                        <PlayerName name={p.name} app={app} navigate={navigate} context="roster" />
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{p.position}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="destructive">{p.status}</Badge>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">{p.section}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -146,14 +148,14 @@ export function WhatsNewView({ data, app, navigate }: { data: WhatsNewData; app:
             <CardTitle className="text-sm flex items-center gap-2">
               <ArrowRightLeft size={14} />
               Pending Trades
-              <Badge color="secondary" size="sm">{data.pending_trades.length}</Badge>
+              <Badge variant="secondary">{data.pending_trades.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-2">
               {data.pending_trades.length + " trade proposal" + (data.pending_trades.length > 1 ? "s" : "") + " pending"}
             </p>
-            <Button variant="outline" color="secondary" onClick={handleViewTrades} disabled={loading}>
+            <Button variant="outline" onClick={handleViewTrades} disabled={loading}>
               Review Trades
             </Button>
           </CardContent>
@@ -167,32 +169,34 @@ export function WhatsNewView({ data, app, navigate }: { data: WhatsNewData; app:
             <CardTitle className="text-sm flex items-center gap-2">
               <Activity size={14} />
               League Activity
-              <Badge color="secondary" size="sm">{data.league_activity.length}</Badge>
+              <Badge variant="secondary">{data.league_activity.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16">Type</TableHead>
-                  <TableHead>Player</TableHead>
-                  <TableHead>Team</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.league_activity.slice(0, 10).map((a, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <Badge color={a.type === "add" ? undefined : "zinc"} size="sm">{a.type}</Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      <PlayerName name={a.player} app={app} navigate={navigate} context="waivers" />
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{a.team}</TableCell>
+            <div className="w-full overflow-x-auto mcp-app-scroll-x">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-16">Type</TableHead>
+                    <TableHead>Player</TableHead>
+                    <TableHead>Team</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {data.league_activity.slice(0, 10).map((a, i) => (
+                    <TableRow key={i}>
+                      <TableCell>
+                        <Badge variant={a.type === "add" ? "default" : "secondary"}>{a.type}</Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <PlayerName name={a.player} app={app} navigate={navigate} context="waivers" />
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{a.team}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -204,38 +208,40 @@ export function WhatsNewView({ data, app, navigate }: { data: WhatsNewData; app:
             <CardTitle className="text-sm flex items-center gap-2">
               <TrendingUp size={14} />
               Trending Pickups
-              <Badge color="secondary" size="sm">{data.trending.length}</Badge>
+              <Badge variant="secondary">{data.trending.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Player</TableHead>
-                  <TableHead className="text-right">Own%</TableHead>
-                  <TableHead className="text-right">Trend</TableHead>
-                  <TableHead className="w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.trending.slice(0, 10).map((t, i) => (
-                  <TableRow key={i} className={i < 3 ? "bg-sem-success-subtle" : ""}>
-                    <TableCell className="font-medium">
-                      <PlayerName name={t.name} app={app} navigate={navigate} context="waivers" />
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs">{t.percent_owned}%</TableCell>
-                    <TableCell className="text-right">
-                      <TrendIndicator trend={{ direction: t.direction || "added", delta: t.delta }} />
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" color="secondary" onClick={() => handleAdd(t.name)} disabled={loading} title="Add player">
-                        <UserPlus size={14} />
-                      </Button>
-                    </TableCell>
+            <div className="w-full overflow-x-auto mcp-app-scroll-x">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Player</TableHead>
+                    <TableHead className="text-right">Own%</TableHead>
+                    <TableHead className="text-right">Trend</TableHead>
+                    <TableHead className="w-12"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {data.trending.slice(0, 10).map((t, i) => (
+                    <TableRow key={i} className={i < 3 ? "bg-sem-success-subtle" : ""}>
+                      <TableCell className="font-medium">
+                        <PlayerName name={t.name} app={app} navigate={navigate} context="waivers" />
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs">{t.percent_owned}%</TableCell>
+                      <TableCell className="text-right">
+                        <TrendIndicator trend={{ direction: t.direction || "added", delta: t.delta }} />
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" onClick={() => handleAdd(t.name)} disabled={loading} title="Add player">
+                          <UserPlus size={14} />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -247,37 +253,39 @@ export function WhatsNewView({ data, app, navigate }: { data: WhatsNewData; app:
             <CardTitle className="text-sm flex items-center gap-2">
               <Star size={14} />
               Prospect Call-Ups
-              <Badge color="secondary" size="sm">{data.prospects.length}</Badge>
+              <Badge variant="secondary">{data.prospects.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Player</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="hidden sm:table-cell">Team</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(data.prospects || []).map((p, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-medium">
-                      <PlayerName name={p.player} app={app} navigate={navigate} context="waivers" />
-                    </TableCell>
-                    <TableCell>
-                      <Badge color="secondary" size="sm">{p.type}</Badge>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <TeamLogo abbrev={p.team} />
-                        {p.team}
-                      </span>
-                    </TableCell>
+            <div className="w-full overflow-x-auto mcp-app-scroll-x">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Player</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="hidden sm:table-cell">Team</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {(data.prospects || []).map((p, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">
+                        <PlayerName name={p.player} app={app} navigate={navigate} context="waivers" />
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{p.type}</Badge>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <TeamLogo abbrev={p.team} />
+                          {p.team}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}

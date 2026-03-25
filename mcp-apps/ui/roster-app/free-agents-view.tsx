@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Button } from "@plexui/ui/components/Button";
-import { Input } from "@plexui/ui/components/Input";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
-import { Tabs } from "@plexui/ui/components/Tabs";
-import { Badge } from "@plexui/ui/components/Badge";
-import { Dialog } from "@plexui/ui/components/Dialog";
-import { EmptyMessage } from "@plexui/ui/components/EmptyMessage";
-import { LoadingIndicator } from "@plexui/ui/components/Indicator";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { LoadingIndicator } from "@/shared/loading-indicator";
+import { EmptyMessage } from "@/shared/empty-message";
 import { useCallTool } from "../shared/use-call-tool";
 import { PlayerCell, PlayerRowData, OwnershipCell } from "../shared/player-row";
 import { IntelPanel } from "../shared/intel-panel";
@@ -63,9 +63,11 @@ export function FreeAgentsView({ data, app, navigate }: { data: FreeAgentsData; 
       <h2 className="text-lg font-semibold">{title}</h2>
 
       {data.type !== "search" && (
-        <Tabs value={activeTab} onChange={handleTabChange} aria-label="Player type">
-          <Tabs.Tab value="B">Batters</Tabs.Tab>
-          <Tabs.Tab value="P">Pitchers</Tabs.Tab>
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
+          <TabsList>
+            <TabsTrigger value="B">Batters</TabsTrigger>
+            <TabsTrigger value="P">Pitchers</TabsTrigger>
+          </TabsList>
         </Tabs>
       )}
 
@@ -75,7 +77,7 @@ export function FreeAgentsView({ data, app, navigate }: { data: FreeAgentsData; 
           value={searchQuery}
           onChange={function (e: any) { setSearchQuery(e.target.value); }}
         />
-        <Button type="submit" color="secondary" disabled={loading}>
+        <Button type="submit" variant="secondary" disabled={loading}>
           {loading ? <LoadingIndicator size={16} /> : "Search"}
         </Button>
       </form>
@@ -89,86 +91,88 @@ export function FreeAgentsView({ data, app, navigate }: { data: FreeAgentsData; 
         {players.length === 0 ? (
           <EmptyMessage title="No players found" description="Try a different search or position filter." />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Player</TableHead>
-                <TableHead className="hidden sm:table-cell">Positions</TableHead>
-                <TableHead className="hidden md:table-cell text-right">%Start</TableHead>
-                <TableHead className="text-right">%Own</TableHead>
-                <TableHead className="w-24">Status</TableHead>
-                <TableHead className="w-20"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {players.map(function (p) {
-                var posDisplay = "";
-                if (p.eligible_positions) {
-                  posDisplay = Array.isArray(p.eligible_positions) ? p.eligible_positions.join(", ") : String(p.eligible_positions);
-                } else if (p.positions) {
-                  posDisplay = Array.isArray(p.positions) ? p.positions.join(", ") : String(p.positions);
-                }
-                var hasStatus = p.status && p.status !== "Healthy";
-                return (
-                  <>
-                    <TableRow key={p.player_id}>
-                      <TableCell className="font-medium">
-                        <PlayerCell player={p} app={app} navigate={navigate} context="free-agents" />
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <div className="flex gap-1 flex-wrap">
-                          {posDisplay.split(",").map(function (pos) {
-                            var trimmed = pos.trim();
-                            return trimmed ? <Badge key={trimmed} color="secondary" size="sm">{trimmed}</Badge> : null;
-                          })}
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-right font-mono text-xs">
-                        {p.percent_started != null ? p.percent_started + "%" : "-"}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-xs">
-                        <OwnershipCell player={p} />
-                      </TableCell>
-                      <TableCell>
-                        {hasStatus ? <Badge color="danger" size="sm">{p.status}</Badge> : null}
-                      </TableCell>
-                      <TableCell>
-                        <Button color="secondary" size="xs" onClick={function () { setAddTarget(p); }}>
-                          Add
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                    {p.intel && (
-                      <TableRow key={(p.player_id || "") + "-intel"}>
-                        <TableCell colSpan={6} className="p-0">
-                          <IntelPanel intel={p.intel} />
+          <div className="w-full overflow-x-auto mcp-app-scroll-x">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Player</TableHead>
+                  <TableHead className="hidden sm:table-cell">Positions</TableHead>
+                  <TableHead className="hidden md:table-cell text-right">%Start</TableHead>
+                  <TableHead className="text-right">%Own</TableHead>
+                  <TableHead className="w-24">Status</TableHead>
+                  <TableHead className="w-20"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {players.map(function (p) {
+                  var posDisplay = "";
+                  if (p.eligible_positions) {
+                    posDisplay = Array.isArray(p.eligible_positions) ? p.eligible_positions.join(", ") : String(p.eligible_positions);
+                  } else if (p.positions) {
+                    posDisplay = Array.isArray(p.positions) ? p.positions.join(", ") : String(p.positions);
+                  }
+                  var hasStatus = p.status && p.status !== "Healthy";
+                  return (
+                    <>
+                      <TableRow key={p.player_id}>
+                        <TableCell className="font-medium">
+                          <PlayerCell player={p} app={app} navigate={navigate} context="free-agents" />
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <div className="flex gap-1 flex-wrap">
+                            {posDisplay.split(",").map(function (pos) {
+                              var trimmed = pos.trim();
+                              return trimmed ? <Badge key={trimmed} variant="secondary">{trimmed}</Badge> : null;
+                            })}
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-right font-mono text-xs">
+                          {p.percent_started != null ? p.percent_started + "%" : "-"}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-xs">
+                          <OwnershipCell player={p} />
+                        </TableCell>
+                        <TableCell>
+                          {hasStatus ? <Badge variant="destructive">{p.status}</Badge> : null}
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="secondary" size="xs" onClick={function () { setAddTarget(p); }}>
+                            Add
+                          </Button>
                         </TableCell>
                       </TableRow>
-                    )}
-                  </>
-                );
-              })}
-            </TableBody>
-          </Table>
+                      {p.intel && (
+                        <TableRow key={(p.player_id || "") + "-intel"}>
+                          <TableCell colSpan={6} className="p-0">
+                            <IntelPanel intel={p.intel} />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </div>
 
       <p className="text-sm text-muted-foreground">{players.length + " players"}</p>
 
       <Dialog open={addTarget !== null} onOpenChange={function (open) { if (!open) setAddTarget(null); }}>
-        <Dialog.Content>
-          <Dialog.Header>
-            <Dialog.Title>Add Player</Dialog.Title>
-            <Dialog.Description>{"Add " + (addTarget ? addTarget.name : "") + " to your roster?"}</Dialog.Description>
-          </Dialog.Header>
-          <Dialog.Footer>
-            <Button variant="ghost" color="secondary" onClick={function () { setAddTarget(null); }} disabled={loading}>Cancel</Button>
-            <Button color="secondary" onClick={handleAdd} disabled={loading}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Player</DialogTitle>
+            <DialogDescription>{"Add " + (addTarget ? addTarget.name : "") + " to your roster?"}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={function () { setAddTarget(null); }} disabled={loading}>Cancel</Button>
+            <Button variant="default" onClick={handleAdd} disabled={loading}>
               {loading ? <LoadingIndicator size={16} /> : null}
               Add
             </Button>
-          </Dialog.Footer>
-        </Dialog.Content>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   );

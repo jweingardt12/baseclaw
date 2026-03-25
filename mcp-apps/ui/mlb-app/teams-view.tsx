@@ -1,4 +1,4 @@
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
 
 import { teamLogoUrl } from "../shared/mlb-images";
 
@@ -18,7 +18,7 @@ export function TeamsView({ data }: { data: { teams: MlbTeam[] } }) {
               <img src={teamLogoUrl(t.id)} alt={t.abbreviation} className="w-8 h-8" />
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate">{t.name}</p>
-                <Badge color="secondary" size="sm" className="font-bold">{t.abbreviation}</Badge>
+                <Badge variant="secondary" className="font-bold">{t.abbreviation}</Badge>
               </div>
             </div>
           );

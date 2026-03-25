@@ -1,6 +1,6 @@
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/card";
-import { Badge } from "@plexui/ui/components/Badge";
-import { Button } from "@plexui/ui/components/Button";
 import { Subheading } from "../components/heading";
 import { Text } from "../components/text";
 import { useCallTool } from "../shared/use-call-tool";
@@ -32,19 +32,19 @@ interface InjuryReportData {
 function PlayerRow({ player, showFind, onFind, readyToActivate, loading, app, navigate }: { player: InjuredPlayer; showFind?: boolean; onFind?: () => void; readyToActivate?: boolean; loading?: boolean; app?: any; navigate?: (data: any) => void }) {
   return (
     <div className="flex items-center gap-2.5 py-2 border-b last:border-0">
-      <Badge color="secondary" size="sm" className="w-8 justify-center">{player.position}</Badge>
+      <Badge variant="secondary" className="w-8 justify-center">{player.position}</Badge>
       <span className="font-medium text-sm flex-1"><PlayerName name={player.name} mlbId={player.mlb_id} app={app} navigate={navigate} context="roster" /></span>
       {player.intel && <IntelBadge intel={player.intel} size="sm" />}
-      <Badge color="danger" size="sm">{player.status}</Badge>
+      <Badge variant="destructive">{player.status}</Badge>
       {player.description && <span className="text-xs text-muted-foreground hidden sm:inline">{player.description}</span>}
       {readyToActivate && (
-        <Badge size="sm" className="bg-sem-success gap-1">
+        <Badge className="bg-sem-success gap-1">
           <CheckCircle className="h-3 w-3" />
           Ready to Activate
         </Badge>
       )}
       {showFind && onFind && (
-        <Button variant="outline" color="secondary" size="xs" onClick={onFind} disabled={loading}>
+        <Button variant="outline" size="sm" onClick={onFind} disabled={loading}>
           <Search className="h-3.5 w-3.5" />
           Find FA
         </Button>
@@ -54,15 +54,15 @@ function PlayerRow({ player, showFind, onFind, readyToActivate, loading, app, na
 }
 
 export function InjuryReportView({ data, app, navigate }: { data: InjuryReportData; app?: any; navigate?: (data: any) => void }) {
-  const { callTool, loading } = useCallTool(app);
-  const hasAnyIssues = (data.injured_active || []).length > 0 || (data.healthy_il || []).length > 0;
+  var { callTool, loading } = useCallTool(app);
+  var hasAnyIssues = (data.injured_active || []).length > 0 || (data.healthy_il || []).length > 0;
 
-  const handleFindReplacement = async (player: InjuredPlayer) => {
+  var handleFindReplacement = async (player: InjuredPlayer) => {
     // Determine position type: if position contains SP/RP or is a pitcher position, search pitchers
-    const pitcherPositions = ["SP", "RP", "P"];
-    const isPitcher = pitcherPositions.some((pp) => player.position.includes(pp));
-    const posType = isPitcher ? "P" : "B";
-    const result = await callTool("yahoo_waiver_analyze", { pos_type: posType, count: 10 });
+    var pitcherPositions = ["SP", "RP", "P"];
+    var isPitcher = pitcherPositions.some((pp) => player.position.includes(pp));
+    var posType = isPitcher ? "P" : "B";
+    var result = await callTool("yahoo_waiver_analyze", { pos_type: posType, count: 10 });
     if (result && result.structuredContent && navigate) {
       navigate(result.structuredContent);
     }
@@ -98,7 +98,7 @@ export function InjuryReportView({ data, app, navigate }: { data: InjuryReportDa
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
               <CardTitle className="text-base text-destructive">Injured in Active Lineup</CardTitle>
-              <Badge color="danger">{(data.injured_active || []).length}</Badge>
+              <Badge variant="destructive">{(data.injured_active || []).length}</Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -114,7 +114,7 @@ export function InjuryReportView({ data, app, navigate }: { data: InjuryReportDa
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
               <CardTitle className="text-base text-sem-warning">On IL - May Be Activatable</CardTitle>
-              <Badge color="secondary">{(data.healthy_il || []).length}</Badge>
+              <Badge variant="secondary">{(data.healthy_il || []).length}</Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -128,7 +128,7 @@ export function InjuryReportView({ data, app, navigate }: { data: InjuryReportDa
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
               <CardTitle className="text-base">Injured on Bench</CardTitle>
-              <Badge color="secondary">{(data.injured_bench || []).length}</Badge>
+              <Badge variant="secondary">{(data.injured_bench || []).length}</Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -142,7 +142,7 @@ export function InjuryReportView({ data, app, navigate }: { data: InjuryReportDa
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
               <CardTitle className="text-base">On IL (Proper)</CardTitle>
-              <Badge color="secondary">{(data.il_proper || []).length}</Badge>
+              <Badge variant="secondary">{(data.il_proper || []).length}</Badge>
             </div>
           </CardHeader>
           <CardContent>

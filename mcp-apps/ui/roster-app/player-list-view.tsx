@@ -1,11 +1,11 @@
 import { useState, useCallback } from "react";
-import { Button } from "@plexui/ui/components/Button";
-import { Input } from "@plexui/ui/components/Input";
-import { Badge } from "@plexui/ui/components/Badge";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
-import { Dialog } from "@plexui/ui/components/Dialog";
-import { EmptyMessage } from "@plexui/ui/components/EmptyMessage";
-import { LoadingIndicator } from "@plexui/ui/components/Indicator";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { LoadingIndicator } from "@/shared/loading-indicator";
+import { EmptyMessage } from "@/shared/empty-message";
 import { useCallTool } from "../shared/use-call-tool";
 import { PlayerRowData } from "../shared/player-row";
 import { PlayerName } from "../shared/player-name";
@@ -137,9 +137,8 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
           return (
             <Button
               key={pos}
-              variant={isActive ? "solid" : "outline"}
-              color="secondary"
-              size="2xs"
+              variant={isActive ? "default" : "outline"}
+              size="sm"
               className={isActive ? "" : "text-muted-foreground"}
               onClick={function () { handlePositionChange(pos); }}
               disabled={loading}
@@ -156,7 +155,7 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
           value={searchQuery}
           onChange={function (e: any) { setSearchQuery(e.target.value); }}
         />
-        <Button type="submit" color="secondary" disabled={loading}>
+        <Button type="submit" variant="secondary" disabled={loading}>
           {loading ? <LoadingIndicator size={16} /> : "Search"}
         </Button>
       </form>
@@ -214,7 +213,7 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
                         <div className="flex gap-1 flex-wrap">
                           {posDisplay.split(",").map(function (pos) {
                             var trimmed = pos.trim();
-                            return trimmed ? <Badge key={trimmed} color="secondary" size="sm">{trimmed}</Badge> : null;
+                            return trimmed ? <Badge key={trimmed} variant="secondary">{trimmed}</Badge> : null;
                           })}
                         </div>
                       </TableCell>
@@ -243,14 +242,14 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
                       })}
                       <TableCell>
                         {hasStatus ? (
-                          <Badge color="danger" size="sm">{p.status}</Badge>
+                          <Badge variant="destructive">{p.status}</Badge>
                         ) : isRostered ? (
-                          <Badge color="secondary" size="sm">Rostered</Badge>
+                          <Badge variant="secondary">Rostered</Badge>
                         ) : null}
                       </TableCell>
                       <TableCell>
                         {!isRostered && (
-                          <Button color="secondary" size="xs" onClick={function () { setAddTarget(p); }}>
+                          <Button variant="secondary" size="sm" onClick={function () { setAddTarget(p); }}>
                             Add
                           </Button>
                         )}
@@ -267,7 +266,7 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{players.length + " players"}</p>
         {!isSearchResult && players.length >= 20 && (
-          <Button variant="outline" color="secondary" onClick={handleLoadMore} disabled={loading}>
+          <Button variant="outline" onClick={handleLoadMore} disabled={loading}>
             {loading ? <LoadingIndicator size={16} /> : null}
             Load More
           </Button>
@@ -275,19 +274,19 @@ export function PlayerListView({ data, app, navigate }: { data: PlayerListData; 
       </div>
 
       <Dialog open={addTarget !== null} onOpenChange={function (open) { if (!open) setAddTarget(null); }}>
-        <Dialog.Content>
-          <Dialog.Header>
-            <Dialog.Title>Add Player</Dialog.Title>
-            <Dialog.Description>{"Add " + (addTarget ? addTarget.name : "") + " to your roster?"}</Dialog.Description>
-          </Dialog.Header>
-          <Dialog.Footer>
-            <Button variant="ghost" color="secondary" onClick={function () { setAddTarget(null); }} disabled={loading}>Cancel</Button>
-            <Button color="secondary" onClick={handleAdd} disabled={loading}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Player</DialogTitle>
+            <DialogDescription>{"Add " + (addTarget ? addTarget.name : "") + " to your roster?"}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={function () { setAddTarget(null); }} disabled={loading}>Cancel</Button>
+            <Button variant="default" onClick={handleAdd} disabled={loading}>
               {loading ? <LoadingIndicator size={16} /> : null}
               Add
             </Button>
-          </Dialog.Footer>
-        </Dialog.Content>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   );

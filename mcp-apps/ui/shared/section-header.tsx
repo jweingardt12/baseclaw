@@ -1,5 +1,5 @@
 import { cn } from "../lib/utils";
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
 import { Subheading } from "../components/heading";
 import type { AppIcon } from "@/shared/icons";
 
@@ -16,7 +16,7 @@ export function SectionHeader({ icon: Icon, title, count, children, className }:
     <div className={cn("flex items-center gap-2 mb-2", className)}>
       {Icon && <Icon className="h-5 w-5 text-primary" />}
       <Subheading>{title}</Subheading>
-      {count !== undefined && <Badge color="secondary" size="sm">{count}</Badge>}
+      {count !== undefined && <Badge variant="secondary">{count}</Badge>}
       <div className="flex-1" />
       {children}
     </div>

@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import preact from "@preact/preset-vite";
+import react from "@vitejs/plugin-react";
 import { viteSingleFile } from "vite-plugin-singlefile";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
@@ -41,14 +41,10 @@ const noNewFunction = {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  plugins: [preact(), viteSingleFile(), tailwindcss(), noNewFunction],
+  plugins: [react(), viteSingleFile(), tailwindcss(), noNewFunction],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "ui"),
-      react: path.resolve(__dirname, "node_modules/preact/compat"),
-      "react-dom": path.resolve(__dirname, "node_modules/preact/compat"),
-      "react/jsx-runtime": path.resolve(__dirname, "node_modules/preact/jsx-runtime"),
-      "react-dom/test-utils": path.resolve(__dirname, "node_modules/preact/test-utils"),
     },
   },
   build: {

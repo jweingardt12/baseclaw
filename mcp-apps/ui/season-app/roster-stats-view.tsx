@@ -1,6 +1,6 @@
-import { Badge } from "@plexui/ui/components/Badge";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Subheading } from "../components/heading";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plexui/ui/components/Table";
 import { cn } from "../lib/utils";
 import { EmptyState } from "../shared/empty-state";
 import { formatFixed } from "../shared/number-format";
@@ -54,6 +54,7 @@ function formatStat(value: string | number | undefined): string {
 
 function StatsTable({ players, statColumns, app, navigate }: { players: RosterStatsPlayer[]; statColumns: string[]; app?: any; navigate?: (data: any) => void }) {
   return (
+    <div className="w-full overflow-x-auto mcp-app-scroll-x">
     <Table>
       <TableHeader>
         <TableRow>
@@ -72,7 +73,7 @@ function StatsTable({ players, statColumns, app, navigate }: { players: RosterSt
                 <PlayerName name={p.name} playerId={p.player_id} mlbId={p.mlb_id} app={app} navigate={navigate} context="roster" />
               </TableCell>
               <TableCell>
-                <Badge color="secondary" size="sm">{p.position}</Badge>
+                <Badge variant="secondary">{p.position}</Badge>
               </TableCell>
               {statColumns.map(function (stat) {
                 return (
@@ -86,6 +87,7 @@ function StatsTable({ players, statColumns, app, navigate }: { players: RosterSt
         })}
       </TableBody>
     </Table>
+    </div>
   );
 }
 
