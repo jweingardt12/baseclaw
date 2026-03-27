@@ -418,7 +418,7 @@ export function registerIntelTools(server: McpServer, distDir: string, enabledTo
 
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
-          structuredContent: { type: "intel-player", ...data },
+          structuredContent: { type: "intel-player", name: data.player || player, ...data },
         };
       } catch (e) { return toolError(e); }
     },
