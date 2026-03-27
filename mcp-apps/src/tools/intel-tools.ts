@@ -319,7 +319,11 @@ export function registerIntelTools(server: McpServer, distDir: string, enabledTo
     },
     async ({ player }) => {
       try {
-        const data = await apiGet<Record<string, unknown>>("/api/player-intel", { player });
+        // Fetch intel + Yahoo season stats in parallel
+        const [data, yahooStats] = await Promise.all([
+          apiGet<Record<string, unknown>>("/api/player-intel", { player }),
+          apiGet<Record<string, unknown>>("/api/player-stats", { name: player }).catch(() => ({} as Record<string, unknown>)),
+        ]);
         const lines: string[] = [];
         lines.push("Player Intel: " + str(data.player_name || player));
 
@@ -416,9 +420,30 @@ export function registerIntelTools(server: McpServer, distDir: string, enabledTo
           }
         }
 
+        // Add season stats to text
+        const ys = (yahooStats.stats || {}) as Record<string, unknown>;
+        if (Object.keys(ys).length > 0) {
+          lines.push("");
+          lines.push("SEASON STATS:");
+          const statParts: string[] = [];
+          for (const [k, v] of Object.entries(ys)) {
+            if (v != null && v !== 0 && v !== "0" && v !== "-" && v !== "" && k !== "H/AB") {
+              statParts.push(k + ": " + str(v));
+            }
+          }
+          lines.push("  " + statParts.join(" | "));
+        }
+
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
-          structuredContent: { type: "intel-player", name: data.player || player, ...data },
+          structuredContent: {
+            type: "intel-player",
+            name: data.player || player,
+            mlb_id: yahooStats.mlb_id || data.mlb_id,
+            yahoo_stats: yahooStats.stats || {},
+            yahoo_player_id: yahooStats.player_id,
+            ...data,
+          },
         };
       } catch (e) { return toolError(e); }
     },

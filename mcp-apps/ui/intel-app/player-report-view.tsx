@@ -1,22 +1,18 @@
-import { useState } from "react";
 import { Card, CardContent } from "../components/card";
 import { IntelPanel } from "../shared/intel-panel";
 import { IntelBadge, type PlayerIntel } from "../shared/intel-badge";
 import { PlayerName } from "../shared/player-name";
-import { AiInsight } from "../shared/ai-insight";
 import { KpiTile } from "../shared/kpi-tile";
-import { VerdictBadge } from "../shared/verdict-badge";
-import { Button } from "@/components/ui/button";
-import { Copy, Check } from "@/shared/icons";
+import { Badge } from "@/components/ui/badge";
 import { Subheading } from "../components/heading";
-import { RadarChart } from "@/charts";
 
-// Data comes from /api/intel/player — it IS the PlayerIntel object with a name
 interface PlayerReportData extends PlayerIntel {
   type: string;
   name: string;
   mlb_id?: number;
   ai_recommendation?: string | null;
+  yahoo_stats?: Record<string, unknown>;
+  yahoo_player_id?: string;
 }
 
 function tierVariant(tier: string): "success" | "info" | "warning" | "risk" | "neutral" {
@@ -28,104 +24,187 @@ function tierVariant(tier: string): "success" | "info" | "warning" | "risk" | "n
   return "neutral";
 }
 
+function tierColor(tier: string): "success" | "risk" | "warning" | "info" | "neutral" {
+  var t = (tier || "").toLowerCase();
+  if (t === "elite" || t === "great" || t === "excellent") return "success";
+  if (t === "good" || t === "above average") return "info";
+  if (t === "average" || t === "below average") return "warning";
+  if (t === "poor" || t === "bad") return "risk";
+  return "neutral";
+}
+
+function pctColor(pct: number | null | undefined): "success" | "risk" | "warning" | "info" | "neutral" {
+  if (pct == null) return "neutral";
+  if (pct >= 80) return "success";
+  if (pct >= 50) return "info";
+  if (pct >= 25) return "warning";
+  return "risk";
+}
+
+function num(v: unknown, decimals: number = 0): string {
+  if (v == null || v === "" || v === "-") return "—";
+  var n = Number(v);
+  if (isNaN(n)) return String(v);
+  return decimals > 0 ? n.toFixed(decimals) : String(Math.round(n));
+}
+
+function StatRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="flex items-center justify-between py-1 border-b border-border/50 last:border-0">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="text-right">
+        <span className="text-sm font-mono font-semibold">{value}</span>
+        {sub && <span className="text-xs text-muted-foreground ml-1">{sub}</span>}
+      </div>
+    </div>
+  );
+}
+
 export function PlayerReportView({ data, app, navigate }: { data: PlayerReportData; app: any; navigate: (data: any) => void }) {
-  var copiedState = useState(false);
-  var copied = copiedState[0];
-  var setCopied = copiedState[1];
+  var sc = data.statcast || {} as any;
+  var trends = data.trends || {} as any;
+  var splits = trends.splits || {};
+  var ys = data.yahoo_stats || {};
+  var isPitcher = sc.player_type === "pitcher" || trends.player_type === "pitcher";
+  var yahooTrend = data.yahoo_trend || {} as any;
 
-  var handleCopy = function () {
-    var text = "Player Report: " + data.name;
-    if (data.statcast && data.statcast.quality_tier) { text += " - " + data.statcast.quality_tier; }
-    if (data.trends && data.trends.hot_cold) { text += " - " + data.trends.hot_cold; }
-    navigator.clipboard.writeText(text).then(function () {
-      setCopied(true);
-      setTimeout(function () { setCopied(false); }, 2000);
-    });
-  };
-
-  var sc = data.statcast;
-  var qualityTier = (sc && sc.quality_tier) || "Unknown";
+  var qualityTier = sc.quality_tier || (sc.expected || {}).quality_tier;
+  var trendStatus = trends.status || trends.hot_cold;
 
   return (
     <div className="space-y-2">
-      {/* Hero card */}
-      <Card className="border-primary/40">
-        <CardContent className="p-4">
+      {/* Hero */}
+      <Card>
+        <CardContent className="p-3">
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
-              <p className="text-2xl-app font-bold truncate">
-                <PlayerName name={data.name} mlbId={data.mlb_id} app={app} navigate={navigate} context="default" />
+              <p className="text-lg font-bold truncate">
+                <PlayerName name={data.name} mlbId={data.mlb_id} app={app} navigate={navigate} showHeadshot />
               </p>
-              <div className="flex items-center gap-2 mt-1">
-                <IntelBadge intel={data} size="md" />
-                <Button variant="ghost" size="icon-sm" onClick={handleCopy}>
-                  {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
-                </Button>
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                <IntelBadge intel={data} size="sm" />
+                {trendStatus && (
+                  <Badge className={trendStatus === "hot" ? "bg-sem-success" : trendStatus === "cold" ? "bg-sem-risk" : "bg-sem-neutral"}>
+                    {trendStatus}
+                  </Badge>
+                )}
+                {yahooTrend.direction && (
+                  <Badge variant="secondary">{yahooTrend.direction === "added" ? "↑ Rising" : "↓ Falling"}</Badge>
+                )}
               </div>
             </div>
-            <VerdictBadge grade={qualityTier.toUpperCase()} variant={tierVariant(qualityTier)} size="lg" />
+            {qualityTier && (
+              <div className={"flex flex-col items-center justify-center rounded-lg px-3 py-2 text-center " +
+                (tierVariant(qualityTier) === "success" ? "bg-sem-success-subtle" :
+                 tierVariant(qualityTier) === "info" ? "bg-sem-info-subtle" :
+                 tierVariant(qualityTier) === "warning" ? "bg-sem-warning-subtle" :
+                 tierVariant(qualityTier) === "risk" ? "bg-sem-risk-subtle" : "bg-muted")}>
+                <span className="text-xs text-muted-foreground">Tier</span>
+                <span className="text-sm font-bold">{qualityTier}</span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      <AiInsight recommendation={data.ai_recommendation} />
-
-      {/* Statcast KPI tiles */}
-      {sc && (
-        <div className="kpi-grid">
-          {sc.xwoba != null && (
-            <KpiTile
-              value={sc.xwoba.toFixed(3)}
-              label={"xwOBA" + (sc.xwoba_pct_rank != null ? " (" + sc.xwoba_pct_rank + "th)" : "")}
-              color={sc.xwoba_pct_rank != null && sc.xwoba_pct_rank >= 80 ? "success" : sc.xwoba_pct_rank != null && sc.xwoba_pct_rank >= 50 ? "info" : "warning"}
-            />
-          )}
-          {sc.avg_exit_velo != null && (
-            <KpiTile
-              value={sc.avg_exit_velo.toFixed(1)}
-              label={"Exit Velo" + (sc.ev_pct_rank != null ? " (" + sc.ev_pct_rank + "th)" : "")}
-              color={sc.ev_pct_rank != null && sc.ev_pct_rank >= 80 ? "success" : sc.ev_pct_rank != null && sc.ev_pct_rank >= 50 ? "info" : "warning"}
-            />
-          )}
-          {sc.barrel_pct_rank != null && (
-            <KpiTile
-              value={sc.barrel_pct_rank + "th"}
-              label="Barrel Rate"
-              color={sc.barrel_pct_rank >= 80 ? "success" : sc.barrel_pct_rank >= 50 ? "info" : "warning"}
-            />
-          )}
-          {sc.hard_hit_rate != null && (
-            <KpiTile
-              value={sc.hard_hit_rate.toFixed(1) + "%"}
-              label={"Hard Hit" + (sc.hh_pct_rank != null ? " (" + sc.hh_pct_rank + "th)" : "")}
-              color={sc.hh_pct_rank != null && sc.hh_pct_rank >= 80 ? "success" : sc.hh_pct_rank != null && sc.hh_pct_rank >= 50 ? "info" : "warning"}
-            />
-          )}
-        </div>
+      {/* Season Stats */}
+      {Object.keys(ys).length > 0 && (
+        <Card>
+          <CardContent className="p-3">
+            <Subheading className="mb-1">Season Stats</Subheading>
+            {isPitcher ? (
+              <div className="grid grid-cols-2 gap-x-4">
+                <StatRow label="ERA" value={num(ys.ERA, 2)} />
+                <StatRow label="WHIP" value={num(ys.WHIP, 2)} />
+                <StatRow label="W" value={num(ys.W)} />
+                <StatRow label="K" value={num(ys.K)} />
+                <StatRow label="IP" value={num(ys.IP, 1)} />
+                <StatRow label="QS" value={num(ys.QS)} />
+                <StatRow label="HLD" value={num(ys.HLD)} />
+                <StatRow label="NSV" value={num(ys.NSV)} />
+                <StatRow label="L" value={num(ys.L)} />
+                <StatRow label="ER" value={num(ys.ER)} />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-x-4">
+                <StatRow label="AVG" value={num(ys.AVG, 3)} />
+                <StatRow label="OBP" value={num(ys.OBP, 3)} />
+                <StatRow label="HR" value={num(ys.HR)} />
+                <StatRow label="RBI" value={num(ys.RBI)} />
+                <StatRow label="R" value={num(ys.R)} />
+                <StatRow label="H" value={num(ys.H)} sub={ys["H/AB"] ? String(ys["H/AB"]) : undefined} />
+                <StatRow label="TB" value={num(ys.TB)} />
+                <StatRow label="XBH" value={num(ys.XBH)} />
+                <StatRow label="NSB" value={num(ys.NSB)} />
+                <StatRow label="K" value={num(ys.K)} />
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
-      {/* Statcast Profile radar chart from percentile data */}
-      {data.percentiles && data.percentiles.metrics && Object.keys(data.percentiles.metrics).length > 2 && (function () {
-        var metrics = data.percentiles.metrics;
-        var radarData = Object.entries(metrics).map(function (entry) {
-          var key = entry[0];
-          var val = entry[1];
-          return {
-            label: key.replace(/_/g, " "),
-            value: typeof val === "number" ? val : (val && (val as any).percentile ? (val as any).percentile : 0),
-            maxValue: 100,
-          };
-        });
-        return (
-          <Card>
-            <CardContent className="p-4">
-              <Subheading className="mb-2">Statcast Profile</Subheading>
-              <RadarChart data={radarData} />
-            </CardContent>
-          </Card>
-        );
-      })()}
+      {/* Advanced Metrics */}
+      {sc && (isPitcher ? (
+        <div className="kpi-grid">
+          {(sc.era_analysis || {}).era != null && (
+            <KpiTile value={num((sc.era_analysis || {}).era, 2)} label="ERA" color={Number((sc.era_analysis || {}).era) < 3.5 ? "success" : Number((sc.era_analysis || {}).era) < 4.5 ? "warning" : "risk"} />
+          )}
+          {(sc.era_analysis || {}).fip != null && (
+            <KpiTile value={num((sc.era_analysis || {}).fip, 2)} label="FIP" color={Number((sc.era_analysis || {}).fip) < 3.5 ? "success" : Number((sc.era_analysis || {}).fip) < 4.5 ? "warning" : "risk"} />
+          )}
+          {(sc.era_analysis || {}).xera != null && (
+            <KpiTile value={num((sc.era_analysis || {}).xera, 2)} label="xERA" color={Number((sc.era_analysis || {}).xera) < 3.5 ? "success" : Number((sc.era_analysis || {}).xera) < 4.5 ? "warning" : "risk"} />
+          )}
+          {(sc.stuff_metrics || {}).stuff_plus != null && (
+            <KpiTile value={num((sc.stuff_metrics || {}).stuff_plus)} label="Stuff+" color={Number((sc.stuff_metrics || {}).stuff_plus) > 110 ? "success" : Number((sc.stuff_metrics || {}).stuff_plus) > 95 ? "info" : "warning"} />
+          )}
+        </div>
+      ) : (
+        <div className="kpi-grid">
+          {(sc.expected || {}).xba != null && (
+            <KpiTile value={num((sc.expected || {}).xba, 3)} label={"xBA" + ((sc.expected || {}).xba_pct != null ? " (" + num((sc.expected || {}).xba_pct) + "th)" : "")} color={pctColor((sc.expected || {}).xba_pct)} />
+          )}
+          {(sc.expected || {}).xslg != null && (
+            <KpiTile value={num((sc.expected || {}).xslg, 3)} label="xSLG" color={pctColor((sc.expected || {}).xslg_pct)} />
+          )}
+          {(sc.batted_ball || {}).barrel_pct != null && (
+            <KpiTile value={num((sc.batted_ball || {}).barrel_pct, 1) + "%"} label={"Barrel%" + ((sc.batted_ball || {}).barrel_pct_rank != null ? " (" + num((sc.batted_ball || {}).barrel_pct_rank) + "th)" : "")} color={pctColor((sc.batted_ball || {}).barrel_pct_rank)} />
+          )}
+          {(sc.batted_ball || {}).avg_exit_velo != null && (
+            <KpiTile value={num((sc.batted_ball || {}).avg_exit_velo, 1)} label={"Exit Velo" + ((sc.batted_ball || {}).ev_pct != null ? " (" + num((sc.batted_ball || {}).ev_pct) + "th)" : "")} color={pctColor((sc.batted_ball || {}).ev_pct)} />
+          )}
+        </div>
+      ))}
 
+      {/* Recent Trends */}
+      {splits && Object.keys(splits).length > 0 && (
+        <Card>
+          <CardContent className="p-3">
+            <Subheading className="mb-1">Recent Trends</Subheading>
+            {isPitcher ? (
+              <div className="grid grid-cols-2 gap-x-4">
+                {splits.era_14d != null && <StatRow label="14d ERA" value={num(splits.era_14d, 2)} />}
+                {splits.era_30d != null && <StatRow label="30d ERA" value={num(splits.era_30d, 2)} />}
+                {splits.k_14d != null && <StatRow label="14d K" value={num(splits.k_14d)} />}
+                {splits.k_30d != null && <StatRow label="30d K" value={num(splits.k_30d)} />}
+                {splits.whip_14d != null && <StatRow label="14d WHIP" value={num(splits.whip_14d, 2)} />}
+                {splits.ip_14d != null && <StatRow label="14d IP" value={num(splits.ip_14d, 1)} />}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-x-4">
+                {splits.avg_14d != null && <StatRow label="14d AVG" value={num(splits.avg_14d, 3)} />}
+                {splits.avg_30d != null && <StatRow label="30d AVG" value={num(splits.avg_30d, 3)} />}
+                {splits.ops_14d != null && <StatRow label="14d OPS" value={num(splits.ops_14d, 3)} />}
+                {splits.ops_30d != null && <StatRow label="30d OPS" value={num(splits.ops_30d, 3)} />}
+                {splits.hr_14d != null && <StatRow label="14d HR" value={num(splits.hr_14d)} />}
+                {splits.rbi_14d != null && <StatRow label="14d RBI" value={num(splits.rbi_14d)} />}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Full Intel Panel (Statcast breakdown, percentiles, etc) */}
       <IntelPanel intel={data} defaultExpanded />
     </div>
   );
