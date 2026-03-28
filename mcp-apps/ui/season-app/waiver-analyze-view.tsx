@@ -244,6 +244,13 @@ export function WaiverAnalyzeView({ data, app, navigate }: { data: WaiverData; a
         </div>
       </div>
 
+      <Button variant="secondary" size="sm" onClick={async function () {
+        var result = await callTool("yahoo_category_check", {});
+        if (result) navigate(result.structuredContent);
+      }} disabled={loading}>
+        Check Category Impact
+      </Button>
+
       <Dialog open={swapTarget !== null} onOpenChange={function (open) { if (!open) setSwapTarget(null); }}>
         <DialogContent>
           <DialogHeader>

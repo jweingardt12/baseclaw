@@ -258,6 +258,7 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
         const ai_recommendation = generateStreamingInsight(data);
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
+          structuredContent: { type: "streaming", ...data },
         };
       } catch (e) { return toolError(e); }
     },

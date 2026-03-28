@@ -158,6 +158,15 @@ export function InjuryReportView({ data, app, navigate }: { data: InjuryReportDa
           </CardContent>
         </Card>
       )}
+
+      {(data.injured_active || []).length > 0 && (
+        <Button variant="secondary" size="sm" onClick={async function () {
+          var result = await callTool("yahoo_waiver_recommendations", { count: 10 });
+          if (result && navigate) navigate(result.structuredContent);
+        }} disabled={loading}>
+          Find Replacements
+        </Button>
+      )}
     </div>
   );
 }

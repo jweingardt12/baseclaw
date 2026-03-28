@@ -107,6 +107,13 @@ export function StreamingView({ data, app, navigate }: { data: StreamingData; ap
           </Table>
         </div>
       </div>
+
+      <Button variant="secondary" size="sm" onClick={async function () {
+        var result = await callTool("yahoo_category_check", {});
+        if (result) navigate(result.structuredContent);
+      }} disabled={loading}>
+        Check Categories
+      </Button>
     </div>
   );
 }

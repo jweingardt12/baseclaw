@@ -231,6 +231,7 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
 
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
+          structuredContent: { type: "waiver-analyze", ...data, ai_recommendation: (data as any).ai_recommendation },
         };
       } catch (e) { return toolError(e); }
     },
@@ -544,6 +545,7 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
 
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
+          structuredContent: { type: "trade-eval", ...(te || {}), ai_recommendation: (data as any).ai_recommendation },
         };
       } catch (e) { return toolError(e); }
     },

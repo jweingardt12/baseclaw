@@ -29,10 +29,26 @@ export function ActionView({ data, app, navigate }: { data: ActionData; app: any
         <AlertDescription>{data.message}</AlertDescription>
       </Alert>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Button variant="outline" onClick={handleBackToRoster} disabled={loading}>
           Back to Roster
         </Button>
+        {data.success && (
+          <Button variant="secondary" onClick={async function () {
+            var result = await callTool("yahoo_waiver_recommendations", { count: 5 });
+            if (result) navigate(result.structuredContent);
+          }} disabled={loading}>
+            Waiver Analysis
+          </Button>
+        )}
+        {data.success && (
+          <Button variant="secondary" onClick={async function () {
+            var result = await callTool("yahoo_lineup_optimize", {});
+            if (result) navigate(result.structuredContent);
+          }} disabled={loading}>
+            Check Lineup
+          </Button>
+        )}
         {loading && <LoadingIndicator size={16} />}
       </div>
     </div>
