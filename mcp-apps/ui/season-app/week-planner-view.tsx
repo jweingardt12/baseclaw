@@ -95,11 +95,11 @@ export function WeekPlannerView({ data }: { data: WeekPlannerData }) {
       </div>
 
       {/* Calendar heatmap */}
-      <div className="surface-card" style={{ padding: "var(--app-space-2)" }}>
-        <div style={{ fontSize: "var(--app-text-xs)", fontWeight: 600, marginBottom: "8px", color: "var(--color-muted-foreground)" }}>
+      <div className="surface-card p-3">
+        <div className="text-xs font-semibold mb-2 text-muted-foreground">
           Games per Day
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(" + dates.length + ", 1fr)", gap: "6px" }}>
+        <div className="grid gap-1.5" style={{ gridTemplateColumns: "repeat(" + dates.length + ", 1fr)" }}>
           {dates.map(function (d) {
             var count = totals[d] || 0;
             var isSelected = selectedDay === d;
@@ -107,24 +107,19 @@ export function WeekPlannerView({ data }: { data: WeekPlannerData }) {
               <div
                 key={d}
                 onClick={function () { setSelectedDay(isSelected ? null : d); }}
+                className={"rounded-md py-2 px-1 text-center cursor-pointer border-2 transition-[border-color,background] duration-150 " + (isSelected ? "border-sem-success" : "border-transparent")}
                 style={{
                   background: heatmapBg(count, maxTotal),
                   color: heatmapText(count, maxTotal),
-                  borderRadius: "var(--radius)",
-                  padding: "8px 4px",
-                  textAlign: "center" as "center",
-                  cursor: "pointer",
-                  border: isSelected ? "2px solid var(--sem-success)" : "2px solid transparent",
-                  transition: "border-color 150ms ease, background 150ms ease",
                 }}
               >
-                <div style={{ fontSize: "var(--app-text-xs)", fontWeight: 600, opacity: 0.8 }}>
+                <div className="text-xs font-semibold opacity-80">
                   {dayOfWeek(d)}
                 </div>
-                <div style={{ fontSize: "var(--app-text-lg)", fontWeight: 700, lineHeight: 1.2, fontVariantNumeric: "tabular-nums" }}>
+                <div className="text-lg font-bold leading-tight tabular-nums">
                   {count}
                 </div>
-                <div style={{ fontSize: "var(--app-text-xs)", opacity: 0.7 }}>
+                <div className="text-xs opacity-70">
                   {dayLabel(d)}
                 </div>
               </div>
@@ -132,11 +127,11 @@ export function WeekPlannerView({ data }: { data: WeekPlannerData }) {
           })}
         </div>
         {selectedDay && selectedPlayers.length > 0 && (
-          <div className="animate-fade-in" style={{ marginTop: "8px", padding: "8px", background: "var(--color-surface-2)", borderRadius: "var(--radius)", fontSize: "var(--app-text-xs)" }}>
-            <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+          <div className="animate-fade-in mt-2 p-2 bg-muted/50 rounded-md text-xs">
+            <div className="font-semibold mb-1">
               {dayOfWeek(selectedDay) + " " + dayLabel(selectedDay) + " — " + selectedPlayers.length + " active"}
             </div>
-            <div style={{ color: "var(--color-muted-foreground)", lineHeight: 1.5, display: "flex", flexWrap: "wrap" as "wrap", gap: "0 8px" }}>
+            <div className="text-muted-foreground leading-relaxed flex flex-wrap gap-x-2">
               {selectedPlayers.map(function (name, idx) {
                 return <PlayerName key={idx} name={name} />;
               })}
@@ -144,7 +139,7 @@ export function WeekPlannerView({ data }: { data: WeekPlannerData }) {
           </div>
         )}
         {selectedDay && selectedPlayers.length === 0 && (
-          <div className="animate-fade-in" style={{ marginTop: "8px", padding: "8px", background: "var(--color-surface-2)", borderRadius: "var(--radius)", fontSize: "var(--app-text-xs)", color: "var(--color-muted-foreground)" }}>
+          <div className="animate-fade-in mt-2 p-2 bg-muted/50 rounded-md text-xs text-muted-foreground">
             No active players scheduled for {dayOfWeek(selectedDay) + " " + dayLabel(selectedDay)}
           </div>
         )}

@@ -136,7 +136,7 @@ export function RosterView({ data, app, navigate }: { data: RosterData; app: any
                         </div>
                       </TableCell>
 
-                      <TableCell style={{ paddingLeft: 8, paddingRight: 8, verticalAlign: "middle" }}>
+                      <TableCell className="hidden sm:table-cell" style={{ paddingLeft: 8, paddingRight: 8, verticalAlign: "middle" }}>
                         <OpponentDisplay opponent={p.opponent} />
                       </TableCell>
 
@@ -152,12 +152,17 @@ export function RosterView({ data, app, navigate }: { data: RosterData; app: any
                               {trendInfo.label}
                             </Badge>
                           )}
+                          {!tier && !trendInfo && (
+                            <span className="sm:hidden">
+                              <OpponentDisplay opponent={p.opponent} />
+                            </span>
+                          )}
                         </div>
                       </TableCell>
 
                       <TableCell style={{ paddingLeft: 8, paddingRight: 12, verticalAlign: "middle" }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
-                          {hasStatus ? <Badge variant="destructive">{p.status}</Badge> : <span />}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
+                          {hasStatus && <Badge variant="destructive" className="text-[10px]">{p.status}</Badge>}
                           <span style={{ color: "var(--color-text-quaternary)", fontSize: 14 }}>{"\u203A"}</span>
                         </div>
                       </TableCell>
@@ -240,94 +245,63 @@ function PlayerCard({ player, app, navigate, onDrop, loading }: {
   var headshot = player.mlb_id ? mlbHeadshotUrl(player.mlb_id) : null;
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
+    <div className="space-y-3">
       {/* Header */}
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start", padding: "20px 24px 0" }}>
-        {/* Headshot or team logo */}
-        <div style={{
-          width: 64, height: 64, borderRadius: 12, overflow: "hidden", flexShrink: 0,
-          background: "var(--color-surface-2)", display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
+      <div className="flex gap-3 items-start px-4 pt-4">
+        <div className="size-14 rounded-xl overflow-hidden shrink-0 bg-muted flex items-center justify-center">
           {headshot ? (
-            <img
-              src={headshot}
-              alt={player.name}
-              style={{ width: 64, height: 64, objectFit: "cover" }}
-              onError={function (e: any) { e.target.style.display = "none"; }}
-            />
+            <img src={headshot} alt={player.name} className="size-14 object-cover" onError={function (e: any) { e.target.style.display = "none"; }} />
           ) : player.team ? (
             <TeamLogo abbrev={player.team} size={40} />
           ) : (
-            <span style={{ fontSize: 24, fontWeight: 700, color: "var(--color-text-tertiary)" }}>
-              {player.name.charAt(0)}
-            </span>
+            <span className="text-2xl font-bold text-muted-foreground">{player.name.charAt(0)}</span>
           )}
         </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 18, fontWeight: 700 }}>{player.name}</span>
-            {hasStatus && <Badge variant="destructive">{player.status}</Badge>}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+        <div className="flex-1 min-w-0">
+          <p className="text-lg font-bold leading-tight truncate">{player.name}</p>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             {player.team && <TeamLogo abbrev={player.team} size={16} />}
-            <span style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>
-              {player.team || ""}
-            </span>
-            <span style={{ fontSize: 13, color: "var(--color-text-tertiary)" }}>{"\u00B7"}</span>
-            <Badge variant="secondary" className="font-mono font-bold">
-              {pos}
-            </Badge>
+            <span className="text-sm text-muted-foreground">{player.team || ""}</span>
+            <span className="text-sm text-muted-foreground">{"\u00B7"}</span>
+            <Badge variant="secondary" className="font-mono font-bold">{pos}</Badge>
             {elig.length > 0 && (
-              <span style={{ fontSize: 12, color: "var(--color-text-tertiary)" }}>
-                {"(" + elig.join(", ") + ")"}
-              </span>
+              <span className="text-xs text-muted-foreground">{"(" + elig.join(", ") + ")"}</span>
             )}
           </div>
-          {/* Signal badges */}
-          <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-            {tier && (
-              <Badge variant="secondary" className="font-mono uppercase">
-                {tier}
-              </Badge>
-            )}
-            {trendInfo && (
-              <Badge variant={trendInfo.variant}>
-                {trendInfo.label}
-              </Badge>
-            )}
-            {player.opponent && (
-              <Badge variant="outline">
-                {player.opponent}
-              </Badge>
-            )}
+          <div className="flex gap-1.5 mt-2 flex-wrap">
+            {hasStatus && <Badge variant="destructive">{player.status}</Badge>}
+            {tier && <Badge variant="secondary" className="font-mono uppercase">{tier}</Badge>}
+            {trendInfo && <Badge variant={trendInfo.variant}>{trendInfo.label}</Badge>}
+            {player.opponent && <Badge variant="outline">{player.opponent}</Badge>}
           </div>
         </div>
       </div>
 
+      {/* Ownership row */}
+      {(player.percent_owned != null || player.preseason_pick != null) && (
+        <div className="flex items-center gap-4 px-4 flex-wrap">
+          {player.percent_owned != null && (
+            <span className="text-xs"><span className="text-muted-foreground">Owned: </span><span className="font-semibold">{player.percent_owned + "%"}</span></span>
+          )}
+          {player.percent_started != null && (
+            <span className="text-xs"><span className="text-muted-foreground">Started: </span><span className="font-semibold">{player.percent_started + "%"}</span></span>
+          )}
+          {player.preseason_pick != null && (
+            <span className="text-xs"><span className="text-muted-foreground">ADP: </span><span className="font-semibold">{player.preseason_pick}</span></span>
+          )}
+        </div>
+      )}
+
       {/* Season stats */}
       {statKeys.length > 0 && (
-        <div style={{ padding: "0 24px" }}>
-          <h4 style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-text-tertiary)", marginBottom: 8 }}>
-            Season Stats
-          </h4>
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))",
-            gap: 8,
-          }}>
+        <div className="px-4">
+          <h4 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Season Stats</h4>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-1.5">
             {statKeys.map(function (key) {
               return (
-                <div key={key} style={{
-                  padding: "6px 8px", borderRadius: 6,
-                  background: "var(--color-surface-2)", textAlign: "center",
-                }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-                    {String(stats[key])}
-                  </div>
-                  <div style={{ fontSize: 10, color: "var(--color-text-tertiary)", marginTop: 2 }}>
-                    {key}
-                  </div>
+                <div key={key} className="rounded-md bg-muted/50 px-2 py-1.5 text-center">
+                  <div className="text-sm font-bold tabular-nums">{String(stats[key])}</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">{key}</div>
                 </div>
               );
             })}
@@ -337,78 +311,30 @@ function PlayerCard({ player, app, navigate, onDrop, loading }: {
 
       {/* Intel panel */}
       {player.intel && (
-        <div style={{ padding: "0 24px" }}>
+        <div className="px-4">
           <IntelPanel intel={player.intel} defaultExpanded={true} />
         </div>
       )}
 
-      {/* Ownership / ADP */}
-      {(player.percent_owned != null || player.preseason_pick != null) && (
-        <div style={{ padding: "0 24px", display: "flex", gap: 16, flexWrap: "wrap" }}>
-          {player.percent_owned != null && (
-            <div style={{ fontSize: 12 }}>
-              <span style={{ color: "var(--color-text-tertiary)" }}>Owned: </span>
-              <span style={{ fontWeight: 600 }}>{player.percent_owned + "%"}</span>
-            </div>
-          )}
-          {player.percent_started != null && (
-            <div style={{ fontSize: 12 }}>
-              <span style={{ color: "var(--color-text-tertiary)" }}>Started: </span>
-              <span style={{ fontWeight: 600 }}>{player.percent_started + "%"}</span>
-            </div>
-          )}
-          {player.preseason_pick != null && (
-            <div style={{ fontSize: 12 }}>
-              <span style={{ color: "var(--color-text-tertiary)" }}>Pre ADP: </span>
-              <span style={{ fontWeight: 600 }}>{player.preseason_pick}</span>
-            </div>
-          )}
-          {player.current_pick != null && (
-            <div style={{ fontSize: 12 }}>
-              <span style={{ color: "var(--color-text-tertiary)" }}>Cur ADP: </span>
-              <span style={{ fontWeight: 600 }}>{player.current_pick}</span>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Actions */}
-      <div style={{ padding: "0 24px 20px", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+      <div className="flex items-center gap-2 px-4 pb-4 flex-wrap">
         {app && app.sendMessage && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={function () {
-              app.sendMessage("Tell me about " + player.name + " — Statcast, trends, and fantasy outlook");
-            }}
-          >
-            Ask Claude
-          </Button>
+          <Button variant="secondary" size="sm" onClick={function () {
+            app.sendMessage("Tell me about " + player.name + " — Statcast, trends, and fantasy outlook");
+          }}>Ask Claude</Button>
         )}
         {app && app.openLink && player.player_id && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={function () {
-              app.openLink("https://sports.yahoo.com/mlb/players/" + player.player_id);
-            }}
-          >
-            Yahoo
-          </Button>
+          <Button variant="outline" size="sm" onClick={function () {
+            app.openLink("https://sports.yahoo.com/mlb/players/" + player.player_id);
+          }}>Yahoo</Button>
         )}
         {app && app.openLink && player.mlb_id && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={function () {
-              app.openLink("https://baseballsavant.mlb.com/savant-player/" + player.mlb_id);
-            }}
-          >
-            Savant
-          </Button>
+          <Button variant="outline" size="sm" onClick={function () {
+            app.openLink("https://baseballsavant.mlb.com/savant-player/" + player.mlb_id);
+          }}>Savant</Button>
         )}
-        <div style={{ flex: 1 }} />
-        <Button variant="ghost" size="sm" onClick={onDrop} disabled={loading}>
+        <div className="flex-1" />
+        <Button variant="ghost" size="sm" className="text-sem-risk" onClick={onDrop} disabled={loading}>
           {loading ? <LoadingIndicator size={14} /> : null}
           Drop
         </Button>

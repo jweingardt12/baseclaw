@@ -266,7 +266,7 @@ export function CompareView({ data, app, navigate }: { data: CompareData; app?: 
                   </span>
                 </div>
                 <div className="h-2.5 rounded-sm overflow-hidden bg-muted">
-                  <div className={"h-full rounded-sm transition-all " + (p1Win ? "bg-green-500" : p2Win ? "bg-red-500" : "bg-yellow-500")} style={{ width: leftPct + "%" }} />
+                  <div className={"h-full rounded-sm transition-all " + (p1Win ? "bg-sem-success" : p2Win ? "bg-sem-risk" : "bg-sem-warning")} style={{ width: leftPct + "%" }} />
                 </div>
               </div>
             );

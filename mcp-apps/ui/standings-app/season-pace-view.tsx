@@ -103,7 +103,7 @@ export function SeasonPaceView({ data }: { data: SeasonPaceData }) {
                 <TableCell className="font-mono text-sm text-muted-foreground">{t.rank}</TableCell>
                 <TableCell className={"font-medium" + (t.is_my_team ? " text-primary" : "")}>
                   <span className="flex items-center gap-1.5">
-                    {t.team_logo && <img src={t.team_logo} alt="" width={28} height={28} className="rounded-sm" style={{ flexShrink: 0 }} />}
+                    {t.team_logo && <img src={t.team_logo} alt="" width={28} height={28} className="rounded-sm shrink-0" />}
                     {t.name}
                   </span>
                 </TableCell>

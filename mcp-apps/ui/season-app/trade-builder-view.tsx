@@ -115,9 +115,8 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
                     <button
                       key={p.player_id}
                       onClick={() => toggleGive(p.player_id)}
-                      className={"flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-md text-sm transition-colors "
-                        + (selected ? "bg-destructive/10 border border-destructive/30" : "hover:bg-muted")}
-                      style={{ border: selected ? undefined : "1px solid transparent" }}
+                      className={"flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-md text-sm transition-colors border "
+                        + (selected ? "bg-destructive/10 border-destructive/30" : "border-transparent hover:bg-muted")}
                     >
                       {selected ? <CheckSquare size={14} className="text-destructive flex-shrink-0" /> : <Square size={14} className="text-muted-foreground flex-shrink-0" />}
                       <span className={"truncate " + (selected ? "font-medium" : "")}><PlayerName name={p.name} playerId={p.player_id} mlbId={p.mlb_id} app={app} navigate={navigate} context="trade" /></span>
@@ -163,9 +162,8 @@ export function TradeBuilderView({ data, app, navigate }: { data: TradeBuilderDa
                     <button
                       key={p.player_id}
                       onClick={() => toggleGet(p.player_id)}
-                      className={"flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-md text-sm transition-colors "
-                        + (selected ? "bg-primary/10 border border-primary/30" : "hover:bg-muted")}
-                      style={{ border: selected ? undefined : "1px solid transparent" }}
+                      className={"flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-md text-sm transition-colors border "
+                        + (selected ? "bg-primary/10 border-primary/30" : "border-transparent hover:bg-muted")}
                     >
                       {selected ? <CheckSquare size={14} className="text-primary flex-shrink-0" /> : <Square size={14} className="text-muted-foreground flex-shrink-0" />}
                       <span className={"truncate " + (selected ? "font-medium" : "")}><PlayerName name={p.name} playerId={p.player_id} mlbId={p.mlb_id} app={app} navigate={navigate} context="trade" /></span>

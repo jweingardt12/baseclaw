@@ -99,7 +99,7 @@ export function FreeAgentsView({ data, app, navigate }: { data: FreeAgentsData; 
                   <TableHead className="hidden sm:table-cell">Positions</TableHead>
                   <TableHead className="hidden md:table-cell text-right">%Start</TableHead>
                   <TableHead className="text-right">%Own</TableHead>
-                  <TableHead className="w-24">Status</TableHead>
+                  <TableHead className="hidden sm:table-cell w-24">Status</TableHead>
                   <TableHead className="w-20"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -115,8 +115,9 @@ export function FreeAgentsView({ data, app, navigate }: { data: FreeAgentsData; 
                   return (
                     <>
                       <TableRow key={p.player_id}>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium min-w-0">
                           <PlayerCell player={p} app={app} navigate={navigate} context="free-agents" />
+                          {hasStatus && <Badge variant="destructive" className="sm:hidden mt-1 text-[10px]">{p.status}</Badge>}
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
                           <div className="flex gap-1 flex-wrap">
@@ -132,7 +133,7 @@ export function FreeAgentsView({ data, app, navigate }: { data: FreeAgentsData; 
                         <TableCell className="text-right font-mono text-xs">
                           <OwnershipCell player={p} />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           {hasStatus ? <Badge variant="destructive">{p.status}</Badge> : null}
                         </TableCell>
                         <TableCell>
