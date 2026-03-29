@@ -620,6 +620,51 @@ def _player_z_summary(name):
     return z_info.get("z_final", 0), z_info.get("tier", "Streamable"), z_info.get("per_category_zscores", {})
 
 
+def _check_roster_fit(player_name, player_positions, roster, give_names=None):
+    """Check if an incoming player fits your roster.
+    Returns dict: {slot, action, over/blocked_by, warning}.
+    give_names: names being traded away (excluded from roster).
+    """
+    from valuations import get_player_zscore
+    non_playing = {"BN", "Bench", "IL", "IL+", "DL", "DL+", "NA"}
+    give_set = set(n.lower() for n in (give_names or []))
+
+    # Build current position map (excluding players being given away)
+    pos_filled = {}
+    for rp in roster:
+        if rp.get("name", "").lower() in give_set:
+            continue
+        sel = get_player_position(rp)
+        if sel not in non_playing:
+            pos_filled.setdefault(sel, []).append(rp.get("name", ""))
+
+    # Find best slot
+    gp_z_info = get_player_zscore(player_name)
+    gp_z = gp_z_info.get("z_final", 0) if gp_z_info else 0
+
+    for elig_pos in player_positions:
+        if elig_pos in ("Util", "BN", "P"):
+            continue
+        current = pos_filled.get(elig_pos, [])
+        if not current:
+            return {"player": player_name, "slot": elig_pos, "action": "fill_empty"}
+        for curr_name in current:
+            curr_z = (get_player_zscore(curr_name) or {}).get("z_final", 0)
+            if gp_z > curr_z:
+                return {"player": player_name, "slot": elig_pos, "action": "upgrade", "over": curr_name}
+
+    has_util = "Util" in player_positions
+    first_pos = player_positions[0] if player_positions else "?"
+    blocked_by = pos_filled.get(first_pos, ["?"])[0] if first_pos in pos_filled else "?"
+    return {
+        "player": player_name,
+        "slot": "Util" if has_util else "BN",
+        "action": "blocked",
+        "blocked_by": blocked_by,
+        "warning": player_name + " blocked at " + first_pos + " by " + blocked_by + (" — would play Util" if has_util else " — no starting slot"),
+    }
+
+
 def _build_roster_profile(roster):
     """Build competitive intelligence profile from an enriched roster.
     Expects roster already enriched via enrich_roster_teams() and enrich_with_intel().
@@ -2180,9 +2225,11 @@ def cmd_waiver_analyze(args, as_json=False):
 
     # Get drop candidates from roster (respect regression buy-low protection)
     drop_candidates = []
+    my_roster = []
     try:
         team = lg.to_team(TEAM_ID)
         roster = team.roster()
+        my_roster = roster
         for p in roster:
             if is_il(p):
                 continue
@@ -2282,6 +2329,16 @@ def cmd_waiver_analyze(args, as_json=False):
         # Compute which weak categories this player actually helps
         helps_cats = [c for c in weak_cat_names if per_cat.get(c, 0) > CAT_HELP_Z_THRESHOLD]
 
+        # Roster fit check
+        fit = None
+        if my_roster:
+            try:
+                fit = _check_roster_fit(name, p.get("eligible_positions", []), my_roster)
+                if fit.get("action") == "blocked":
+                    score *= 0.7  # penalize blocked adds
+            except Exception as e:
+                print("Warning: roster fit check failed for " + name + ": " + str(e))
+
         scored.append({
             "name": name,
             "pid": pid,
@@ -2293,6 +2350,7 @@ def cmd_waiver_analyze(args, as_json=False):
             "tier": tier,
             "regression": reg_signal.get("signal", "") if reg_signal else None,
             "helps_categories": helps_cats,
+            "roster_fit": fit,
         })
 
     # Sort by score
@@ -2340,6 +2398,7 @@ def cmd_waiver_analyze(args, as_json=False):
                 "trend": p.get("trend"),
                 "mlb_id": get_mlb_id(p.get("name", "")),
                 "helps_categories": p.get("helps_categories", []),
+                "roster_fit": p.get("roster_fit"),
             }
             _attach_context_fields(rec, p)
             recs.append(rec)
@@ -3045,74 +3104,21 @@ def cmd_trade_eval(args, as_json=False):
         if bonus > 0:
             pos_warnings.append("Losing scarce position: " + pos + " (scarcity bonus +" + str(bonus) + ")")
 
-    # Roster-aware positional analysis: check if incoming players have a starting slot
+    # Roster-aware positional analysis
     roster_pos_analysis = []
-    non_playing = {"BN", "Bench", "IL", "IL+", "DL", "DL+", "NA"}
     try:
         current_roster = roster if roster else team.roster()
-        # Map: position -> list of starters currently filling it
-        pos_filled = {}
-        for rp in current_roster:
-            if rp in give_players:
-                continue  # player being traded away
-            sel = get_player_position(rp)
-            if sel not in non_playing:
-                pos_filled[sel] = pos_filled.get(sel, [])
-                pos_filled[sel].append(rp.get("name", ""))
-
-        # Check each incoming player
+        give_names_list = [p.get("name", "") for p in give_players]
         for gp in get_players:
-            gp_name = gp.get("name", "")
-            gp_elig = gp.get("eligible_positions", [])
-            # Find an open slot or an upgrade opportunity
-            best_slot = None
-            upgrade_over = None
-            for elig_pos in gp_elig:
-                if elig_pos in ("Util", "BN", "P"):
-                    continue
-                current_at_pos = pos_filled.get(elig_pos, [])
-                if not current_at_pos:
-                    best_slot = elig_pos  # empty slot
-                    break
-                # Check if incoming player is better than current starter
-                gp_eval = get_player_zscore(gp_name) or {}
-                gp_z = gp_eval.get("z_final", 0)
-                for curr_name in current_at_pos:
-                    curr_eval = get_player_zscore(curr_name) or {}
-                    curr_z = curr_eval.get("z_final", 0)
-                    if gp_z > curr_z:
-                        upgrade_over = curr_name
-                        best_slot = elig_pos
-                        break
-                if best_slot:
-                    break
-
-            if best_slot and upgrade_over:
-                roster_pos_analysis.append({
-                    "player": gp_name,
-                    "slot": best_slot,
-                    "action": "upgrade",
-                    "over": upgrade_over,
-                })
-            elif best_slot:
-                roster_pos_analysis.append({
-                    "player": gp_name,
-                    "slot": best_slot,
-                    "action": "fill_empty",
-                })
-            else:
-                # No starting slot — blocked, would go to Util or bench
-                has_util = "Util" in gp_elig
-                roster_pos_analysis.append({
-                    "player": gp_name,
-                    "slot": "Util" if has_util else "BN",
-                    "action": "blocked",
-                    "blocked_by": pos_filled.get(gp_elig[0], ["?"])[0] if gp_elig else "?",
-                })
-                if not has_util:
-                    pos_warnings.append(gp_name + " has no starting slot — all eligible positions filled")
-                else:
-                    pos_warnings.append(gp_name + " blocked at " + gp_elig[0] + " by " + (pos_filled.get(gp_elig[0], ["?"])[0]) + " — would play Util")
+            fit = _check_roster_fit(
+                gp.get("name", ""),
+                gp.get("eligible_positions", []),
+                current_roster,
+                give_names=give_names_list,
+            )
+            roster_pos_analysis.append(fit)
+            if fit.get("warning"):
+                pos_warnings.append(fit["warning"])
     except Exception as e:
         print("Warning: roster position analysis failed: " + str(e))
 
@@ -5760,6 +5766,17 @@ def _trade_finder_league_scan(lg, team, as_json=False):
                 if why_accept:
                     rationale += ". " + why_accept
 
+                # Check roster fit for incoming player
+                fit = _check_roster_fit(
+                    their_p.get("name", ""),
+                    their_p.get("positions", []),
+                    my_roster,
+                    give_names=[my_p.get("name", "")],
+                )
+                if fit.get("action") == "blocked":
+                    score -= 2.0  # penalize blocked acquisitions
+                    rationale += ". BLOCKED: " + fit.get("warning", "no starting slot")
+
                 scored_packages.append({
                     "give": [my_p],
                     "get": [their_p],
@@ -5768,6 +5785,7 @@ def _trade_finder_league_scan(lg, team, as_json=False):
                     "mutual_score": round(score, 2),
                     "my_gain": round(my_gain, 2),
                     "their_gain": round(their_gain, 2),
+                    "roster_fit": fit,
                 })
 
         # Try 2-for-1 packages using effective_z
