@@ -1769,6 +1769,35 @@ def cmd_category_check(args, as_json=False):
     strong = [c for c, i in sorted_cats if i["rank"] <= 3]
     weak = [c for c, i in sorted_cats if i["rank"] >= (i["total"] - 2) and i["total"] > 3]
 
+    # Sustainability: compare actual rank vs roster z-score profile
+    roster_profile = {}
+    try:
+        sc2, gm2, lg2, team2 = get_league_context()
+        roster2 = team2.roster()
+        enrich_roster_teams(roster2, lg2, team2)
+        enrich_with_intel(roster2)
+        roster_profile = _build_roster_profile(roster2)
+    except Exception:
+        pass
+
+    cat_z_sums = roster_profile.get("category_strengths", {})
+
+    # Rank z-score sums vs all teams to get "expected" rank
+    # (z-score rank approximates true talent level)
+    z_ranks = {}
+    if cat_z_sums:
+        for cat in cat_ranks:
+            my_z = cat_z_sums.get(cat, 0)
+            # Simple heuristic: if z-sum is top-3 among my categories, expect top-3 rank
+            # Compare actual rank vs z-based expectation
+            all_z = sorted(cat_z_sums.values(), reverse=True)
+            my_z_rank = 1
+            for zv in all_z:
+                if my_z >= zv:
+                    break
+                my_z_rank += 1
+            z_ranks[cat] = my_z
+
     if as_json:
         categories = []
         for cat, info in sorted_cats:
@@ -1777,18 +1806,32 @@ def cmd_category_check(args, as_json=False):
                 strength = "strong"
             elif info["rank"] >= info["total"] - 2 and info["total"] > 3:
                 strength = "weak"
+            # Sustainability label
+            z_sum = cat_z_sums.get(cat, 0)
+            sustainability = ""
+            if z_sum > 2 and info["rank"] > info["total"] // 2:
+                sustainability = "underperforming"
+            elif z_sum < -2 and info["rank"] <= info["total"] // 3:
+                sustainability = "overperforming"
+            elif strength == "strong" and z_sum > 0:
+                sustainability = "sustainable"
+            elif strength == "weak" and z_sum < 0:
+                sustainability = "sustainable"
             categories.append({
                 "name": cat,
                 "value": info["value"],
                 "rank": info["rank"],
                 "total": info["total"],
                 "strength": strength,
+                "z_sum": round(z_sum, 2),
+                "sustainability": sustainability,
             })
         return {
             "week": week,
             "categories": categories,
             "strongest": strong,
             "weakest": weak,
+            "roster_profile": roster_profile,
         }
 
     print("Your Category Rankings (week " + str(week) + "):")

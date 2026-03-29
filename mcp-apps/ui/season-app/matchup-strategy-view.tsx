@@ -49,6 +49,21 @@ interface WaiverTarget {
   mlb_id?: number;
 }
 
+interface QualityBreakdown { elite: number; strong: number; average: number; below: number; poor: number }
+interface RegressionFlag { name: string; signal: string; score: number; detail: string }
+interface RosterProfile {
+  quality_breakdown: QualityBreakdown;
+  total_adjusted_z: number;
+  hitting_adjusted_z: number;
+  pitching_adjusted_z: number;
+  regression_flags: RegressionFlag[];
+  low_confidence_count: number;
+  hot_players: string[];
+  cold_players: string[];
+}
+interface Vulnerability { type: string; player?: string; detail: string; category?: string }
+interface TransactionContext { max_weekly_adds?: number; my_moves?: number; my_trades?: number; opp_moves?: number; opp_trades?: number }
+
 interface MatchupStrategyData {
   week: number | string;
   opponent: string;
@@ -61,6 +76,10 @@ interface MatchupStrategyData {
   waiver_targets: WaiverTarget[];
   summary: string;
   ai_recommendation?: string | null;
+  my_profile?: RosterProfile;
+  opp_profile?: RosterProfile;
+  transactions?: TransactionContext;
+  opp_vulnerabilities?: Vulnerability[];
 }
 
 function resultColor(wins: number, losses: number): "green" | "red" | "yellow" {
@@ -228,6 +247,95 @@ export function MatchupStrategyView({ data, app, navigate }: { data: MatchupStra
           )}
         </CardContent>
       </Card>
+
+      {/* Roster Quality Comparison */}
+      {d.my_profile && d.opp_profile && d.my_profile.total_adjusted_z > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Roster Quality</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(function () {
+              var mp = d.my_profile!;
+              var op = d.opp_profile!;
+              var myES = (mp.quality_breakdown.elite || 0) + (mp.quality_breakdown.strong || 0);
+              var oppES = (op.quality_breakdown.elite || 0) + (op.quality_breakdown.strong || 0);
+              var zEdge = Math.round((mp.total_adjusted_z - op.total_adjusted_z) * 10) / 10;
+              var edgeColor = zEdge > 0 ? "text-sem-success" : zEdge < 0 ? "text-sem-risk" : "text-muted-foreground";
+              return (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                    <div><p className="text-xs text-muted-foreground mb-1">You</p><p className="font-bold font-mono">{mp.total_adjusted_z}</p><p className="text-[10px] text-muted-foreground">adj-z</p></div>
+                    <div><p className="text-xs text-muted-foreground mb-1">Edge</p><p className={"font-bold font-mono " + edgeColor}>{zEdge > 0 ? "+" : ""}{zEdge}</p></div>
+                    <div><p className="text-xs text-muted-foreground mb-1">Opp</p><p className="font-bold font-mono">{op.total_adjusted_z}</p><p className="text-[10px] text-muted-foreground">adj-z</p></div>
+                  </div>
+                  {(myES > 0 || oppES > 0) && (
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Elite/Strong: {myES}</span>
+                      <span>Elite/Strong: {oppES}</span>
+                    </div>
+                  )}
+                  {(mp.cold_players.length > 0 || op.cold_players.length > 0) && (
+                    <div className="flex justify-between text-xs">
+                      <span className="text-blue-400">{mp.cold_players.length > 0 ? mp.cold_players.length + " cold" : ""}</span>
+                      <span className="text-blue-400">{op.cold_players.length > 0 ? op.cold_players.length + " cold" : ""}</span>
+                    </div>
+                  )}
+                  {(mp.low_confidence_count > 2 || op.low_confidence_count > 2) && (
+                    <p className="text-[10px] text-amber-400 text-center">{mp.low_confidence_count + op.low_confidence_count} total low-sample players — early season caution</p>
+                  )}
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Transaction Budget */}
+      {d.transactions && d.transactions.max_weekly_adds && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Transactions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 text-center text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Your Moves</p>
+                <p className="font-bold font-mono">{d.transactions.my_moves || 0}</p>
+                <p className="text-[10px] text-muted-foreground">season total</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Opp Moves</p>
+                <p className="font-bold font-mono">{d.transactions.opp_moves || 0}</p>
+                <p className="text-[10px] text-muted-foreground">season total</p>
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground text-center mt-2">Weekly limit: {d.transactions.max_weekly_adds} adds/week</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Opponent Vulnerabilities */}
+      {(d.opp_vulnerabilities || []).length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Opponent Vulnerabilities</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1.5">
+              {(d.opp_vulnerabilities || []).slice(0, 6).map(function (v, i) {
+                var icon = v.type === "regression" ? "\u{1F4C9}" : v.type === "cold_streak" ? "\u2744\uFE0F" : v.type === "sample_size" ? "\u26A0" : "\u{1F534}";
+                return (
+                  <div key={i} className="flex items-start gap-2 text-sm">
+                    <span className="shrink-0">{icon}</span>
+                    <span className="text-muted-foreground">{v.player ? <span className="font-medium text-foreground">{v.player}</span> : null}{v.player ? ": " : ""}{v.detail}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Strategy Summary Badges */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">

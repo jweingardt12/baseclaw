@@ -151,13 +151,21 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
           "  " + "-".repeat(35),
         ];
         for (const c of data.categories) {
-          let marker = "";
+          var marker = "";
           if (c.strength === "strong") marker = " << STRONG";
           if (c.strength === "weak") marker = " << WEAK";
-          lines.push("  " + str(c.name).padEnd(12) + str(c.value).padStart(10) + "  " + c.rank + "/" + c.total + marker);
+          var sust = (c as any).sustainability;
+          if (sust === "overperforming") marker += " (lucky)";
+          else if (sust === "underperforming") marker += " (unlucky)";
+          var zStr = (c as any).z_sum != null ? " z=" + (c as any).z_sum : "";
+          lines.push("  " + str(c.name).padEnd(12) + str(c.value).padStart(10) + "  " + c.rank + "/" + c.total + zStr + marker);
         }
         if (data.strongest.length > 0) lines.push("Strongest: " + data.strongest.join(", "));
         if (data.weakest.length > 0) lines.push("Weakest:   " + data.weakest.join(", "));
+        var overperf = data.categories.filter(function (c) { return (c as any).sustainability === "overperforming"; });
+        var underperf = data.categories.filter(function (c) { return (c as any).sustainability === "underperforming"; });
+        if (overperf.length > 0) lines.push("Overperforming (may regress): " + overperf.map(function (c) { return c.name; }).join(", "));
+        if (underperf.length > 0) lines.push("Underperforming (expect improvement): " + underperf.map(function (c) { return c.name; }).join(", "));
         const ai_recommendation = generateCategoryInsight(data);
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
