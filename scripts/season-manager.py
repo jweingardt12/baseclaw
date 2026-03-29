@@ -620,14 +620,24 @@ def _player_z_summary(name):
     return z_info.get("z_final", 0), z_info.get("tier", "Streamable"), z_info.get("per_category_zscores", {})
 
 
-def _check_roster_fit(player_name, player_positions, roster, give_names=None):
+def _check_roster_fit(player_name, player_positions, roster, give_names=None, z_cache=None):
     """Check if an incoming player fits your roster.
     Returns dict: {slot, action, over/blocked_by, warning}.
     give_names: names being traded away (excluded from roster).
+    z_cache: optional {name: z_final} dict to avoid repeated lookups.
     """
     from valuations import get_player_zscore
     non_playing = {"BN", "Bench", "IL", "IL+", "DL", "DL+", "NA"}
     give_set = set(n.lower() for n in (give_names or []))
+    if z_cache is None:
+        z_cache = {}
+
+    def _z(name):
+        if name in z_cache:
+            return z_cache[name]
+        val = (get_player_zscore(name) or {}).get("z_final", 0)
+        z_cache[name] = val
+        return val
 
     # Build current position map (excluding players being given away)
     pos_filled = {}
@@ -638,9 +648,7 @@ def _check_roster_fit(player_name, player_positions, roster, give_names=None):
         if sel not in non_playing:
             pos_filled.setdefault(sel, []).append(rp.get("name", ""))
 
-    # Find best slot
-    gp_z_info = get_player_zscore(player_name)
-    gp_z = gp_z_info.get("z_final", 0) if gp_z_info else 0
+    gp_z = _z(player_name)
 
     for elig_pos in player_positions:
         if elig_pos in ("Util", "BN", "P"):
@@ -649,8 +657,7 @@ def _check_roster_fit(player_name, player_positions, roster, give_names=None):
         if not current:
             return {"player": player_name, "slot": elig_pos, "action": "fill_empty"}
         for curr_name in current:
-            curr_z = (get_player_zscore(curr_name) or {}).get("z_final", 0)
-            if gp_z > curr_z:
+            if gp_z > _z(curr_name):
                 return {"player": player_name, "slot": elig_pos, "action": "upgrade", "over": curr_name}
 
     has_util = "Util" in player_positions
@@ -723,24 +730,19 @@ def _build_roster_profile(roster):
         if sample.get("confidence") in ("very_low", "low"):
             low_conf += 1
 
-    # Regression signals
-    try:
-        from intel import get_regression_signal
-        for p in roster:
-            pos = get_player_position(p)
-            if pos in non_playing:
-                continue
-            name = p.get("name", "")
+        # Regression signal (in same loop to avoid second pass)
+        try:
+            from intel import get_regression_signal
             reg = get_regression_signal(name)
             if reg and reg.get("direction") in ("buy_low", "sell_high"):
                 regression_flags.append({
                     "name": name,
                     "signal": reg.get("direction", ""),
                     "score": reg.get("regression_score", 0),
-                    "detail": reg.get("top_signal", ""),
+                    "detail": reg.get("details", ""),
                 })
-    except Exception:
-        pass
+        except Exception:
+            pass
 
     # Round category strengths
     for k in cat_strengths:
@@ -757,12 +759,6 @@ def _build_roster_profile(roster):
         "cold_players": cold_players,
         "category_strengths": cat_strengths,
     }
-
-
-def _enrich_roster_for_profile(roster, lg, team):
-    """Enrich a roster with teams + intel + sample context for profiling."""
-    enrich_roster_teams(roster, lg, team)
-    enrich_with_intel(roster)
 
 
 def _find_vulnerabilities(profile, categories=None):
@@ -1679,11 +1675,11 @@ def _category_check_preseason(lg, as_json=False):
         # Build roster profile for sustainability context
         roster_profile = {}
         try:
-            sc2, gm2, lg2, team2 = get_league_context()
-            roster2 = team2.roster()
-            enrich_roster_teams(roster2, lg2, team2)
-            enrich_with_intel(roster2)
-            roster_profile = _build_roster_profile(roster2)
+            my_team = lg.to_team(TEAM_ID)
+            r2 = my_team.roster()
+            enrich_roster_teams(r2, lg, my_team)
+            enrich_with_intel(r2)
+            roster_profile = _build_roster_profile(r2)
         except Exception:
             pass
 
@@ -1831,31 +1827,15 @@ def cmd_category_check(args, as_json=False):
     # Sustainability: compare actual rank vs roster z-score profile
     roster_profile = {}
     try:
-        sc2, gm2, lg2, team2 = get_league_context()
-        roster2 = team2.roster()
-        enrich_roster_teams(roster2, lg2, team2)
-        enrich_with_intel(roster2)
-        roster_profile = _build_roster_profile(roster2)
+        team = lg.to_team(TEAM_ID)
+        r2 = team.roster()
+        enrich_roster_teams(r2, lg, team)
+        enrich_with_intel(r2)
+        roster_profile = _build_roster_profile(r2)
     except Exception:
         pass
 
     cat_z_sums = roster_profile.get("category_strengths", {})
-
-    # Rank z-score sums vs all teams to get "expected" rank
-    # (z-score rank approximates true talent level)
-    z_ranks = {}
-    if cat_z_sums:
-        for cat in cat_ranks:
-            my_z = cat_z_sums.get(cat, 0)
-            # Simple heuristic: if z-sum is top-3 among my categories, expect top-3 rank
-            # Compare actual rank vs z-based expectation
-            all_z = sorted(cat_z_sums.values(), reverse=True)
-            my_z_rank = 1
-            for zv in all_z:
-                if my_z >= zv:
-                    break
-                my_z_rank += 1
-            z_ranks[cat] = my_z
 
     if as_json:
         categories = []
@@ -2260,6 +2240,7 @@ def cmd_waiver_analyze(args, as_json=False):
     _intel_lookup = {d.get("name", ""): d.get("intel") for d in _fa_dicts}
 
     scored = []
+    _z_cache = {}  # shared z-score cache for roster fit checks
     for p in fa:
         name = p.get("name", "Unknown")
         pid = p.get("player_id", "?")
@@ -2329,13 +2310,13 @@ def cmd_waiver_analyze(args, as_json=False):
         # Compute which weak categories this player actually helps
         helps_cats = [c for c in weak_cat_names if per_cat.get(c, 0) > CAT_HELP_Z_THRESHOLD]
 
-        # Roster fit check
+        # Roster fit check (z_cache shared across all candidates to avoid repeated lookups)
         fit = None
         if my_roster:
             try:
-                fit = _check_roster_fit(name, p.get("eligible_positions", []), my_roster)
+                fit = _check_roster_fit(name, p.get("eligible_positions", []), my_roster, z_cache=_z_cache)
                 if fit.get("action") == "blocked":
-                    score *= 0.7  # penalize blocked adds
+                    score *= 0.7
             except Exception as e:
                 print("Warning: roster fit check failed for " + name + ": " + str(e))
 
@@ -6257,7 +6238,7 @@ def cmd_league_intel(args, as_json=False):
 
     # --- Transaction activity per team ---
     try:
-        all_team_data = lg.teams() if hasattr(lg, "teams") else {}
+        all_team_data = all_teams
         for t in team_data_list:
             tk = t.get("team_key", "")
             td = all_team_data.get(tk, {})

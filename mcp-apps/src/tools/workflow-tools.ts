@@ -428,7 +428,6 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
               lines.push("  ⚠️ " + tp.name + " is injured (" + tp.injury_severity + ") — factor into trade timing");
             }
           }
-          // Roster fit from trade eval
           var rosterFit = te.position_impact && (te.position_impact as any).roster_fit;
           if (rosterFit && rosterFit.length > 0) {
             lines.push("");
