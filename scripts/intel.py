@@ -2816,15 +2816,40 @@ def _build_statcast(name, mlb_id):
 
         if not expected_row and not statcast_row and not sprint_row:
             result["note"] = "Player not found in Savant leaderboards (may not meet minimum PA/IP threshold)"
-            # Fall back to projection-based tier from z-scores
+
+        # Compute composite quality_tier
+        # Priority: xwOBA tier (if sufficient PA/IP), then EV tier, then z-score tier
+        _MIN_RELIABLE_PA = 50
+        _MIN_RELIABLE_IP = 15
+        exp = result.get("expected", {})
+        bb_res = result.get("batted_ball", {})
+        era_a = result.get("era_analysis", {})
+        sample_pa = exp.get("pa")
+        sample_ip = era_a.get("ip")
+        is_reliable = False
+        if player_type == "pitcher" and sample_ip is not None:
+            is_reliable = float(sample_ip) >= _MIN_RELIABLE_IP
+        elif sample_pa is not None:
+            is_reliable = float(sample_pa) >= _MIN_RELIABLE_PA
+
+        if is_reliable and exp.get("xwoba_tier"):
+            result["quality_tier"] = exp.get("xwoba_tier")
+        elif bb_res.get("ev_tier"):
+            # EV comes from statcast CSV which may have fallen back to prior year
+            result["quality_tier"] = bb_res.get("ev_tier")
+        elif exp.get("xwoba_tier"):
+            # Small sample but it's all we have from current year
+            result["quality_tier"] = exp.get("xwoba_tier")
+            result["quality_source"] = "small_sample"
+
+        # If still no quality tier, use projection z-score
+        if not result.get("quality_tier"):
             try:
                 from valuations import get_player_zscore
                 z_info = get_player_zscore(name)
                 if z_info:
-                    tier = z_info.get("tier", "Unknown")
-                    result["quality_tier"] = tier
+                    result["quality_tier"] = z_info.get("tier", "Unknown")
                     result["quality_source"] = "projections"
-                    result["projection_z"] = z_info.get("z_final", 0)
             except Exception:
                 pass
 
