@@ -497,14 +497,17 @@ def get_todays_schedule():
     return get_schedule_for_range(today, today)
 
 
+_statsapi_hydrate_works = True
+
 def get_schedule_for_range(start_date, end_date):
     """Get MLB schedule for a date range with probable pitchers"""
+    global _statsapi_hydrate_works
     if statsapi:
-        try:
-            return statsapi.schedule(start_date=start_date, end_date=end_date, hydrate="probablePitcher")
-        except Exception:
-            pass
-        # Retry without hydrate
+        if _statsapi_hydrate_works:
+            try:
+                return statsapi.schedule(start_date=start_date, end_date=end_date, hydrate="probablePitcher")
+            except Exception:
+                _statsapi_hydrate_works = False
         try:
             return statsapi.schedule(start_date=start_date, end_date=end_date)
         except Exception as e:
@@ -546,25 +549,38 @@ def get_player_team(player):
     return team_name
 
 
+_enrich_cache = {}
+_ENRICH_TTL = 120
+
 def enrich_roster_teams(roster, lg, team):
     """Add editorial_team_abbr to roster players from Yahoo enriched API.
     Basic team.roster() lacks team data; this fills it in.
+    Cached per team_key for 120s to avoid duplicate API calls.
     """
-    try:
-        yf_mod = importlib.import_module("yahoo-fantasy")
-        stat_lookup = yf_mod._get_stat_lookup(lg)
-        handler = lg.yhandler
-        uri = ("/team/" + team.team_key
-               + "/roster/players;out=percent_started,percent_owned"
-               + "/stats;type=season;season=" + str(date.today().year))
-        raw = handler.get(uri)
-        enriched = yf_mod._parse_enriched_data(raw, stat_lookup)
-        for p in roster:
-            pid = str(p.get("player_id", ""))
-            if pid in enriched and enriched[pid].get("team"):
-                p["editorial_team_abbr"] = enriched[pid]["team"]
-    except Exception as e:
-        print("Warning: roster team enrichment failed: " + str(e))
+    import time as _time
+    cache_key = team.team_key
+    now = _time.monotonic()
+    cached = _enrich_cache.get(cache_key)
+    if cached and (now - cached[0]) < _ENRICH_TTL:
+        enriched = cached[1]
+    else:
+        try:
+            yf_mod = importlib.import_module("yahoo-fantasy")
+            stat_lookup = yf_mod._get_stat_lookup(lg)
+            handler = lg.yhandler
+            uri = ("/team/" + team.team_key
+                   + "/roster/players;out=percent_started,percent_owned"
+                   + "/stats;type=season;season=" + str(date.today().year))
+            raw = handler.get(uri)
+            enriched = yf_mod._parse_enriched_data(raw, stat_lookup)
+            _enrich_cache[cache_key] = (now, enriched)
+        except Exception as e:
+            print("Warning: roster team enrichment failed: " + str(e))
+            return
+    for p in roster:
+        pid = str(p.get("player_id", ""))
+        if pid in enriched and enriched[pid].get("team"):
+            p["editorial_team_abbr"] = enriched[pid]["team"]
 
 
 def get_player_position(player):
@@ -1678,27 +1694,17 @@ def cmd_injury_report(args, as_json=False):
         print("Roster is empty")
         return
 
-    # Enrich roster with team/headshot from Yahoo raw API
+    # Enrich roster with team + headshot from Yahoo raw API
     if as_json:
-        try:
-            yf_mod = importlib.import_module("yahoo-fantasy")
-            stat_lookup = yf_mod._get_stat_lookup(lg)
-            handler = lg.yhandler
-            uri = ("/team/" + team.team_key
-                   + "/roster/players;out=percent_started,percent_owned,draft_analysis"
-                   + "/stats;type=season;season=" + str(date.today().year))
-            raw = handler.get(uri)
-            enriched = yf_mod._parse_enriched_data(raw, stat_lookup)
+        enrich_roster_teams(roster, lg, team)
+        # Headshots need separate pass from cached enriched data
+        cached = _enrich_cache.get(team.team_key)
+        if cached:
+            enriched = cached[1]
             for p in roster:
                 pid = str(p.get("player_id", ""))
-                if pid in enriched:
-                    ed = enriched[pid]
-                    if ed.get("team"):
-                        p["editorial_team_abbr"] = ed["team"]
-                    if ed.get("headshot"):
-                        p["headshot"] = {"url": ed["headshot"]}
-        except Exception as e:
-            print("Warning: injury-report enrichment failed: " + str(e))
+                if pid in enriched and enriched[pid].get("headshot"):
+                    p["headshot"] = {"url": enriched[pid]["headshot"]}
 
     # Get MLB injuries
     mlb_injuries = {}
