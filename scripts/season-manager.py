@@ -620,6 +620,166 @@ def _player_z_summary(name):
     return z_info.get("z_final", 0), z_info.get("tier", "Streamable"), z_info.get("per_category_zscores", {})
 
 
+def _build_roster_profile(roster):
+    """Build competitive intelligence profile from an enriched roster.
+    Expects roster already enriched via enrich_roster_teams() and enrich_with_intel().
+    """
+    from valuations import DEFAULT_BATTING_CATS, DEFAULT_BATTING_CATS_NEGATIVE, DEFAULT_PITCHING_CATS, DEFAULT_PITCHING_CATS_NEGATIVE
+    all_cats = (DEFAULT_BATTING_CATS + DEFAULT_BATTING_CATS_NEGATIVE
+                + DEFAULT_PITCHING_CATS + DEFAULT_PITCHING_CATS_NEGATIVE)
+
+    quality = {"elite": 0, "strong": 0, "average": 0, "below": 0, "poor": 0}
+    total_z = 0.0
+    hitting_z = 0.0
+    pitching_z = 0.0
+    cat_strengths = {}
+    regression_flags = []
+    hot_players = []
+    cold_players = []
+    low_conf = 0
+
+    non_playing = {"BN", "Bench", "IL", "IL+", "DL", "DL+", "NA"}
+
+    for p in roster:
+        pos = get_player_position(p)
+        if pos in non_playing:
+            continue
+        name = p.get("name", "")
+        positions = p.get("eligible_positions", [])
+        is_pit = is_pitcher_position(positions)
+
+        z_val, tier, per_cat = _player_z_summary(name)
+        intel_data = p.get("intel") or {}
+        sc_data = intel_data.get("statcast") or {}
+        qt = sc_data.get("quality_tier")
+        trends = intel_data.get("trends") or {}
+        hot_cold = trends.get("hot_cold") or trends.get("status")
+
+        adj_z, _ = compute_adjusted_z(name, z_val, qt, hot_cold)
+        total_z += adj_z
+        if is_pit:
+            pitching_z += adj_z
+        else:
+            hitting_z += adj_z
+
+        if qt in quality:
+            quality[qt] += 1
+
+        for cat in all_cats:
+            if cat in per_cat:
+                cat_strengths[cat] = cat_strengths.get(cat, 0) + per_cat[cat]
+
+        if hot_cold in ("hot",):
+            hot_players.append(name)
+        elif hot_cold in ("cold", "ice"):
+            cold_players.append(name)
+
+        sample = p.get("sample") or {}
+        if sample.get("confidence") in ("very_low", "low"):
+            low_conf += 1
+
+    # Regression signals
+    try:
+        from intel import get_regression_signal
+        for p in roster:
+            pos = get_player_position(p)
+            if pos in non_playing:
+                continue
+            name = p.get("name", "")
+            reg = get_regression_signal(name)
+            if reg and reg.get("direction") in ("buy_low", "sell_high"):
+                regression_flags.append({
+                    "name": name,
+                    "signal": reg.get("direction", ""),
+                    "score": reg.get("regression_score", 0),
+                    "detail": reg.get("top_signal", ""),
+                })
+    except Exception:
+        pass
+
+    # Round category strengths
+    for k in cat_strengths:
+        cat_strengths[k] = round(cat_strengths[k], 2)
+
+    return {
+        "quality_breakdown": quality,
+        "total_adjusted_z": round(total_z, 2),
+        "hitting_adjusted_z": round(hitting_z, 2),
+        "pitching_adjusted_z": round(pitching_z, 2),
+        "regression_flags": regression_flags,
+        "low_confidence_count": low_conf,
+        "hot_players": hot_players,
+        "cold_players": cold_players,
+        "category_strengths": cat_strengths,
+    }
+
+
+def _enrich_roster_for_profile(roster, lg, team):
+    """Enrich a roster with teams + intel + sample context for profiling."""
+    enrich_roster_teams(roster, lg, team)
+    enrich_with_intel(roster)
+
+
+def _find_vulnerabilities(profile, categories=None):
+    """Identify exploitable weaknesses from a roster profile."""
+    vulns = []
+    for rf in profile.get("regression_flags", []):
+        vulns.append({
+            "type": "regression",
+            "player": rf.get("name", ""),
+            "detail": rf.get("signal", "") + ": " + rf.get("detail", ""),
+        })
+    if profile.get("low_confidence_count", 0) >= 3:
+        vulns.append({
+            "type": "sample_size",
+            "detail": str(profile.get("low_confidence_count", 0)) + " players with low sample confidence — stats may be noise",
+        })
+    for p in profile.get("cold_players", []):
+        vulns.append({
+            "type": "cold_streak",
+            "player": p,
+            "detail": p + " on a cold streak",
+        })
+    # Weak categories (negative z-score sum)
+    if categories:
+        for cat in categories:
+            cat_z = profile.get("category_strengths", {}).get(cat, 0)
+            if cat_z < -2.0:
+                vulns.append({
+                    "type": "weak_category",
+                    "category": cat,
+                    "detail": cat + " roster z-sum is " + str(cat_z) + " — structurally weak",
+                })
+    return vulns
+
+
+def _get_transaction_context(lg, my_team_key, opp_team_key=None):
+    """Get transaction budget info for matchup context."""
+    result = {}
+    try:
+        settings = get_league_settings()
+        max_adds = settings.get("max_weekly_adds")
+        if max_adds is not None:
+            try:
+                result["max_weekly_adds"] = int(max_adds)
+            except (ValueError, TypeError):
+                pass
+
+        teams = lg.teams() if hasattr(lg, "teams") else {}
+        for tk, td in teams.items():
+            moves = td.get("number_of_moves", 0)
+            trades = td.get("number_of_trades", 0)
+            if my_team_key and my_team_key in str(tk):
+                result["my_moves"] = int(moves) if moves else 0
+                result["my_trades"] = int(trades) if trades else 0
+            elif opp_team_key and opp_team_key in str(tk):
+                result["opp_moves"] = int(moves) if moves else 0
+                result["opp_trades"] = int(trades) if trades else 0
+    except Exception as e:
+        print("Warning: transaction context failed: " + str(e))
+    return result
+
+
 _cached_positions = None
 
 
@@ -3573,6 +3733,25 @@ def cmd_scout_opponent(args, as_json=False):
             if not strategy:
                 strategy.append("Matchup is evenly contested - stay the course and avoid unnecessary roster moves")
 
+            # Build opponent roster profile + vulnerabilities
+            opp_profile = {}
+            opp_vulns = []
+            try:
+                opp_team_obj = lg.to_team(opp_key)
+                opp_roster = opp_team_obj.roster()
+                enrich_roster_teams(opp_roster, lg, opp_team_obj)
+                enrich_with_intel(opp_roster)
+                opp_profile = _build_roster_profile(opp_roster)
+                opp_vulns = _find_vulnerabilities(opp_profile, [c.get("name") for c in categories])
+            except Exception as e:
+                print("Warning: opponent profile failed: " + str(e))
+
+            transactions = {}
+            try:
+                transactions = _get_transaction_context(lg, TEAM_ID, opp_key)
+            except Exception:
+                pass
+
             result_data = {
                 "week": week,
                 "opponent": opp_name,
@@ -3581,6 +3760,9 @@ def cmd_scout_opponent(args, as_json=False):
                 "opp_strengths": opp_strengths,
                 "opp_weaknesses": opp_weaknesses,
                 "strategy": strategy,
+                "roster_profile": opp_profile,
+                "vulnerabilities": opp_vulns,
+                "transactions": transactions,
             }
 
             if as_json:
@@ -4084,6 +4266,24 @@ def cmd_matchup_strategy(args, as_json=False):
 
         summary = ". ".join(parts) + "."
 
+        # ── 7. Roster quality profiles + transactions ──
+        my_profile = {}
+        opp_profile = {}
+        transactions = {}
+        try:
+            if my_roster:
+                enrich_with_intel(my_roster)
+                my_profile = _build_roster_profile(my_roster)
+            if opp_roster:
+                enrich_with_intel(opp_roster)
+                opp_profile = _build_roster_profile(opp_roster)
+        except Exception as e:
+            print("Warning: roster profile build failed: " + str(e))
+        try:
+            transactions = _get_transaction_context(lg, TEAM_ID, opp_key)
+        except Exception as e:
+            print("Warning: transaction context failed: " + str(e))
+
         result_data = {
             "week": week,
             "opponent": opp_name,
@@ -4094,6 +4294,10 @@ def cmd_matchup_strategy(args, as_json=False):
             "strategy": strategy_map,
             "waiver_targets": waiver_targets,
             "summary": summary,
+            "my_profile": my_profile,
+            "opp_profile": opp_profile,
+            "transactions": transactions,
+            "opp_vulnerabilities": _find_vulnerabilities(opp_profile, [c.get("name") for c in categories]) if opp_profile else [],
         }
 
         if as_json:
@@ -5903,6 +6107,28 @@ def cmd_league_intel(args, as_json=False):
                 tp["hot_cold"] = ap.get("hot_cold")
                 tp["regression"] = ap.get("regression")
                 tp["adjusted_z"] = ap.get("adjusted_z")
+
+    # --- Transaction activity per team ---
+    try:
+        all_team_data = lg.teams() if hasattr(lg, "teams") else {}
+        for t in team_data_list:
+            tk = t.get("team_key", "")
+            td = all_team_data.get(tk, {})
+            moves = int(td.get("number_of_moves", 0) or 0)
+            trades = int(td.get("number_of_trades", 0) or 0)
+            t["transactions"] = {"moves": moves, "trades": trades}
+
+        # Add sustainability summary from intel_summary
+        for t in team_data_list:
+            intel_s = t.get("intel_summary", {})
+            t["sustainability"] = {
+                "regression_risk": intel_s.get("sell_high", 0),
+                "buy_low_count": intel_s.get("buy_low", 0),
+                "hot_count": intel_s.get("hot", 0),
+                "cold_count": intel_s.get("cold", 0),
+            }
+    except Exception as e:
+        print("Warning: transaction/sustainability enrichment failed: " + str(e))
 
     # --- Power Rankings: composite with adjusted z + standings + quality ---
     num_teams = len(team_data_list)

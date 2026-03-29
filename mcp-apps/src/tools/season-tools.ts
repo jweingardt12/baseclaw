@@ -290,6 +290,39 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
         for (const s of data.strategy) {
           lines.push("  - " + s);
         }
+
+        // Opponent roster profile
+        var rp = (data as any).roster_profile;
+        if (rp && rp.total_adjusted_z) {
+          var es = (rp.quality_breakdown.elite || 0) + (rp.quality_breakdown.strong || 0);
+          var bp = (rp.quality_breakdown.below || 0) + (rp.quality_breakdown.poor || 0);
+          lines.push("");
+          lines.push("OPPONENT ROSTER: " + es + " elite/strong, " + bp + " below/poor, adj-z " + rp.total_adjusted_z);
+          if (rp.regression_flags.length > 0) {
+            lines.push("  Regression flags: " + rp.regression_flags.map(function (f: any) { return f.name + " (" + f.signal + ")"; }).join(", "));
+          }
+          if (rp.cold_players.length > 0) {
+            lines.push("  Cold: " + rp.cold_players.join(", "));
+          }
+        }
+
+        // Vulnerabilities
+        var vs = (data as any).vulnerabilities || [];
+        if (vs.length > 0) {
+          lines.push("");
+          lines.push("VULNERABILITIES:");
+          for (var vv of vs.slice(0, 5)) {
+            lines.push("  " + (vv.player ? vv.player + ": " : "") + vv.detail);
+          }
+        }
+
+        // Transactions
+        var tx = (data as any).transactions;
+        if (tx) {
+          lines.push("");
+          lines.push("TRANSACTIONS: Opp " + (tx.opp_moves || 0) + " moves, " + (tx.opp_trades || 0) + " trades season");
+        }
+
         const ai_recommendation = generateScoutInsight(data);
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
@@ -326,6 +359,40 @@ export function registerSeasonTools(server: McpServer, distDir: string, writesEn
         if (strat.lock.length > 0) lines.push("LOCK: " + strat.lock.join(", "));
         lines.push("");
         lines.push(data.summary);
+
+        // Roster quality profiles
+        var myP = (data as any).my_profile;
+        var oppP = (data as any).opp_profile;
+        if (myP && oppP && myP.total_adjusted_z) {
+          var myES = (myP.quality_breakdown.elite || 0) + (myP.quality_breakdown.strong || 0);
+          var oppES = (oppP.quality_breakdown.elite || 0) + (oppP.quality_breakdown.strong || 0);
+          lines.push("");
+          lines.push("ROSTER QUALITY:");
+          lines.push("  You: " + myES + " elite/strong, adj-z " + myP.total_adjusted_z + " | Opp: " + oppES + " elite/strong, adj-z " + oppP.total_adjusted_z);
+          if (myP.low_confidence_count > 2 || oppP.low_confidence_count > 2) {
+            lines.push("  Sample: you " + myP.low_confidence_count + " low-confidence, opp " + oppP.low_confidence_count + " low-confidence");
+          }
+        }
+
+        // Transactions
+        var txn = (data as any).transactions;
+        if (txn && txn.max_weekly_adds) {
+          lines.push("");
+          lines.push("TRANSACTIONS:");
+          lines.push("  You: " + (txn.my_moves || 0) + " moves season | Opp: " + (txn.opp_moves || 0) + " moves season");
+          lines.push("  Weekly limit: " + txn.max_weekly_adds + " adds/week");
+        }
+
+        // Opponent vulnerabilities
+        var vulns = (data as any).opp_vulnerabilities || [];
+        if (vulns.length > 0) {
+          lines.push("");
+          lines.push("EXPLOIT:");
+          for (var v of vulns.slice(0, 5)) {
+            lines.push("  " + (v.player ? v.player + ": " : "") + v.detail);
+          }
+        }
+
         const ai_recommendation = generateMatchupInsight(data);
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
