@@ -255,13 +255,18 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
           ? filteredTaken.length + " player(s) filtered (recently added by league rivals: " + filteredTaken.join(", ") + "). Recommendations reflect current availability."
           : null;
 
+        var filteredNames = new Set(filteredTaken.map(function (n) { return n.toLowerCase(); }));
+        var filteredRecs = ((data.waiver_batters || {}).recommendations || []).filter(function (r: any) {
+            return !filteredNames.has((r.name || "").toLowerCase());
+        });
+
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
           structuredContent: {
             type: "waiver-analyze",
             pos_type: (data.waiver_batters || {}).pos_type || "B",
             weak_categories: (data.waiver_batters || {}).weak_categories,
-            recommendations: (data.waiver_batters || {}).recommendations,
+            recommendations: filteredRecs,
             season_context: ((data.waiver_batters || {}) as any).season_context,
             ai_recommendation: ai_rec || (data as any).ai_recommendation,
           },

@@ -2127,11 +2127,12 @@ def workflow_roster_health():
     return _cached_endpoint("wf-roster-hp", _run, 300)
 
 
-def _synthesize_waiver_pairs(waiver_b, waiver_p, cat_check=None, recent_adds=None):
+def _synthesize_waiver_pairs(waiver_b, waiver_p, cat_check=None, recent_add_ids=None, recent_add_names=None):
     """Pair waiver recommendations with position type labels, filtering recently-taken players."""
     pairs = []
     filtered_taken = []
-    taken_names = recent_adds or set()
+    taken_ids = recent_add_ids or set()
+    taken_names = recent_add_names or set()
 
     # Fallback weak categories from cat_check when waiver source is empty
     fallback_weak = []
@@ -2141,9 +2142,10 @@ def _synthesize_waiver_pairs(waiver_b, waiver_p, cat_check=None, recent_adds=Non
     for label, waiver in [("B", waiver_b), ("P", waiver_p)]:
         for rec in (waiver or {}).get("recommendations", [])[:5]:
             name = str(rec.get("name", "?"))
+            rec_pid = str(rec.get("pid", ""))
 
-            # Skip players recently added by league rivals
-            if name.lower() in taken_names:
+            # Skip players recently added by league rivals (ID match preferred, name fallback)
+            if (rec_pid and rec_pid in taken_ids) or name.lower() in taken_names:
                 filtered_taken.append(name)
                 continue
 
@@ -2184,7 +2186,7 @@ def workflow_waiver_recommendations():
             "waiver_b": _workflow_pool.submit(_safe_call, season_manager.cmd_waiver_analyze, ["B", count]),
             "waiver_p": _workflow_pool.submit(_safe_call, season_manager.cmd_waiver_analyze, ["P", count]),
             "roster": _workflow_pool.submit(_safe_call, yahoo_fantasy.cmd_roster),
-            "transactions": _workflow_pool.submit(_safe_call, yahoo_fantasy.cmd_transactions, ["add", "15"]),
+            "transactions": _workflow_pool.submit(_safe_call, yahoo_fantasy.cmd_transactions, ["", "25"]),
         }
         cat_check = _get_future(futures["cat_check"])
         waiver_b = _get_future(futures["waiver_b"])
@@ -2192,14 +2194,23 @@ def workflow_waiver_recommendations():
         roster = _get_future(futures["roster"])
         txns = _get_future(futures["transactions"])
 
-        # Build set of player names recently added by league rivals
-        recent_adds = set()
-        for tx in (txns or {}).get("transactions", []):
+        # Reconcile adds/drops: only filter players whose latest action was "add"
+        latest_action = {}  # name -> (action, player_id)
+        txns_list = (txns or {}).get("transactions", [])
+        for tx in sorted(txns_list, key=lambda t: t.get("timestamp", "")):
             for p in tx.get("players", []):
-                if p.get("action") == "add" and p.get("name"):
-                    recent_adds.add(str(p["name"]).lower())
+                name = str(p.get("name", "")).lower()
+                if name:
+                    latest_action[name] = (p.get("action", ""), str(p.get("player_id", "")))
+        recent_add_ids = set()
+        recent_add_names = set()
+        for name, (action, pid) in latest_action.items():
+            if action == "add":
+                recent_add_names.add(name)
+                if pid:
+                    recent_add_ids.add(pid)
 
-        pairs, filtered_taken = _synthesize_waiver_pairs(waiver_b, waiver_p, cat_check=cat_check, recent_adds=recent_adds)
+        pairs, filtered_taken = _synthesize_waiver_pairs(waiver_b, waiver_p, cat_check=cat_check, recent_add_ids=recent_add_ids, recent_add_names=recent_add_names)
         return {
             "pairs": pairs,
             "filtered_taken": filtered_taken,

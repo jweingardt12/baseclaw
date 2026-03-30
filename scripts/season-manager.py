@@ -2281,10 +2281,10 @@ def cmd_waiver_analyze(args, as_json=False):
             try:
                 ctx = _get_season_context(lg)
                 if ctx.get("phase") == "observation":
-                    # Dampen projection-heavy z-score base; keep intel/trend bonuses full
-                    z_component = adjusted_z * 10.0
-                    non_z_component = score - z_component
-                    score = z_component * 0.6 + non_z_component
+                    # Dampen raw projection z-score; keep intel/trend/category bonuses full
+                    projection_component = z_final * 10.0
+                    non_projection_component = score - projection_component
+                    score = projection_component * 0.6 + non_projection_component
                 elif ctx.get("phase") == "stretch":
                     if pct and float(pct) > 50:
                         score *= 1.15
@@ -2293,7 +2293,7 @@ def cmd_waiver_analyze(args, as_json=False):
             except Exception:
                 pass
         else:
-            score = float(pct) if pct else 0
+            score = float(pct) * 0.3 if pct else 0
             tier = "Unknown"
             z_final = 0
             adjusted_z = 0
