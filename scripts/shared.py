@@ -669,9 +669,10 @@ def enrich_with_trends(players, count=None):
                 p["trend"] = trend
                 if trend.get("direction") == "added":
                     rank = trend.get("rank", 25)
-                    p["score"] = p.get("score", 0) + max(0, 12 - rank * 0.4)
+                    p["score"] = p.get("score", 0) + max(0, 25 - rank * 0.8)
                 elif trend.get("direction") == "dropped":
-                    p["score"] = p.get("score", 0) - 3
+                    rank = trend.get("rank", 25)
+                    p["score"] = p.get("score", 0) - max(3, 15 - rank * 0.5)
     except Exception:
         pass
 

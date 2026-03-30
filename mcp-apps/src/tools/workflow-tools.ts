@@ -238,14 +238,22 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
 
         const catCheck: Partial<CategoryCheckResponse> = data.category_check || {};
         const weakest = catCheck.weakest || [];
+        var filteredTaken: string[] = (data as any).filtered_taken || [];
 
         const lines: string[] = [];
         lines.push(header("WAIVER_RECOMMENDATIONS", (data.pairs || []).length + " options | weak: " + weakest.join(", ")));
+        if (filteredTaken.length > 0) {
+          lines.push("FILTERED (recently added by league rivals): " + filteredTaken.join(", "));
+        }
         lines.push("");
         lines.push(waiverPairList(data.pairs || []));
         var addPlayers = (data.pairs || []).map(function (pair) { return pair.add; });
         var sw = sampleWarning(addPlayers);
         if (sw) lines.push(sw);
+
+        var ai_rec = filteredTaken.length > 0
+          ? filteredTaken.length + " player(s) filtered (recently added by league rivals: " + filteredTaken.join(", ") + "). Recommendations reflect current availability."
+          : null;
 
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
@@ -255,7 +263,7 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
             weak_categories: (data.waiver_batters || {}).weak_categories,
             recommendations: (data.waiver_batters || {}).recommendations,
             season_context: ((data.waiver_batters || {}) as any).season_context,
-            ai_recommendation: (data as any).ai_recommendation,
+            ai_recommendation: ai_rec || (data as any).ai_recommendation,
           },
         };
       } catch (e) { return toolError(e); }

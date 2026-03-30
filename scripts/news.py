@@ -527,6 +527,7 @@ _CONTEXT_TTL = 300
 _DEALBREAKER_KEYWORDS = [
     "released", "dfa", "designated for assignment", "optioned", "sent to minors",
     "outrighted", "non-tendered", "unconditional release",
+    "60-day injured list", "season-ending", "out for season", "out for the year",
 ]
 _WARNING_KEYWORDS = [
     "placed on", "injured list", "day-to-day",

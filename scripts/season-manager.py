@@ -2178,7 +2178,7 @@ def cmd_waiver_analyze(args, as_json=False):
 
     # Fetch free agents
     try:
-        fa = lg.free_agents(pos_type)[:count * 2]
+        fa = lg.free_agents(pos_type)[:max(count * 4, 30)]
     except Exception as e:
         if as_json:
             return {"error": "Error fetching free agents: " + str(e)}
@@ -2281,7 +2281,10 @@ def cmd_waiver_analyze(args, as_json=False):
             try:
                 ctx = _get_season_context(lg)
                 if ctx.get("phase") == "observation":
-                    score *= 0.85
+                    # Dampen projection-heavy z-score base; keep intel/trend bonuses full
+                    z_component = adjusted_z * 10.0
+                    non_z_component = score - z_component
+                    score = z_component * 0.6 + non_z_component
                 elif ctx.get("phase") == "stretch":
                     if pct and float(pct) > 50:
                         score *= 1.15
@@ -2294,6 +2297,20 @@ def cmd_waiver_analyze(args, as_json=False):
             tier = "Unknown"
             z_final = 0
             adjusted_z = 0
+            # No-projection players (rookies/breakouts): boost with intel signals
+            _pi = _intel_lookup.get(name) or {}
+            quality_tier = (_pi.get("statcast") or {}).get("quality_tier")
+            hot_cold = (_pi.get("trends") or {}).get("hot_cold")
+            if quality_tier == "elite":
+                score += 25
+            elif quality_tier == "strong":
+                score += 15
+            elif quality_tier == "average":
+                score += 8
+            if hot_cold == "hot":
+                score += 12
+            elif hot_cold == "warm":
+                score += 6
 
         # Regression signal (kept for explicit signal tracking, score already adjusted via compute_adjusted_z)
         reg_signal = None
@@ -2305,7 +2322,10 @@ def cmd_waiver_analyze(args, as_json=False):
 
         # Penalty for injured players
         if status and status not in ("", "Healthy"):
-            score *= 0.5
+            if "IL60" in str(status) or "IL 60" in str(status):
+                score = 0  # Season-ending / long-term IL — not a waiver target
+            else:
+                score *= 0.5
 
         # Compute which weak categories this player actually helps
         helps_cats = [c for c in weak_cat_names if per_cat.get(c, 0) > CAT_HELP_Z_THRESHOLD]
