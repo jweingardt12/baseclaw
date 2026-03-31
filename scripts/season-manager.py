@@ -11791,12 +11791,80 @@ def cmd_competitor_tracker(args, as_json=False):
             "threat_level": threat_level,
         })
 
+    # Scan direct rivals for injury vulnerabilities and strategic opportunities
+    rival_injuries = []
+    strategic_opps = []
+    try:
+        from news import get_player_context
+        direct_rivals = [t for t in teams if t.get("relative_threat") == "direct_rival"]
+        for rival in direct_rivals[:3]:
+            rival_name = rival.get("name", "")
+            rival_key = None
+            for tk, td in get_cached_teams(lg).items():
+                if td.get("name") == rival_name:
+                    rival_key = tk
+                    break
+            if not rival_key:
+                continue
+            try:
+                rival_team = lg.to_team(rival_key)
+                rival_roster = rival_team.roster()
+                for rp in rival_roster:
+                    status = rp.get("status", "")
+                    pname = rp.get("name", "")
+                    if status in ("IL", "IL+", "IL10", "IL15", "IL60", "DTD"):
+                        z_info = _z_cache.get(pname) or get_player_zscore(pname)
+                        z_val = z_info.get("z_final", 0) if z_info else 0
+                        if z_val > 2.0:
+                            severity = "long_term" if "60" in str(status) else ("short_term" if "IL" in str(status) else "day_to_day")
+                            rival_injuries.append({
+                                "rival": rival_name,
+                                "player": pname,
+                                "status": status,
+                                "z_score": round(z_val, 2),
+                                "severity": severity,
+                            })
+                            # Find which categories this weakens
+                            per_cat = z_info.get("per_category_zscores", {}) if z_info else {}
+                            weak_cats = [c for c, v in per_cat.items() if v > 0.5]
+                            if weak_cats:
+                                strategic_opps.append({
+                                    "type": "rival_injured_star",
+                                    "message": rival_name + " lost " + pname + " (z=" + str(round(z_val, 2)) + ", " + status + ") — weakens their " + ", ".join(weak_cats[:3]),
+                                    "categories": weak_cats[:3],
+                                    "actionable": True,
+                                })
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    # Build strategic recommendations based on competitive landscape
+    recommendations = []
+    # 1. Exploit rival injuries
+    for opp in strategic_opps:
+        if opp.get("type") == "rival_injured_star":
+            recommendations.append("Target " + ", ".join(opp.get("categories", [])) + " — rival " + opp.get("message", ""))
+
+    # 2. Counter rival improvements
+    for alert in alerts:
+        if alert.get("type") == "rival_add":
+            recommendations.append("Consider countering: " + alert.get("message", ""))
+
+    # 3. Identify sell-high windows before rivals catch up
+    for t in teams:
+        if t.get("threat_level") == "high" and t.get("net_z_change", 0) > 3:
+            recommendations.append("URGENT: " + t.get("name", "") + " is rapidly improving (net z+" + str(t.get("net_z_change", 0)) + ") — trade to lock in value before standings shift")
+
     result = {
         "my_rank": my_rank,
         "teams": teams,
         "alerts": alerts,
         "sniped_targets": sniped,
         "total_rival_moves": sum(len(m) for m in team_moves.values()),
+        "rival_injuries": rival_injuries,
+        "strategic_opportunities": strategic_opps,
+        "recommendations": recommendations,
     }
 
     if as_json:

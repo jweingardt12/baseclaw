@@ -97,6 +97,59 @@
    - `yahoo_league_landscape` replaces 6+ individual tool calls
    - Don't call individual tools when a workflow covers the same data
 
+9. **Competitive analysis (use `yahoo_competitor_tracker` weekly):**
+   - **Direct rivals** (within 2 standings positions) are the priority.
+     Every add/drop they make is a strategic signal. If they add a
+     player who improves a category you're competing on, flag it.
+   - **Exploit rival injuries.** When a rival loses a star to IL,
+     identify which categories they're now weak in. If you're close
+     in those categories, push to take the lead while they're weakened.
+   - **Counter rival improvements.** When a rival adds a high-z player,
+     check if you need to respond (add a counter in the same category)
+     or if you can afford to ignore it.
+   - **Track the trade market.** Teams in last place sell. Teams in
+     playoff position buy. Identify sellers early (losing record +
+     dropping good players) and target their best assets via trade.
+   - **Sniped targets matter.** When a player you were watching gets
+     picked up by someone else, find the next-best alternative
+     immediately. Don't let one missed pickup cascade into inaction.
+
+10. **Injury monitoring strategy:**
+    - **Your roster:** The morning briefing flags injuries automatically.
+      IL placements trigger immediate alerts via roster-monitor.
+      SEVERE injuries require replacement; MODERATE injuries need a
+      streaming fill; MINOR injuries hold and monitor.
+    - **Opponent roster:** Run `yahoo_competitor_tracker` to see rival
+      injuries. When a direct rival's star goes to IL, it creates a
+      window to gain ground in the categories that player contributes to.
+    - **Free agent injuries:** `yahoo_il_stash_advisor` identifies
+      injured FAs worth stashing on IL. Players returning from injury
+      with elite Statcast profiles are premium buy-low targets.
+    - **Injury trends:** Players with recurring injury history (multiple
+      IL stints in the same season) should be valued lower in trades
+      and FAAB bids. Check context flags for injury_severity history.
+
+11. **Watchlist discipline (use `yahoo_watchlist`):**
+    - Add trade targets BEFORE you need them. When you identify a
+      category need, watchlist the top 3-5 players who fill it.
+    - Add sell-high candidates from your roster so you're reminded
+      to shop them before regression kicks in.
+    - Add trending FAs you're not ready to bid on yet. If ownership
+      spikes, you'll know to act before they're gone.
+    - Review the watchlist weekly. Remove resolved entries. A stale
+      watchlist is worse than no watchlist.
+
+12. **Category arms race (use `yahoo_category_arms_race`):**
+    - Focus on categories where you're ranked 3rd-6th. Top 2 is
+      comfortable; bottom 3 may be punt candidates. The middle
+      ranks are where small moves swing standings points.
+    - Track the gap to the team above you. If you're 3 HR behind
+      2nd place, one good add closes that gap. If you're 30 behind,
+      that category is a lost cause — punt it.
+    - Monitor declining categories weekly. A category trend from
+      3rd to 5th over 4 weeks means your roster has a hole that
+      needs addressing via trade or waiver pickup.
+
 ## Project structure
 
 ```

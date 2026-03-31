@@ -55,7 +55,7 @@
     "sessionTarget": "session:baseclaw-weekly",
     "payload": {
       "kind": "agentTurn",
-      "message": "Run yahoo_league_context first, then yahoo_matchup_strategy. Provide a clear game plan that answers: (1) Which categories can we realistically win this week and which should we concede? (2) Are any of our key players injured, cold, or flagged with warnings that weaken our expected output? (3) Does the opponent have any vulnerable positions — players with DEALBREAKER flags, bust candidates, or cold streaks? (4) Should we stream pitchers this week, and if so, which days have the best matchups? Be specific with player names and category impact.",
+      "message": "Run yahoo_league_context, then yahoo_matchup_strategy, then yahoo_competitor_tracker, then yahoo_category_arms_race. Build a comprehensive weekly game plan: (1) Which categories can we realistically win this week and which should we concede? (2) Are any of our key players injured, cold, or flagged with warnings? (3) Does the opponent have injuries or vulnerable positions we can exploit? (4) What have direct rivals done this week — any moves that affect our competitive position? (5) Which categories are we close to gaining or losing a rank in — and should we make a targeted add to push over the edge? (6) Should we stream pitchers, and if so, which days have the best matchups? (7) Are there any strategic opportunities from rival injuries (their star on IL = category window)? Be specific with player names, category gaps, and rival context.",
       "model": "anthropic/claude-sonnet-4-20250514"
     },
     "delivery": {
