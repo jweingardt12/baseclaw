@@ -11713,6 +11713,17 @@ def cmd_competitor_tracker(args, as_json=False):
     except Exception:
         pass
 
+    # Collect all unique player names for batch z-score lookup
+    _all_tx_names = set()
+    for tx in transactions:
+        for p in tx.get("players", []):
+            name = p.get("name", "")
+            if name:
+                _all_tx_names.add(name)
+    _z_cache = {}
+    for _txn in _all_tx_names:
+        _z_cache[_txn] = get_player_zscore(_txn)
+
     # Group transactions by team and analyze
     team_moves = {}
     sniped = []
@@ -11728,7 +11739,7 @@ def cmd_competitor_tracker(args, as_json=False):
             if team_name not in team_moves:
                 team_moves[team_name] = []
 
-            z_info = get_player_zscore(player_name)
+            z_info = _z_cache.get(player_name)
             z_val = z_info.get("z_final", 0) if z_info else 0
             per_cat = z_info.get("per_category_zscores", {}) if z_info else {}
             cats_improved = [c for c, v in per_cat.items() if v > 0.3] if action == "add" else []
@@ -11825,22 +11836,12 @@ def cmd_watchlist_add(args, as_json=False):
     z_info = get_player_zscore(name)
     z_val = z_info.get("z_final", 0) if z_info else 0
 
-    # Try to find current owner
     sc, gm, lg = get_league()
     owner = "free_agent"
     try:
-        all_teams = get_cached_teams(lg)
-        for team_key, team_data in all_teams.items():
-            try:
-                t = lg.to_team(team_key)
-                for p in t.roster():
-                    if name.lower() in p.get("name", "").lower():
-                        owner = team_data.get("name", team_key)
-                        break
-            except Exception:
-                continue
-            if owner != "free_agent":
-                break
+        team_key, team_name, _ = _find_player_owner(lg, name)
+        if team_key:
+            owner = team_name
     except Exception:
         pass
 
@@ -12006,7 +12007,7 @@ def cmd_category_arms_race(args, as_json=False):
         return
 
     # Build category arms race data
-    lower_is_better = {"ERA", "WHIP", "L", "ER", "BB"}
+    lower_is_better_cats = _build_lower_is_better_sids(_build_stat_id_to_name(lg))
     categories = []
 
     for cat, my_val in my_cats.items():
@@ -12024,31 +12025,31 @@ def cmd_category_arms_race(args, as_json=False):
             except (ValueError, TypeError):
                 pass
 
-        is_lower = cat.upper() in lower_is_better
+        is_lower = cat.upper() in ("ERA", "WHIP", "BB", "L")
         team_values.sort(key=lambda x: x[1], reverse=not is_lower)
 
+        # Find my rank and nearest rivals (same algorithm as cmd_category_check)
         my_rank = 1
-        for i, (tn, tv) in enumerate(team_values, 1):
-            if tn == list(all_teams_cats.keys())[0] if not all_teams_cats else "":
-                pass
-            if abs(tv - my_num) < 0.001:
-                my_rank = i
-                break
-            if is_lower and tv <= my_num:
-                my_rank = i
-            elif not is_lower and tv >= my_num:
-                my_rank = i
-
-        # Find nearest rivals
         above = None
         below = None
         for i, (tn, tv) in enumerate(team_values):
-            if abs(tv - my_num) < 0.001:
-                if i > 0:
-                    above = {"team": team_values[i - 1][0], "value": team_values[i - 1][1], "gap": round(abs(team_values[i - 1][1] - my_num), 3)}
-                if i < len(team_values) - 1:
-                    below = {"team": team_values[i + 1][0], "value": team_values[i + 1][1], "gap": round(abs(team_values[i + 1][1] - my_num), 3)}
-                break
+            rank = i + 1
+            if is_lower:
+                if my_num <= tv:
+                    my_rank = rank
+                    if i > 0:
+                        above = {"team": team_values[i - 1][0], "value": team_values[i - 1][1], "gap": round(abs(team_values[i - 1][1] - my_num), 3)}
+                    if i < len(team_values) - 1:
+                        below = {"team": team_values[i + 1][0], "value": team_values[i + 1][1], "gap": round(abs(team_values[i + 1][1] - my_num), 3)}
+                    break
+            else:
+                if my_num >= tv:
+                    my_rank = rank
+                    if i > 0:
+                        above = {"team": team_values[i - 1][0], "value": team_values[i - 1][1], "gap": round(abs(team_values[i - 1][1] - my_num), 3)}
+                    if i < len(team_values) - 1:
+                        below = {"team": team_values[i + 1][0], "value": team_values[i + 1][1], "gap": round(abs(team_values[i + 1][1] - my_num), 3)}
+                    break
 
         categories.append({
             "name": cat,
@@ -12075,21 +12076,32 @@ def cmd_research_feed(args, as_json=False):
 
     feed_items = []
 
-    # 1. Roster-relevant news
+    # 1. Roster-relevant news (fetch once, filter by roster names)
     if filter_type in ("all", "roster", "news"):
         try:
             from news import fetch_aggregated_news
             sc, gm, lg = get_league()
             team = lg.to_team(TEAM_ID)
             roster = team.roster()
-            roster_names = [p.get("name", "") for p in roster if p.get("name")]
-            for name in roster_names[:15]:
-                articles = fetch_aggregated_news(player=name, limit=2)
-                for a in articles:
+            roster_names_lower = set(p.get("name", "").lower() for p in roster if p.get("name"))
+            all_news = fetch_aggregated_news(limit=100)
+            for a in all_news:
+                player = a.get("player", "")
+                headline_lower = (a.get("headline", "") + " " + a.get("raw_title", "")).lower()
+                matched_name = ""
+                if player and player.lower() in roster_names_lower:
+                    matched_name = player
+                else:
+                    for rn in roster_names_lower:
+                        parts = rn.split()
+                        if len(parts) >= 2 and parts[-1] in headline_lower and parts[0] in headline_lower:
+                            matched_name = rn
+                            break
+                if matched_name:
                     feed_items.append({
                         "type": "news",
                         "category": "roster",
-                        "player": name,
+                        "player": matched_name,
                         "headline": a.get("headline", a.get("raw_title", "")),
                         "source": a.get("source", ""),
                         "timestamp": a.get("timestamp", ""),

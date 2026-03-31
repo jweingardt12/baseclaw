@@ -2715,7 +2715,7 @@ def api_achievements():
 @app.route("/api/competitor-tracker")
 def api_competitor_tracker():
     return _cached_endpoint("competitor-tracker",
-        lambda: season_manager.cmd_competitor_tracker([], as_json=True), 600)
+        lambda: season_manager.cmd_competitor_tracker([], as_json=True), 180)
 
 
 @app.route("/api/watchlist-add", methods=["POST"])
@@ -2748,11 +2748,8 @@ def api_watchlist_remove():
 
 @app.route("/api/watchlist")
 def api_watchlist_check():
-    try:
-        result = season_manager.cmd_watchlist_check([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("watchlist-check",
+        lambda: season_manager.cmd_watchlist_check([], as_json=True), 120)
 
 
 @app.route("/api/category-arms-race")
