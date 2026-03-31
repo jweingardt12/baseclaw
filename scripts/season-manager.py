@@ -11817,16 +11817,16 @@ def cmd_competitor_tracker(args, as_json=False):
                         z_val = z_info.get("z_final", 0) if z_info else 0
                         if z_val > 2.0:
                             severity = "long_term" if "60" in str(status) else ("short_term" if "IL" in str(status) else "day_to_day")
+                            per_cat = z_info.get("per_category_zscores", {}) if z_info else {}
+                            weak_cats = [c for c, v in per_cat.items() if v > 0.5]
                             rival_injuries.append({
                                 "rival": rival_name,
                                 "player": pname,
                                 "status": status,
                                 "z_score": round(z_val, 2),
                                 "severity": severity,
+                                "categories_weakened": weak_cats[:5],
                             })
-                            # Find which categories this weakens
-                            per_cat = z_info.get("per_category_zscores", {}) if z_info else {}
-                            weak_cats = [c for c, v in per_cat.items() if v > 0.5]
                             if weak_cats:
                                 strategic_opps.append({
                                     "type": "rival_injured_star",

@@ -154,7 +154,7 @@ from shared import cache_get, cache_set
 
 _response_cache = {}
 _timeout_pool = concurrent.futures.ThreadPoolExecutor(max_workers=10)
-_workflow_pool = concurrent.futures.ThreadPoolExecutor(max_workers=8)
+_workflow_pool = concurrent.futures.ThreadPoolExecutor(max_workers=14)
 
 
 def _get_future(future, timeout=30):
@@ -2524,9 +2524,11 @@ def workflow_trade_analysis():
         except Exception:
             news_futures = {}
 
-        # Competitive context: arms race + competitor tracker (in parallel with everything else)
-        arms_race_future = _workflow_pool.submit(_safe_call, season_manager.cmd_category_arms_race)
-        competitor_future = _workflow_pool.submit(_safe_call, season_manager.cmd_competitor_tracker)
+        # Competitive context: use cached results if available, else fetch fresh
+        _cached_arms = cache_get(_response_cache, "cat-arms-race", 300)
+        _cached_comp = cache_get(_response_cache, "competitor-tracker", 180)
+        arms_race_future = _workflow_pool.submit(lambda: _cached_arms or _safe_call(season_manager.cmd_category_arms_race))
+        competitor_future = _workflow_pool.submit(lambda: _cached_comp or _safe_call(season_manager.cmd_competitor_tracker))
 
         # Phase 3: gather results
         trade_eval = _get_future(trade_eval_future) if trade_eval_future else None
@@ -2553,15 +2555,6 @@ def workflow_trade_analysis():
         # Phase 5: build strategic trade context
         trade_strategy = {}
         try:
-            # Check if trade partner is a rival
-            trade_partner = None
-            for gp in get_players:
-                if gp.get("eligible_positions") and not gp.get("_error"):
-                    for rp_data in (roster_players or []):
-                        pass
-                    break
-
-            # Map category impact to arms race positions
             cats_gained = category_impact.get("categories_gained", [])
             cats_lost = category_impact.get("categories_lost", [])
             arms_cats = {c.get("name"): c for c in (arms_race or {}).get("categories", [])} if arms_race else {}
@@ -2585,21 +2578,17 @@ def workflow_trade_analysis():
                         "could_drop_to": arm.get("rank", 0) + 1 if arm.get("below") else arm.get("rank"),
                     })
 
-            # Rival injury exploitation check
+            # Rival injury exploitation — use categories_weakened already on rival_injuries
             rival_injuries = (competitors or {}).get("rival_injuries", [])
             injury_relevant = []
             for inj in rival_injuries:
-                inj_cats = []
-                from valuations import get_player_zscore as _gzs_trade
-                z_info = _gzs_trade(inj.get("player", ""))
-                if z_info:
-                    inj_cats = [c for c, v in z_info.get("per_category_zscores", {}).items() if v > 0.5]
+                inj_cats = inj.get("categories_weakened", [])
                 overlap = [c for c in cats_gained if c in inj_cats]
                 if overlap:
                     injury_relevant.append({
                         "rival": inj.get("rival"),
                         "injured_player": inj.get("player"),
-                        "categories_weakened": inj_cats[:3],
+                        "categories_weakened": inj_cats,
                         "trade_helps_exploit": overlap,
                     })
 
@@ -2610,6 +2599,7 @@ def workflow_trade_analysis():
                 "net_rank_impact": len(strategic_gains) - len(strategic_losses),
             }
         except Exception as e:
+            print("Warning: trade strategy context failed: " + str(e))
             trade_strategy = {"_error": str(e)}
 
         return safe_jsonify({
