@@ -1910,6 +1910,9 @@ def _run_briefing():
         "waiver_b": _workflow_pool.submit(_safe_call, season_manager.cmd_waiver_analyze, ["B", "5"]),
         "waiver_p": _workflow_pool.submit(_safe_call, season_manager.cmd_waiver_analyze, ["P", "5"]),
         "yesterday": _workflow_pool.submit(_safe_call, season_manager.cmd_roster_stats, ["--period=date", "--date=" + yesterday]),
+        "competitors": _workflow_pool.submit(_safe_call, season_manager.cmd_competitor_tracker),
+        "arms_race": _workflow_pool.submit(_safe_call, season_manager.cmd_category_arms_race),
+        "watchlist": _workflow_pool.submit(_safe_call, season_manager.cmd_watchlist_check),
     }
     injury = _get_future(futures["injury"])
     lineup = _get_future(futures["lineup"])
@@ -1919,6 +1922,9 @@ def _run_briefing():
     waiver_b = _get_future(futures["waiver_b"])
     waiver_p = _get_future(futures["waiver_p"])
     yesterday_stats = _get_future(futures["yesterday"])
+    competitors = _get_future(futures["competitors"])
+    arms_race = _get_future(futures["arms_race"])
+    watchlist = _get_future(futures["watchlist"])
 
     action_items = _synthesize_morning_actions(
         injury, lineup, whats_new, waiver_b, waiver_p
@@ -2004,6 +2010,36 @@ def _run_briefing():
                     + "). Projected: " + str(traj.get("projected_rank", "?"))
                     + "th by season end. Target " + cat_name + " contributors.",
             })
+    # Add competitor alerts to action items
+    if competitors:
+        for alert in (competitors.get("alerts") or []):
+            action_items.append({
+                "priority": 2,
+                "type": "competitor_alert",
+                "message": alert.get("message", ""),
+            })
+        for rec in (competitors.get("recommendations") or [])[:2]:
+            action_items.append({
+                "priority": 3,
+                "type": "strategic_recommendation",
+                "message": rec,
+            })
+        for inj in (competitors.get("rival_injuries") or [])[:3]:
+            action_items.append({
+                "priority": 3,
+                "type": "rival_injury",
+                "message": inj.get("rival", "") + " lost " + inj.get("player", "") + " (" + inj.get("status", "") + ", z=" + str(inj.get("z_score", 0)) + ") — exploit their weakness",
+            })
+
+    # Add watchlist alerts
+    if watchlist:
+        for alert in (watchlist.get("alerts") or []):
+            action_items.append({
+                "priority": 2,
+                "type": "watchlist_alert",
+                "message": alert.get("message", ""),
+            })
+
     action_items.sort(key=lambda a: a.get("priority", 99))
 
     return {
@@ -2020,6 +2056,9 @@ def _run_briefing():
         "yesterday": yesterday_stats,
         "season_context": season_ctx,
         "category_trajectory": cat_trajectory,
+        "competitors": competitors,
+        "category_arms_race": arms_race,
+        "watchlist": watchlist,
     }
 
 
@@ -2461,7 +2500,7 @@ def workflow_trade_analysis():
             except Exception:
                 get_players.append({"name": name, "_error": "Player not found in projections"})
 
-        # Phase 2: parallel — trade_eval, intel reports, news context all at once
+        # Phase 2: parallel — trade_eval, intel, news, competitive context all at once
         all_names = give_names + get_names
 
         trade_eval_future = None
@@ -2485,6 +2524,10 @@ def workflow_trade_analysis():
         except Exception:
             news_futures = {}
 
+        # Competitive context: arms race + competitor tracker (in parallel with everything else)
+        arms_race_future = _workflow_pool.submit(_safe_call, season_manager.cmd_category_arms_race)
+        competitor_future = _workflow_pool.submit(_safe_call, season_manager.cmd_competitor_tracker)
+
         # Phase 3: gather results
         trade_eval = _get_future(trade_eval_future) if trade_eval_future else None
 
@@ -2500,9 +2543,74 @@ def workflow_trade_analysis():
             else:
                 news_context[name] = {"headlines": [], "transactions": [], "flags": []}
 
+        arms_race = _get_future(arms_race_future)
+        competitors = _get_future(competitor_future)
+
         # Phase 4: compute impacts (depend on trade_eval + player data)
         positional_impact = _compute_positional_impact(roster_players, get_players, give_players)
         category_impact = _compute_category_impact(give_players, get_players)
+
+        # Phase 5: build strategic trade context
+        trade_strategy = {}
+        try:
+            # Check if trade partner is a rival
+            trade_partner = None
+            for gp in get_players:
+                if gp.get("eligible_positions") and not gp.get("_error"):
+                    for rp_data in (roster_players or []):
+                        pass
+                    break
+
+            # Map category impact to arms race positions
+            cats_gained = category_impact.get("categories_gained", [])
+            cats_lost = category_impact.get("categories_lost", [])
+            arms_cats = {c.get("name"): c for c in (arms_race or {}).get("categories", [])} if arms_race else {}
+
+            strategic_gains = []
+            strategic_losses = []
+            for cat in cats_gained:
+                arm = arms_cats.get(cat, {})
+                if arm:
+                    strategic_gains.append({
+                        "category": cat,
+                        "current_rank": arm.get("rank"),
+                        "could_improve_to": max(1, arm.get("rank", 99) - 1) if arm.get("above") and arm.get("above", {}).get("gap", 99) < 5 else arm.get("rank"),
+                    })
+            for cat in cats_lost:
+                arm = arms_cats.get(cat, {})
+                if arm:
+                    strategic_losses.append({
+                        "category": cat,
+                        "current_rank": arm.get("rank"),
+                        "could_drop_to": arm.get("rank", 0) + 1 if arm.get("below") else arm.get("rank"),
+                    })
+
+            # Rival injury exploitation check
+            rival_injuries = (competitors or {}).get("rival_injuries", [])
+            injury_relevant = []
+            for inj in rival_injuries:
+                inj_cats = []
+                from valuations import get_player_zscore as _gzs_trade
+                z_info = _gzs_trade(inj.get("player", ""))
+                if z_info:
+                    inj_cats = [c for c, v in z_info.get("per_category_zscores", {}).items() if v > 0.5]
+                overlap = [c for c in cats_gained if c in inj_cats]
+                if overlap:
+                    injury_relevant.append({
+                        "rival": inj.get("rival"),
+                        "injured_player": inj.get("player"),
+                        "categories_weakened": inj_cats[:3],
+                        "trade_helps_exploit": overlap,
+                    })
+
+            trade_strategy = {
+                "strategic_gains": strategic_gains,
+                "strategic_losses": strategic_losses,
+                "rival_injury_exploitation": injury_relevant,
+                "net_rank_impact": len(strategic_gains) - len(strategic_losses),
+            }
+        except Exception as e:
+            trade_strategy = {"_error": str(e)}
 
         return safe_jsonify({
             "give_players": give_players,
@@ -2514,6 +2622,8 @@ def workflow_trade_analysis():
             "news_context": news_context,
             "positional_impact": positional_impact,
             "category_impact": category_impact,
+            "trade_strategy": trade_strategy,
+            "category_arms_race": arms_race,
         })
     except Exception as e:
         return safe_jsonify({"error": str(e)}, 500)
