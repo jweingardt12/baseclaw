@@ -708,16 +708,23 @@ def prefetch_context(players):
     """Batch-fetch news context for a list of player dicts (or name strings).
 
     Returns dict keyed by player name -> context dict.
-    Silently skips failures so one bad lookup doesn't block the rest.
+    Parallel fetch with ThreadPoolExecutor to avoid sequential API call bottleneck.
     """
     result = {}
     try:
         from news import get_player_context
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        names = []
         for p in players:
             name = p.get("name", "") if isinstance(p, dict) else str(p)
             if name:
+                names.append(name)
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            futures = {pool.submit(get_player_context, n): n for n in names}
+            for fut in as_completed(futures):
+                name = futures[fut]
                 try:
-                    result[name] = get_player_context(name)
+                    result[name] = fut.result(timeout=5)
                 except Exception:
                     pass
     except Exception:
@@ -913,9 +920,24 @@ def enrich_with_context(players, count=None, filter_dealbreakers=False):
     """
     try:
         from news import get_player_context
+        from concurrent.futures import ThreadPoolExecutor, as_completed
         subset = players[:count] if count else players
+        names = [p.get("name", "") for p in subset]
+
+        # Parallel fetch: get_player_context for all players at once
+        ctx_map = {}
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            futures = {pool.submit(get_player_context, n): n for n in names if n}
+            for fut in as_completed(futures):
+                name = futures[fut]
+                try:
+                    ctx_map[name] = fut.result(timeout=5)
+                except Exception:
+                    ctx_map[name] = {}
+
+        # Apply context to player dicts (sequential, fast — just dict writes)
         for p in subset:
-            ctx = get_player_context(p.get("name", ""))
+            ctx = ctx_map.get(p.get("name", ""), {})
             p["_context"] = ctx
             if ctx.get("flags"):
                 p["context_flags"] = ctx["flags"]
@@ -925,20 +947,16 @@ def enrich_with_context(players, count=None, filter_dealbreakers=False):
                         break
             if ctx.get("headlines"):
                 p["news"] = ctx["headlines"][:2]
-            # Injury severity
             if ctx.get("injury_severity"):
                 p["injury_severity"] = ctx["injury_severity"]
                 if ctx.get("headlines"):
                     p["injury_detail"] = ctx["headlines"][0].get("title", "")
-            # Role change detection (pass cached ctx to avoid re-fetch)
             role = detect_role_change(p.get("name", ""), ctx=ctx)
             if role.get("role_changed"):
                 p["role_change"] = role
-            # Reddit sentiment
             reddit = ctx.get("reddit", {})
             if reddit.get("mentions", 0) >= 1:
                 p["reddit"] = reddit
-            # Build context_line
             p["context_line"] = _build_context_line(p)
     except Exception:
         pass

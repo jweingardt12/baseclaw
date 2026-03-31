@@ -378,7 +378,15 @@ def cmd_roster(args, as_json=False):
             players.append(player_data)
 
         enrich_with_intel(players)
-        enrich_with_context(players)
+        try:
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as _ctx_pool:
+                _ctx_future = _ctx_pool.submit(enrich_with_context, players)
+                _ctx_future.result(timeout=8)
+        except concurrent.futures.TimeoutError:
+            pass
+        except Exception:
+            pass
         return {"players": players}
 
     print("Current Roster:")

@@ -2328,8 +2328,9 @@ def cmd_waiver_analyze(args, as_json=False):
     enrich_with_intel(_fa_dicts)
     _intel_lookup = {d.get("name", ""): d.get("intel") for d in _fa_dicts}
 
-    # Pre-fetch news context for all FA candidates (dealbreakers, injuries, sentiment)
-    _context_lookup = prefetch_context(fa)
+    # Pre-fetch news context for top FA candidates only (limit to 20 for performance)
+    _fa_for_context = sorted(fa, key=lambda x: float(x.get("percent_owned", 0) or 0), reverse=True)[:20]
+    _context_lookup = prefetch_context(_fa_for_context)
 
     scored = []
     _z_cache = {}  # shared z-score cache for roster fit checks
@@ -2689,7 +2690,8 @@ def cmd_streaming(args, as_json=False):
         pass
 
     # Pre-fetch news context for streaming candidates (filter dealbreakers)
-    _stream_context = prefetch_context(fa_pitchers)
+    _sp_for_context = sorted(fa_pitchers, key=lambda x: float(x.get("percent_owned", 0) or 0), reverse=True)[:20]
+    _stream_context = prefetch_context(_sp_for_context)
 
     scored = []
     for p in fa_pitchers:
@@ -6299,10 +6301,10 @@ def cmd_league_intel(args, as_json=False):
         print(msg)
         return
 
-    # --- Enrichment: intel (statcast + trends) + regression signals + news context ---
+    # --- Enrichment: intel (statcast + trends) + regression signals ---
+    # Note: enrich_with_context skipped for league_intel (300+ players, too expensive)
     try:
         enrich_with_intel(all_players)
-        enrich_with_context(all_players)
     except Exception as e:
         print("Warning: intel enrichment failed for league intel: " + str(e))
 
