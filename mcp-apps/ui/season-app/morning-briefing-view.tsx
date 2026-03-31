@@ -694,7 +694,7 @@ function WaiverTargetsCard({ data, strategy, app, navigate, loading, onAdd }: {
             var pct = rec.pct != null ? rec.pct : rec.percent_owned;
             var pid = rec.pid || "";
             var contextLine = rec.context_line || null;
-            var regression = rec.regression || null;
+            var regression = typeof rec.regression === "string" ? rec.regression : (rec.regression && rec.regression.signal ? rec.regression.signal : null);
 
             return (
               <div key={idx} className="flex items-start gap-3 py-2.5 px-4">
