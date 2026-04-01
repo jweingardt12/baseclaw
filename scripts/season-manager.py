@@ -2392,7 +2392,7 @@ def cmd_waiver_analyze(args, as_json=False):
                 pass
         else:
             score = float(pct) * 0.3 if pct else 0
-            tier = "Unknown"
+            tier = "Unranked"
             z_final = 0
             adjusted_z = 0
             # No-projection players (rookies/breakouts): boost with intel signals
@@ -2742,7 +2742,7 @@ def cmd_streaming(args, as_json=False):
         else:
             # Fallback
             z_final = 0
-            tier = "Unknown"
+            tier = "Unranked"
             k_z = 0
             era_z = 0
             whip_z = 0

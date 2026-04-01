@@ -1841,7 +1841,7 @@ def _synthesize_morning_actions(injury, lineup, whats_new, waiver_b, waiver_p):
     # Lineup: off-day starters or bench with games
     off_day = (lineup or {}).get("active_off_day", [])
     bench_playing = (lineup or {}).get("bench_playing", [])
-    if off_day or bench_playing:
+    if off_day:
         msg = str(len(off_day)) + " starter(s) off today"
         if bench_playing:
             msg += ", " + str(len(bench_playing)) + " bench player(s) have games"
@@ -2041,12 +2041,8 @@ def _run_briefing():
                 "type": "strategic_recommendation",
                 "message": rec,
             })
-        for inj in (competitors.get("rival_injuries") or [])[:3]:
-            action_items.append({
-                "priority": 3,
-                "type": "rival_injury",
-                "message": inj.get("rival", "") + " lost " + inj.get("player", "") + " (" + inj.get("status", "") + ", z=" + str(inj.get("z_score", 0)) + ") — exploit their weakness",
-            })
+        # rival_injuries data is in the response payload for UI use;
+        # recommendations already surface these as actionable items
 
     # Add watchlist alerts
     if watchlist:
