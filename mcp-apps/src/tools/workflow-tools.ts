@@ -43,7 +43,7 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
     },
     async () => {
       try {
-        const data = await apiGet<MorningBriefingResponse>("/api/workflow/morning-briefing");
+        const data = await apiGet<MorningBriefingResponse>("/api/workflow/morning-briefing", undefined, 50000);
 
         const matchup: Partial<MatchupDetailResponse> = data.matchup || {};
         const strategy: Partial<MatchupStrategyResponse> = data.strategy || {};
