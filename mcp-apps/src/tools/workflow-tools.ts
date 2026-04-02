@@ -24,6 +24,7 @@ import {
   type TradePipelineResponse,
   type WeeklyDigestResponse,
   type SeasonCheckpointResponse,
+  type RedzoneResponse,
 } from "../api/types.js";
 import { SEASON_URI } from "./season-tools.js";
 import { shouldRegister as _shouldRegister } from "../toolsets.js";
@@ -106,6 +107,29 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
           if (ss.strong_positions && ss.strong_positions.length > 0) lines.push("  + Strong positions: " + ss.strong_positions.join(", "));
           if (ss.trade_partners && ss.trade_partners.length > 0) lines.push("  Trade targets: " + ss.trade_partners.join(", "));
         }
+
+        // Redzone enrichment: remaining games + starters today
+        try {
+          var rz = await apiGet<RedzoneResponse>("/api/redzone");
+          if (rz.my_matchup) {
+            var myRz = rz.teams[rz.my_matchup.my_team_id];
+            var oppRz = rz.teams[rz.my_matchup.opponent_id];
+            if (myRz && oppRz) {
+              lines.push("");
+              lines.push("WEEK " + rz.week + " GAMES: You " + myRz.remaining_games + " remaining (" + myRz.completed_games + " done) | Opp " + oppRz.remaining_games + " (" + oppRz.completed_games + " done)");
+              // Players starting today
+              var starters = myRz.players.filter((p) => p.is_starting === true);
+              if (starters.length > 0) {
+                lines.push("Starting today: " + starters.map((p) => p.name + " (" + p.position + ")").join(", "));
+              }
+              // Players with new notes
+              var newNotes = myRz.players.filter((p) => p.has_new_notes);
+              if (newNotes.length > 0) {
+                lines.push("New player notes: " + newNotes.map((p) => p.name).join(", "));
+              }
+            }
+          }
+        } catch (e) { /* redzone optional */ }
 
         // Build prioritized next-steps footer
         var priorities: string[] = [];
@@ -666,6 +690,31 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
           lines.push("");
           lines.push("STREAMING: " + str(ss.name) + " (" + str(ss.team) + ", " + ss.games + " games, score=" + ss.score + ")");
         }
+
+        // Redzone: confirmed starters + remaining games
+        try {
+          var rz = await apiGet<RedzoneResponse>("/api/redzone");
+          if (rz.my_matchup) {
+            var myRz = rz.teams[rz.my_matchup.my_team_id];
+            if (myRz) {
+              var confirmed = myRz.players.filter((p) => p.is_starting === true);
+              if (confirmed.length > 0) {
+                lines.push("");
+                lines.push("CONFIRMED IN MLB LINEUP:");
+                for (var cp of confirmed) {
+                  lines.push("  " + str(cp.name) + " (" + cp.position + ", " + cp.team + ")");
+                }
+              }
+              var notStarting = myRz.players.filter((p) => p.is_starting === false && !["BN", "IL", "NA", "--"].includes(p.position));
+              if (notStarting.length > 0) {
+                lines.push("NOT IN MLB LINEUP (benched by real team):");
+                for (var ns of notStarting) {
+                  lines.push("  " + str(ns.name) + " (" + ns.position + ", " + ns.team + ") — consider benching");
+                }
+              }
+            }
+          }
+        } catch (e) { /* redzone optional */ }
 
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],

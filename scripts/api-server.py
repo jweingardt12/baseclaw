@@ -1184,6 +1184,14 @@ def api_positional_ranks():
         return safe_jsonify({"error": str(e)}, 500)
 
 
+@app.route("/api/redzone")
+def api_redzone():
+    """Live matchup data: per-player weekly stats, remaining games, starting lineups.
+    Uses Yahoo v3 redzone API — fresher than v2 scoreboard."""
+    return _cached_endpoint("redzone",
+        lambda: yahoo_fantasy.get_redzone_cached(), 120, timeout_sec=15)
+
+
 @app.route("/api/league-snapshot")
 def api_league_snapshot():
     """Full league snapshot: standings + season stats + positional ranks + trade partners.

@@ -146,6 +146,42 @@ export interface LeagueSnapshotResponse {
   teams: SnapshotTeam[];
 }
 
+export interface RedzonePlayer {
+  id: string;
+  name: string;
+  position: string;
+  position_type: string;
+  team: string;
+  status: string;
+  is_starting: boolean | null;
+  has_new_notes: boolean;
+  stats: Record<string, number>;
+}
+
+export interface RedzoneTeam {
+  id: string;
+  name: string;
+  rank: string;
+  wins: number;
+  losses: number;
+  ties: number;
+  remaining_games: number;
+  live_games: number;
+  completed_games: number;
+  players: RedzonePlayer[];
+}
+
+export interface RedzoneResponse {
+  week: number;
+  week_start: string;
+  week_end: string;
+  my_matchup: { my_team_id: string; opponent_id: string; opponent_name: string } | null;
+  matchups: { team1_id: string; team2_id: string }[];
+  teams: Record<string, RedzoneTeam>;
+  negative_stat_ids: string[];
+  scoring_stat_ids: string[];
+}
+
 // Python matchups return team1/team2 as plain strings, not objects
 export interface Matchup {
   team1: string;

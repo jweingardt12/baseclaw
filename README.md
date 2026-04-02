@@ -557,7 +557,8 @@ The `./yf` helper script provides direct CLI access to all functionality:
 | `yahoo_league_context` | Compact league profile: waiver type, scoring format, stat categories, roster slots, FAAB balance. Call once at session start |
 | `yahoo_standings` | League standings with season-long category stats, positional strengths, and playoff seeds |
 | `yahoo_matchups` | Weekly H2H matchup pairings |
-| `yahoo_my_matchup` | Detailed H2H matchup with per-category comparison |
+| `yahoo_my_matchup` | Detailed H2H matchup with per-category comparison, remaining games, and live game counts |
+| `yahoo_redzone` | Live matchup scoreboard: every player's weekly stats, remaining games, confirmed MLB starters, and new player notes |
 | `yahoo_transactions` | Recent league transactions (add, drop, trade) |
 | `yahoo_transaction_trends` | Most added and most dropped players across Yahoo |
 | `yahoo_league_pulse` | League activity — moves and trades per team |
@@ -690,7 +691,7 @@ Aggregated tools that bundle 5-7+ API calls server-side so the agent gets a comp
 | `yahoo_waiver_recommendations` | Best waiver pickups for weak categories with recommended drops and projected category impact |
 | `yahoo_auto_lineup` | Auto-optimize lineup: bench off-day players, start active bench players, flag injured starters (write operation) |
 | `yahoo_trade_analysis` | Surplus value trade analysis: roster spot tax, category fit bonus, consolidation premium, catcher scarcity, rival warnings. A+/F letter grading with full breakdown |
-| `yahoo_game_day_manager` | Pre-game pipeline: schedule, weather risks, injury check, lineup optimization, and streaming recommendation |
+| `yahoo_game_day_manager` | Pre-game pipeline: schedule, weather risks, injury check, lineup optimization, streaming recommendation, and confirmed MLB starting lineups |
 | `yahoo_waiver_deadline_prep` | Pre-deadline waiver analysis with FAAB bid recommendations and simulated category impact |
 | `yahoo_trade_pipeline` | End-to-end trade search: complementary partners, package values, category impact, and graded proposals |
 | `yahoo_weekly_digest` | End-of-week summary: matchup result, standings, transactions, achievements, and prose narrative |

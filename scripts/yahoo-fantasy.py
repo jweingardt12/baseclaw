@@ -73,6 +73,173 @@ def get_league_snapshot_cached():
     return data
 
 
+_redzone_cache = {"data": None, "time": 0}
+_REDZONE_TTL = 120  # 2 minutes — live-week data needs to be fresh
+
+_REDZONE_URL = "https://pub-api.fantasysports.yahoo.com/fantasy/v3/redzone/mlb"
+
+
+def get_redzone_cached():
+    """Return cached redzone data (live matchup stats, per-player weekly numbers,
+    remaining games, isStarting flags, stat metadata with isNegative).
+    Uses Yahoo v3 public API with our OAuth session."""
+    import time as _time
+    now = _time.time()
+    if (_redzone_cache["data"] is not None
+            and (now - _redzone_cache["time"]) < _REDZONE_TTL):
+        return _redzone_cache["data"]
+    data = _fetch_redzone()
+    if data and not data.get("error"):
+        _redzone_cache["data"] = data
+        _redzone_cache["time"] = now
+    return data
+
+
+def _fetch_redzone():
+    """Fetch and parse the v3 redzone endpoint."""
+    league_num = LEAGUE_ID.split(".")[-1] if "." in LEAGUE_ID else LEAGUE_ID
+    try:
+        sc, gm, lg = get_league()
+        resp = sc.session.get(_REDZONE_URL + "?league_id=" + league_num + "&format=json")
+        if resp.status_code != 200:
+            return {"error": "Redzone API returned " + str(resp.status_code)}
+        raw = resp.json()
+    except Exception as e:
+        return {"error": "Failed to fetch redzone: " + str(e)}
+
+    try:
+        service = raw.get("service", {})
+        league = service.get("leagues", {}).get(league_num, {})
+        if not league:
+            return {"error": "League not found in redzone response"}
+
+        return _parse_redzone(league, service.get("players", {}))
+    except Exception as e:
+        return {"error": "Failed to parse redzone: " + str(e)}
+
+
+def _parse_redzone(league, player_lookup):
+    """Parse redzone response into a clean structure."""
+    # Stat metadata
+    stat_meta = {}
+    negative_stat_ids = set()
+    scoring_stat_ids = set()
+    for s in league.get("stats", []):
+        sid = str(s.get("id", ""))
+        stat_meta[sid] = {
+            "id": sid,
+            "group": s.get("group", ""),
+            "is_negative": bool(s.get("isNegative")),
+            "is_scoring": bool(s.get("isScoring")),
+            "position_type": s.get("positionType", ""),
+        }
+        if s.get("isNegative"):
+            negative_stat_ids.add(sid)
+        if s.get("isScoring"):
+            scoring_stat_ids.add(sid)
+
+    # Build stat_id -> display_name from already-cached snapshot (don't trigger a fetch)
+    sid_to_name = {}
+    if _snapshot_cache["data"] and not _snapshot_cache["data"].get("error"):
+        try:
+            for cat in _snapshot_cache["data"].get("settings", {}).get("stat_categories", []):
+                sid_to_name[str(cat.get("stat_id", ""))] = cat.get("display_name", "")
+        except Exception:
+            pass
+
+    # Week info
+    week_info = league.get("weekInfo", {})
+
+    # Matchup pairings
+    matchups = []
+    for group in league.get("matchupGroups", []):
+        for pair in group.get("matchups", []):
+            if len(pair) == 2:
+                matchups.append({"team1_id": str(pair[0]), "team2_id": str(pair[1])})
+
+    # Teams with player stats
+    teams = {}
+    for tid, tdata in league.get("teams", {}).items():
+        team_players = []
+        for p in tdata.get("players", []):
+            pid = str(p.get("id", ""))
+            pinfo = player_lookup.get(pid, {})
+            stats = p.get("stats", {})
+            # Only include scoring stats
+            scoring_stats = {}
+            for sid, val in (stats.items() if isinstance(stats, dict) else []):
+                if str(sid) in scoring_stat_ids:
+                    name = sid_to_name.get(str(sid), str(sid))
+                    scoring_stats[name] = val
+
+            player_entry = {
+                "id": pid,
+                "name": pinfo.get("name", "Player " + pid),
+                "position": p.get("position", ""),
+                "position_type": p.get("positionType", ""),
+                "team": pinfo.get("team", ""),
+                "status": p.get("status", ""),
+                "is_starting": pinfo.get("isStarting"),
+                "has_new_notes": pinfo.get("hasNewPlayerNotes", False),
+                "stats": scoring_stats,
+            }
+            team_players.append(player_entry)
+
+        remaining = tdata.get("remainingGames", {})
+        rg = remaining.get(tid, {}) if isinstance(remaining, dict) else {}
+
+        teams[tid] = {
+            "id": tid,
+            "name": tdata.get("name", ""),
+            "rank": tdata.get("rank", ""),
+            "wins": tdata.get("wins", 0),
+            "losses": tdata.get("losses", 0),
+            "ties": tdata.get("ties", 0),
+            "remaining_games": rg.get("remaining_games", 0),
+            "live_games": rg.get("live_games", 0),
+            "completed_games": rg.get("completed_games", 0),
+            "players": team_players,
+        }
+
+    # Find our team and opponent
+    my_team_num = TEAM_ID.split(".")[-1] if "." in TEAM_ID else TEAM_ID
+    my_matchup = None
+    for m in matchups:
+        if m["team1_id"] == my_team_num or m["team2_id"] == my_team_num:
+            opp_id = m["team2_id"] if m["team1_id"] == my_team_num else m["team1_id"]
+            my_matchup = {
+                "my_team_id": my_team_num,
+                "opponent_id": opp_id,
+                "opponent_name": teams.get(opp_id, {}).get("name", ""),
+            }
+            break
+
+    return {
+        "week": week_info.get("week"),
+        "week_start": week_info.get("start"),
+        "week_end": week_info.get("end"),
+        "my_matchup": my_matchup,
+        "matchups": matchups,
+        "teams": teams,
+        "stat_meta": stat_meta,
+        "negative_stat_ids": list(negative_stat_ids),
+        "scoring_stat_ids": list(scoring_stat_ids),
+    }
+
+
+def get_negative_stat_ids():
+    """Return set of stat IDs where lower is better, from redzone metadata.
+    Falls back to hardcoded set if redzone unavailable."""
+    try:
+        rz = get_redzone_cached()
+        if rz and not rz.get("error") and rz.get("negative_stat_ids"):
+            return set(rz["negative_stat_ids"])
+    except Exception:
+        pass
+    # Fallback: hardcoded (matches _LOWER_IS_BETTER_STATS in season-manager)
+    return {"21", "29", "37", "26", "27"}
+
+
 def _get_today_opponents():
     """Build a team->opponent map for today's MLB games."""
     info = _get_today_game_info()

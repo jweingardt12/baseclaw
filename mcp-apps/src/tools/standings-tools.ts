@@ -24,6 +24,7 @@ import {
   type SeasonPaceResponse,
   type LeagueIntelResponse,
   type LeagueSnapshotResponse,
+  type RedzoneResponse,
 } from "../api/types.js";
 import { shouldRegister as _shouldRegister } from "../toolsets.js";
 
@@ -152,7 +153,7 @@ export function registerStandingsTools(server: McpServer, distDir: string, enabl
     server,
     "yahoo_my_matchup",
     {
-      description: "Use this to see how you're doing in this week's head-to-head matchup. Shows your score vs your opponent across every stat category with running totals.",
+      description: "Use this to see how you're doing in this week's head-to-head matchup. Shows your score vs your opponent across every stat category with running totals, plus remaining games and live player stats from redzone.",
       annotations: READ_ANNO,
       _meta: { ui: { resourceUri: STANDINGS_URI } },
     },
@@ -160,11 +161,33 @@ export function registerStandingsTools(server: McpServer, distDir: string, enabl
       try {
         const data = await apiGet<MatchupDetailResponse>("/api/matchup-detail");
         const score = data.score;
-        const text = "Week " + data.week + " Matchup: " + data.my_team + " vs " + data.opponent + "\n"
-          + "Score: " + score.wins + "-" + score.losses + "-" + score.ties + "\n"
-          + (data.categories || []).map((c) =>
-            "  " + (c.result === "win" ? "W" : c.result === "loss" ? "L" : "T") + " " + str(c.name).padEnd(10) + " " + str(c.my_value).padStart(8) + " vs " + str(c.opp_value).padStart(8)
-          ).join("\n");
+        var lines: string[] = [];
+        lines.push("Week " + data.week + " Matchup: " + data.my_team + " vs " + data.opponent);
+        lines.push("Score: " + score.wins + "-" + score.losses + "-" + score.ties);
+
+        // Try to enrich with redzone remaining games
+        var rzExtra = "";
+        try {
+          var rz = await apiGet<RedzoneResponse>("/api/redzone");
+          if (rz.my_matchup) {
+            var myRz = rz.teams[rz.my_matchup.my_team_id];
+            var oppRz = rz.teams[rz.my_matchup.opponent_id];
+            if (myRz && oppRz) {
+              rzExtra = "Games remaining: You " + myRz.remaining_games + " (" + myRz.completed_games + " done)"
+                + " | Opp " + oppRz.remaining_games + " (" + oppRz.completed_games + " done)";
+              lines.push(rzExtra);
+              if (myRz.live_games > 0 || oppRz.live_games > 0) {
+                lines.push("LIVE: You " + myRz.live_games + " | Opp " + oppRz.live_games);
+              }
+            }
+          }
+        } catch (e) { /* redzone optional */ }
+
+        lines.push("");
+        lines.push((data.categories || []).map((c) =>
+          "  " + (c.result === "win" ? "W" : c.result === "loss" ? "L" : "T") + " " + str(c.name).padEnd(10) + " " + str(c.my_value).padStart(8) + " vs " + str(c.opp_value).padStart(8)
+        ).join("\n"));
+
         var result = score.wins > score.losses ? "Winning" : score.wins < score.losses ? "Losing" : "Tied";
         var closeCats = (data.categories || []).filter(function (c) {
           var diff = Math.abs(parseFloat(c.my_value) - parseFloat(c.opp_value));
@@ -173,17 +196,18 @@ export function registerStandingsTools(server: McpServer, distDir: string, enabl
         });
         var flippable = closeCats.filter(function (c) { return c.result === "loss"; });
         var ai_recommendation = result + " " + score.wins + "-" + score.losses + (score.ties > 0 ? "-" + score.ties : "") + " vs " + data.opponent + "."
+          + (rzExtra ? " " + rzExtra + "." : "")
           + (flippable.length > 0 ? " " + flippable.length + " close categor" + (flippable.length === 1 ? "y" : "ies") + " you can flip: " + flippable.map(function (c) { return c.name; }).join(", ") + "." : "");
         var footer = buildFooter(
           result + " " + score.wins + "-" + score.losses + "." + (flippable.length > 0 ? " " + flippable.length + " flippable." : " No close categories to target."),
           [
+            "Live player stats for both teams -> yahoo_redzone",
             "Full strategy with target/protect/concede -> yahoo_matchup_strategy",
             "Find streaming pitchers to flip categories -> yahoo_streaming",
-            "Scout opponent's roster weaknesses -> yahoo_scout_opponent",
           ]
         );
         return {
-          content: [{ type: "text" as const, text: text + footer }],
+          content: [{ type: "text" as const, text: lines.join("\n") + footer }],
           structuredContent: { type: "matchup-detail", ai_recommendation, ...data },
         };
       } catch (e) { return toolError(e); }
@@ -696,6 +720,64 @@ export function registerStandingsTools(server: McpServer, distDir: string, enabl
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
           structuredContent: { ai_recommendation, ...data },
+        };
+      } catch (e) { return toolError(e); }
+    },
+  );
+  }
+
+  // yahoo_redzone
+  if (shouldRegister("yahoo_redzone")) {
+  registerAppTool(
+    server,
+    "yahoo_redzone",
+    {
+      description: "Live matchup scoreboard: every player's stats for the current week, remaining games for both teams, who's starting today, and per-category scoring. Best for real-time matchup tracking during the week.",
+      annotations: READ_ANNO,
+      _meta: {},
+    },
+    async () => {
+      try {
+        var data = await apiGet<RedzoneResponse>("/api/redzone");
+        var lines: string[] = [];
+        var matchup = data.my_matchup;
+        if (!matchup) {
+          lines.push("No active matchup found.");
+          return { content: [{ type: "text" as const, text: lines.join("\n") }] };
+        }
+
+        var myTeam = data.teams[matchup.my_team_id];
+        var oppTeam = data.teams[matchup.opponent_id];
+        if (!myTeam || !oppTeam) {
+          lines.push("Could not find matchup teams in redzone data.");
+          return { content: [{ type: "text" as const, text: lines.join("\n") }] };
+        }
+
+        lines.push("LIVE MATCHUP — Week " + data.week + " (" + data.week_start + " to " + data.week_end + ")");
+        lines.push("=".repeat(60));
+        lines.push(str(myTeam.name) + " vs " + str(oppTeam.name));
+        lines.push("Games: " + myTeam.completed_games + " done, " + myTeam.remaining_games + " left | Opp: " + oppTeam.completed_games + " done, " + oppTeam.remaining_games + " left");
+        if (myTeam.live_games > 0 || oppTeam.live_games > 0) {
+          lines.push("LIVE NOW: You " + myTeam.live_games + " | Opp " + oppTeam.live_games);
+        }
+
+        // Show active players with stats for both teams
+        for (var [label, team] of [["YOUR ROSTER", myTeam], ["OPPONENT", oppTeam]] as [string, typeof myTeam][]) {
+          lines.push("");
+          lines.push(label + " (" + str(team.name) + "):");
+          var active = team.players.filter((p) => !["BN", "IL", "NA", "--"].includes(p.position));
+          for (var p of active) {
+            var starting = p.is_starting === true ? " *" : p.is_starting === false ? "" : "";
+            var newNote = p.has_new_notes ? " [!]" : "";
+            var statusTag = p.status ? " [" + p.status + "]" : "";
+            var statLine = Object.entries(p.stats || {}).filter(([_, v]) => v !== 0).map(([k, v]) => k + ":" + v).join(" ");
+            lines.push("  " + p.position.padEnd(4) + " " + str(p.name).padEnd(22) + " " + p.team.padEnd(4) + starting + statusTag + newNote + (statLine ? " | " + statLine : ""));
+          }
+        }
+
+        return {
+          content: [{ type: "text" as const, text: lines.join("\n") }],
+          structuredContent: { type: "redzone", ...data },
         };
       } catch (e) { return toolError(e); }
     },
