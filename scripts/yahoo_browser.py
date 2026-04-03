@@ -932,6 +932,127 @@ def test_session():
         _cleanup(pw, browser, context)
 
 
+_JS_EXTRACT_HOLDERS = """
+    function extractHolders(holderCell) {
+        var links = holderCell.querySelectorAll("a");
+        var holders = [];
+        for (var li = 0; li < links.length; li++) {
+            var a = links[li];
+            var teamName = a.textContent.trim();
+            var context = "";
+            var next = a.nextSibling;
+            if (next && next.nodeType === 3) {
+                context = next.textContent.trim();
+                if (context.charAt(0) === "(") context = context.slice(1);
+                if (context.charAt(context.length - 1) === ")") context = context.slice(0, -1);
+            }
+            holders.push({team_name: teamName, context: context});
+        }
+        return holders;
+    }
+"""
+
+
+def _extract_record_tables(page):
+    """Extract record tables from the current recordbook page using JS DOM parsing."""
+    return page.evaluate("""() => {""" + _JS_EXTRACT_HOLDERS + """
+        var results = [];
+        var headings = document.querySelectorAll("h3");
+        for (var hi = 0; hi < headings.length; hi++) {
+            var h = headings[hi];
+            var text = h.textContent.trim();
+            if (text.indexOf("Best") === -1 && text.indexOf("Worst") === -1) continue;
+
+            var table = h.nextElementSibling;
+            while (table && table.tagName !== "TABLE") table = table.nextElementSibling;
+            if (!table) continue;
+
+            var parts = text.split(" - ");
+            var category = parts[0].trim();
+            var direction = parts.length > 1 ? parts[1].trim().toLowerCase() : "best";
+
+            var rows = table.querySelectorAll("tbody tr");
+            for (var ri = 0; ri < rows.length; ri++) {
+                var cells = rows[ri].querySelectorAll("td");
+                if (cells.length < 3) continue;
+
+                results.push({
+                    category: category,
+                    direction: direction,
+                    record_type: cells[0].textContent.trim(),
+                    holders: extractHolders(cells[1]),
+                    value: cells[cells.length - 1].textContent.trim()
+                });
+            }
+        }
+        return results;
+    }""")
+
+
+def _extract_h2h_records(page):
+    """Extract head-to-head records from the H2H recordbook tab."""
+    return page.evaluate("""() => {""" + _JS_EXTRACT_HOLDERS + """
+        var results = [];
+        var tables = document.querySelectorAll("table.Table");
+        for (var ti = 0; ti < tables.length; ti++) {
+            var table = tables[ti];
+            var headers = [];
+            table.querySelectorAll("thead th").forEach(function(th) {
+                headers.push(th.textContent.trim());
+            });
+            var valueHeader = headers.length > 2 ? headers[2] : "";
+
+            var rows = table.querySelectorAll("tbody tr");
+            for (var ri = 0; ri < rows.length; ri++) {
+                var cells = rows[ri].querySelectorAll("td");
+                if (cells.length < 3) continue;
+
+                results.push({
+                    record_type: cells[0].textContent.trim(),
+                    holders: extractHolders(cells[1]),
+                    value: cells[cells.length - 1].textContent.trim(),
+                    value_header: valueHeader
+                });
+            }
+        }
+        return results;
+    }""")
+
+
+def scrape_record_book():
+    """Scrape the Yahoo Fantasy record book page for pre-compiled league records.
+
+    Returns a dict with batting_records, pitching_records, and h2h_records,
+    each containing structured data parsed from the Yahoo recordbook HTML.
+    """
+    pw, browser, context = _get_browser_context()
+    try:
+        page = context.new_page()
+
+        # Batting records (default tab)
+        _navigate_league(page, "/recordbook?type=leaguestats&subtype=B&pos=all")
+        batting = _extract_record_tables(page)
+
+        # Pitching records
+        _navigate_league(page, "/recordbook?type=leaguestats&subtype=P&pos=all")
+        pitching = _extract_record_tables(page)
+
+        # Head-to-head records
+        _navigate_league(page, "/recordbook?type=h2h")
+        h2h = _extract_h2h_records(page)
+
+        return {
+            "success": True,
+            "batting_records": batting,
+            "pitching_records": pitching,
+            "h2h_records": h2h,
+        }
+    except Exception as e:
+        return {"success": False, "batting_records": [], "pitching_records": [], "h2h_records": [], "error": str(e)}
+    finally:
+        _cleanup(pw, browser, context)
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "login":

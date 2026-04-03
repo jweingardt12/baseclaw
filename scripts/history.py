@@ -9,6 +9,41 @@ import yahoo_fantasy_api as yfa
 
 from shared import get_connection, get_team_key, LEAGUE_ID, TEAM_ID
 
+# Record book file cache
+_DATA_DIR = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data"))
+RECORD_BOOK_CACHE = os.path.join(_DATA_DIR, "record-book-cache.json")
+RECORD_BOOK_TTL = 86400  # 24 hours
+API_SUPPLEMENT_CACHE = os.path.join(_DATA_DIR, "record-book-api-cache.json")
+API_SUPPLEMENT_TTL = 604800  # 7 days (champions/careers rarely change)
+
+
+def _get_file_cache(path, ttl):
+    """Return cached data from a JSON file if within TTL, else None."""
+    try:
+        if not os.path.exists(path):
+            return None
+        with open(path, "r") as f:
+            cache = json.load(f)
+        fetched = cache.get("fetched_at", "")
+        if not fetched:
+            return None
+        age = (datetime.now() - datetime.fromisoformat(fetched)).total_seconds()
+        if age > ttl:
+            return None
+        return cache.get("data")
+    except Exception:
+        return None
+
+
+def _save_file_cache(path, data):
+    """Save data to a JSON file cache with timestamp."""
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump({"fetched_at": datetime.now().isoformat(), "data": data}, f)
+    except Exception:
+        pass
+
 
 def _load_league_keys():
     """Load league keys from config file, falling back to current year"""
@@ -194,8 +229,70 @@ def cmd_league_history(args, as_json=False):
         print(line)
 
 
-def cmd_record_book(args, as_json=False):
-    """Compile all-time records across all seasons"""
+def cmd_record_book(args, as_json=False, force_refresh=False):
+    """Compile all-time records across all seasons.
+
+    Primary path: scrapes Yahoo's recordbook page (fast, accurate).
+    Fallback: queries API per-season (slow but works without browser session).
+    Results are cached for 24 hours.
+    """
+    # Check file cache first
+    if not force_refresh:
+        cached = _get_file_cache(RECORD_BOOK_CACHE, RECORD_BOOK_TTL)
+        if cached:
+            if as_json:
+                return cached
+            _print_record_book(cached)
+            return
+
+    # Try browser scrape first (fast: ~3-5 seconds vs ~60 seconds for API)
+    scraped_records = None
+    try:
+        from yahoo_browser import scrape_record_book
+        scraped = scrape_record_book()
+        if scraped.get("success"):
+            scraped_records = {
+                "batting_records": scraped.get("batting_records", []),
+                "pitching_records": scraped.get("pitching_records", []),
+                "h2h_records": scraped.get("h2h_records", []),
+            }
+        else:
+            if not as_json:
+                print("Browser scrape failed: " + str(scraped.get("error", "unknown")))
+                print("Falling back to API queries...")
+    except Exception as e:
+        if not as_json:
+            print("Browser scrape unavailable: " + str(e))
+            print("Falling back to API queries...")
+
+    # Use cached API supplement (7-day TTL) to avoid the slow 16-season loop
+    result = _get_file_cache(API_SUPPLEMENT_CACHE, API_SUPPLEMENT_TTL)
+    if result is None:
+        if not as_json:
+            print("Building career/champion data from API...")
+        result = _build_api_record_book()
+        _save_file_cache(API_SUPPLEMENT_CACHE, result)
+
+    # Merge scraped category records into result
+    if scraped_records:
+        result["batting_records"] = scraped_records.get("batting_records", [])
+        result["pitching_records"] = scraped_records.get("pitching_records", [])
+        result["h2h_records"] = scraped_records.get("h2h_records", [])
+        result["source"] = "browser"
+    else:
+        result["source"] = "api"
+
+    # Cache the combined result
+    _save_file_cache(RECORD_BOOK_CACHE, result)
+
+    if as_json:
+        return result
+
+    _print_record_book(result)
+
+
+def _build_api_record_book():
+    """Build record book data from Yahoo API (the existing per-season approach)."""
     sc = get_connection()
     gm = yfa.Game(sc, "mlb")
 
@@ -205,10 +302,6 @@ def cmd_record_book(args, as_json=False):
     activity_records = []
     first_picks = []
 
-    if not as_json:
-        print("Building all-time record book (querying " + str(len(LEAGUE_KEYS)) + " seasons)...")
-        print("")
-
     for year in sorted(LEAGUE_KEYS.keys()):
         try:
             lg = gm.to_league(LEAGUE_KEYS[year])
@@ -216,9 +309,7 @@ def cmd_record_book(args, as_json=False):
             # Get standings
             try:
                 standings = lg.standings()
-            except Exception as e:
-                if not as_json:
-                    print("  " + str(year) + " standings error: " + str(e))
+            except Exception:
                 standings = []
 
             # Get teams for manager data, activity, and playoff clinch
@@ -324,11 +415,8 @@ def cmd_record_book(args, as_json=False):
             except Exception:
                 pass
 
-            if not as_json:
-                print("  " + str(year) + " done")
-        except Exception as e:
-            if not as_json:
-                print("  " + str(year) + " error: " + str(e))
+        except Exception:
+            pass
 
     # Build career list sorted by wins
     sorted_careers = sorted(careers.values(), key=lambda x: x.get("wins", 0), reverse=True)
@@ -414,33 +502,57 @@ def cmd_record_book(args, as_json=False):
             })
     playoff_managers.sort(key=lambda x: -x.get("appearances", 0))
 
-    if as_json:
-        return {
-            "champions": champions,
-            "careers": careers_list,
-            "season_records": season_records_summary,
-            "activity_records": activity_summary,
-            "playoff_appearances": playoff_managers,
-            "first_picks": first_picks,
-        }
+    return {
+        "champions": champions,
+        "careers": careers_list,
+        "season_records": season_records_summary,
+        "activity_records": activity_summary,
+        "playoff_appearances": playoff_managers,
+        "first_picks": first_picks,
+    }
 
-    # Print results
+
+def _format_holder(holder):
+    """Format a single record holder dict into a display string."""
+    name = str(holder.get("team_name", "?"))
+    ctx = str(holder.get("context", ""))
+    if ctx:
+        return name + " (" + ctx + ")"
+    return name
+
+
+def _print_category_records(records, section_name):
+    """Print all-time category records (batting or pitching) to stdout."""
+    if not records:
+        return
     print("")
-    # Get league name dynamically
-    record_book_title = "ALL-TIME RECORD BOOK"
-    try:
-        current_year = max(LEAGUE_KEYS.keys()) if LEAGUE_KEYS else datetime.now().year
-        current_key = LEAGUE_KEYS.get(current_year, "")
-        if current_key:
-            lg_temp = gm.to_league(current_key)
-            record_book_title = lg_temp.settings().get("name", "").upper() + " ALL-TIME RECORD BOOK"
-    except Exception:
-        pass
+    print(section_name)
+    print("-" * 75)
+    for rec in records:
+        rtype = rec.get("record_type", "")
+        if "All Time" not in rtype:
+            continue
+        cat = rec.get("category", "?")
+        direction = rec.get("direction", "best")
+        val = rec.get("value", "?")
+        holders = rec.get("holders", [])
+        holder_str = ", ".join(_format_holder(h) for h in holders)
+        label = cat
+        if direction == "worst":
+            label = label + " (worst)"
+        scope = "Week" if "Week" in rtype else "Season"
+        print("  " + scope.ljust(8) + label.ljust(28) + str(val).rjust(8) + "  " + holder_str)
+
+
+def _print_record_book(data):
+    """Print a record book dict to stdout."""
+    print("")
     print("=" * 70)
-    print(record_book_title)
+    print("ALL-TIME RECORD BOOK")
     print("=" * 70)
 
-    # 1. Champions
+    # Champions
+    champions = data.get("champions", [])
     if champions:
         print("")
         print("CHAMPIONS")
@@ -453,7 +565,8 @@ def cmd_record_book(args, as_json=False):
                     + str(ch.get("win_pct", "")) + "%")
             print(line)
 
-    # 2. Career Records
+    # Career Records
+    careers_list = data.get("careers", [])
     if careers_list:
         print("")
         print("ALL-TIME CAREER RECORDS")
@@ -470,60 +583,29 @@ def cmd_record_book(args, as_json=False):
                     + str(c.get("seasons", 0)).rjust(8) + "  " + best)
             print(line)
 
-    # 3. Single-Season Records
-    if season_records_summary:
+    _print_category_records(data.get("batting_records", []), "BATTING CATEGORY RECORDS")
+    _print_category_records(data.get("pitching_records", []), "PITCHING CATEGORY RECORDS")
+
+    # H2H Records (from scrape)
+    h2h = data.get("h2h_records", [])
+    if h2h:
         print("")
-        print("SINGLE-SEASON RECORDS")
-        print("-" * 65)
+        print("HEAD-TO-HEAD RECORDS")
+        print("-" * 75)
+        for rec in h2h:
+            rtype = rec.get("record_type", "?")
+            val = rec.get("value", "?")
+            holders = rec.get("holders", [])
+            holder_str = ", ".join(_format_holder(h) for h in holders[:3])
+            if len(holders) > 3:
+                holder_str = holder_str + " (+" + str(len(holders) - 3) + " more)"
+            print("  " + rtype.ljust(40) + str(val).rjust(6) + "  " + holder_str)
 
-        if "best_win_pct" in season_records_summary:
-            b = season_records_summary["best_win_pct"]
-            print("  Best Win%:   " + str(b.get("manager", "")) + " (" + str(b.get("year", "")) + ") "
-                  + str(b.get("wins", "")) + "-" + str(b.get("losses", "")) + "-" + str(b.get("ties", ""))
-                  + " (" + str(b.get("win_pct", "")) + "%)")
-
-        if "most_wins" in season_records_summary:
-            m = season_records_summary["most_wins"]
-            print("  Most Wins:   " + str(m.get("manager", "")) + " (" + str(m.get("year", "")) + ") "
-                  + str(m.get("wins", "")) + "-" + str(m.get("losses", "")) + "-" + str(m.get("ties", "")))
-
-        if "worst_win_pct" in season_records_summary:
-            w = season_records_summary["worst_win_pct"]
-            print("  Worst Win%:  " + str(w.get("manager", "")) + " (" + str(w.get("year", "")) + ") "
-                  + str(w.get("wins", "")) + "-" + str(w.get("losses", "")) + "-" + str(w.get("ties", ""))
-                  + " (" + str(w.get("win_pct", "")) + "%)")
-
-    # 4. Activity Records
-    if activity_summary:
+    # Source indicator
+    source = data.get("source", "")
+    if source:
         print("")
-        print("ACTIVITY RECORDS")
-        print("-" * 65)
-
-        if "most_moves" in activity_summary:
-            tm = activity_summary["most_moves"]
-            print("  Most Moves:  " + str(tm.get("manager", "")) + " ("
-                  + str(tm.get("year", "")) + ") " + str(tm.get("moves", "")) + " moves")
-
-        if "most_trades" in activity_summary:
-            tt = activity_summary["most_trades"]
-            print("  Most Trades: " + str(tt.get("manager", "")) + " ("
-                  + str(tt.get("year", "")) + ") " + str(tt.get("trades", "")) + " trades")
-
-    # 5. Playoff Appearances
-    if playoff_managers:
-        print("")
-        print("PLAYOFF APPEARANCES")
-        print("-" * 65)
-        for pm in playoff_managers:
-            print("  " + str(pm.get("manager", "?")).ljust(20) + str(pm.get("appearances", 0)))
-
-    # 6. #1 Overall Draft Picks
-    if first_picks:
-        print("")
-        print("#1 OVERALL DRAFT PICKS")
-        print("-" * 65)
-        for fp in first_picks:
-            print("  " + str(fp.get("year", "")).ljust(6) + str(fp.get("player", "")))
+        print("  (source: " + source + ")")
 
 
 def cmd_past_standings(args, as_json=False):

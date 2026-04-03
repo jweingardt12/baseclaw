@@ -3,7 +3,7 @@ import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 import { apiGet, toolError } from "../api/python-client.js";
 import { READ_ANNO } from "../api/annotations.js";
-import { pid } from "../api/format-text.js";
+import { pid, formatHolder } from "../api/format-text.js";
 import {
   str,
   type LeagueHistoryResponse,
@@ -53,26 +53,70 @@ export function registerHistoryTools(server: McpServer, enabledTools?: Set<strin
     server,
     "yahoo_record_book",
     {
-      description: "Use this to see all-time league records including career W-L leaders, best seasons, most active managers, playoff appearances, champion history, and #1 draft picks. Returns a comprehensive record book across all league seasons.",
+      description: "Use this to see all-time league records including per-category stat records (batting and pitching), head-to-head records, career W-L leaders, champion history, and #1 draft picks. Returns a comprehensive record book scraped from Yahoo's recordbook page. Pass refresh=true to force re-scrape.",
+      inputSchema: { refresh: z.boolean().describe("Force re-scrape from Yahoo (bypasses cache)").default(false) },
       annotations: READ_ANNO,
       _meta: {},
     },
-    async () => {
+    async ({ refresh }) => {
       try {
-        const data = await apiGet<RecordBookResponse>("/api/record-book");
-        const lines = ["Record Book:"];
+        var params: Record<string, string> = {};
+        if (refresh) params.refresh = "true";
+        var data = await apiGet<RecordBookResponse>("/api/record-book", params, 120000);
+        var lines = ["Record Book:"];
         lines.push("\nChampions:");
-        for (const c of (data.champions || [])) {
+        for (var c of (data.champions || [])) {
           lines.push("  " + c.year + ": " + str(c.team_name).padEnd(25) + " " + str(c.manager).padEnd(15) + " " + str(c.record));
         }
         lines.push("\nCareer Leaders:");
-        for (const c of (data.careers || []).slice(0, 10)) {
-          lines.push("  " + str(c.manager).padEnd(15) + " " + c.wins + "-" + c.losses + "-" + c.ties + " (" + c.win_pct + "%)  " + c.seasons + " seasons  Best: #" + c.best_finish + " (" + c.best_year + ")");
+        for (var c2 of (data.careers || []).slice(0, 10)) {
+          lines.push("  " + str(c2.manager).padEnd(15) + " " + c2.wins + "-" + c2.losses + "-" + c2.ties + " (" + c2.win_pct + "%)  " + c2.seasons + " seasons  Best: #" + c2.best_finish + " (" + c2.best_year + ")");
         }
+
+        // Batting category records (from scrape)
+        var batting = data.batting_records || [];
+        var allTimeBatting = batting.filter(function(r) { return r.record_type.indexOf("All Time") > -1; });
+        if (allTimeBatting.length > 0) {
+          lines.push("\nBatting Records (All-Time):");
+          for (var br of allTimeBatting) {
+            var scope = br.record_type.indexOf("Week") > -1 ? "Week" : "Season";
+            var label = br.category;
+            if (br.direction === "worst") label = label + " (worst)";
+            var holder = (br.holders || []).map(formatHolder).join(", ");
+            lines.push("  " + scope.padEnd(8) + label.padEnd(28) + str(br.value).padStart(8) + "  " + holder);
+          }
+        }
+
+        // Pitching category records (from scrape)
+        var pitching = data.pitching_records || [];
+        var allTimePitching = pitching.filter(function(r) { return r.record_type.indexOf("All Time") > -1; });
+        if (allTimePitching.length > 0) {
+          lines.push("\nPitching Records (All-Time):");
+          for (var pr of allTimePitching) {
+            var pScope = pr.record_type.indexOf("Week") > -1 ? "Week" : "Season";
+            var pLabel = pr.category;
+            if (pr.direction === "worst") pLabel = pLabel + " (worst)";
+            var pHolder = (pr.holders || []).map(formatHolder).join(", ");
+            lines.push("  " + pScope.padEnd(8) + pLabel.padEnd(28) + str(pr.value).padStart(8) + "  " + pHolder);
+          }
+        }
+
+        // H2H records (from scrape)
+        var h2h = data.h2h_records || [];
+        if (h2h.length > 0) {
+          lines.push("\nHead-to-Head Records:");
+          for (var hr of h2h) {
+            var hHolder = (hr.holders || []).slice(0, 3).map(formatHolder).join(", ");
+            if ((hr.holders || []).length > 3) hHolder = hHolder + " (+" + ((hr.holders || []).length - 3) + " more)";
+            lines.push("  " + str(hr.record_type).padEnd(40) + str(hr.value).padStart(6) + "  " + hHolder);
+          }
+        }
+
         lines.push("\n#1 Draft Picks:");
-        for (const p of (data.first_picks || [])) {
+        for (var p of (data.first_picks || [])) {
           lines.push("  " + p.year + ": " + p.player);
         }
+        if (data.source) lines.push("\n(source: " + data.source + ")");
         return {
           content: [{ type: "text" as const, text: lines.join("\n") }],
         };

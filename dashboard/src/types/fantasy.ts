@@ -292,6 +292,26 @@ export interface FirstPick {
   player: string;
 }
 
+export interface RecordHolder {
+  team_name: string;
+  context: string;
+}
+
+export interface CategoryRecord {
+  category: string;
+  direction: string;
+  record_type: string;
+  holders: RecordHolder[];
+  value: string;
+}
+
+export interface H2HRecord {
+  record_type: string;
+  holders: RecordHolder[];
+  value: string;
+  value_header: string;
+}
+
 export interface RecordBook {
   careers: CareerRecord[];
   champions: Champion[];
@@ -306,6 +326,10 @@ export interface RecordBook {
   };
   playoff_appearances: PlayoffAppearance[];
   first_picks: FirstPick[];
+  batting_records?: CategoryRecord[];
+  pitching_records?: CategoryRecord[];
+  h2h_records?: H2HRecord[];
+  source?: string;
 }
 
 // --- Past Standings ---

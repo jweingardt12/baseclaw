@@ -1326,7 +1326,8 @@ def api_league_history():
 @app.route("/api/record-book")
 def api_record_book():
     try:
-        result = history.cmd_record_book([], as_json=True)
+        refresh = request.args.get("refresh", "") == "true"
+        result = history.cmd_record_book([], as_json=True, force_refresh=refresh)
         return safe_jsonify(result)
     except Exception as e:
         return safe_jsonify({"error": str(e)}, 500)

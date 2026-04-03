@@ -799,6 +799,26 @@ export interface ChampionEntry {
   win_pct: number;
 }
 
+export interface RecordHolder {
+  team_name: string;
+  context: string;
+}
+
+export interface CategoryRecord {
+  category: string;
+  direction: string;
+  record_type: string;
+  holders: RecordHolder[];
+  value: string;
+}
+
+export interface H2HRecord {
+  record_type: string;
+  holders: RecordHolder[];
+  value: string;
+  value_header: string;
+}
+
 export interface RecordBookResponse {
   careers: CareerEntry[];
   champions: ChampionEntry[];
@@ -806,6 +826,10 @@ export interface RecordBookResponse {
   activity_records: Record<string, Record<string, unknown>>;
   first_picks: Array<{ year: number; player: string }>;
   playoff_appearances: Array<{ manager: string; appearances: number }>;
+  batting_records?: CategoryRecord[];
+  pitching_records?: CategoryRecord[];
+  h2h_records?: H2HRecord[];
+  source?: string;
 }
 
 export interface CategorySimulateResponse {

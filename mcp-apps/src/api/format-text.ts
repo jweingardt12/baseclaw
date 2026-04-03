@@ -2,11 +2,16 @@
  *  Designed for token-efficient agent consumption. */
 
 import { str } from "./types.js";
-import type { ActionItem, RosterIssue, WaiverPair } from "./types.js";
+import type { ActionItem, RosterIssue, WaiverPair, RecordHolder } from "./types.js";
 
 /** Append player ID suffix for agent-readable output */
 export function pid(id: string | undefined | null): string {
   return id ? "  (id:" + id + ")" : "";
+}
+
+/** Format a record holder with optional context */
+export function formatHolder(h: RecordHolder): string {
+  return h.context ? h.team_name + " (" + h.context + ")" : h.team_name;
 }
 
 /** Append team key suffix for agent-readable output */
