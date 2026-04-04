@@ -21,6 +21,7 @@ from shared import (
     get_connection, get_league_context, get_league, get_team_key,
     get_league_settings, get_regression_adjusted_z, compute_adjusted_z,
     get_cached_teams, get_cached_standings,
+    get_cached_league_rosters, find_player_in_rosters,
     LEAGUE_ID, TEAM_ID, GAME_KEY, DATA_DIR,
     MLB_API, mlb_fetch, TEAM_ALIASES, normalize_team_name,
     get_trend_lookup, enrich_with_intel, enrich_with_trends, enrich_with_context,
@@ -3093,27 +3094,16 @@ def cmd_trade_eval(args, as_json=False):
                 give_players.append(p)
                 break
 
-    # For get players, search all league rosters to resolve name + positions
+    # For get players, search cached league rosters to resolve name + positions
+    _eval_rosters = get_cached_league_rosters(lg)
     for pid in get_ids:
         pid = pid.strip()
         player_key = GAME_KEY + ".p." + pid
         found_player = None
-        try:
-            all_teams = lg.teams()
-            for team_key in all_teams:
-                try:
-                    t = lg.to_team(team_key)
-                    for p in t.roster():
-                        if str(p.get("player_id", "")) == pid:
-                            found_player = p
-                            break
-                except Exception:
-                    continue
-                if found_player:
-                    found_player["_source_team_key"] = team_key
-                    break
-        except Exception:
-            pass
+        _tk, _tn, _fp = find_player_in_rosters(lg, pid, rosters=_eval_rosters)
+        if _fp:
+            found_player = _fp
+            found_player["_source_team_key"] = _tk
         if found_player:
             get_players.append(found_player)
         else:
@@ -5137,26 +5127,10 @@ def cmd_whats_new(args, as_json=False):
 
 
 def _find_player_owner(lg, target_name):
-    """Find which team owns a player by searching all rosters.
+    """Find which team owns a player by searching cached league rosters.
     Returns (team_key, team_name, player_dict) or (None, None, None).
     """
-    target_lower = target_name.strip().lower()
-    all_teams = lg.teams()
-    for team_key, team_data in all_teams.items():
-        team_name = team_data.get("name", "Unknown")
-        try:
-            t = lg.to_team(team_key)
-            roster = t.roster()
-        except Exception:
-            continue
-        for p in roster:
-            name = p.get("name", "")
-            if name.lower() == target_lower:
-                return team_key, team_name, p
-            # Partial match: last name
-            if target_lower in name.lower():
-                return team_key, team_name, p
-    return None, None, None
+    return find_player_in_rosters(lg, target_name)
 
 
 def _team_cat_strengths_from_zscores(lg, team_key, roster=None):
@@ -5808,8 +5782,8 @@ def _trade_finder_league_scan(lg, team, as_json=False):
 
     # --- Phase 2: Analyze each opponent ---
     all_teams = get_cached_teams(lg)
+    all_rosters = get_cached_league_rosters(lg)
     partners = []
-    _roster_cache = {}  # Cache rosters to avoid duplicate fetches
     _cat_profile_cache = {}  # Cache category profiles
     MAX_GOOD_PARTNERS = 3  # Early return threshold
 
@@ -5818,16 +5792,9 @@ def _trade_finder_league_scan(lg, team, as_json=False):
             continue
         other_name = other_data.get("name", "Unknown")
 
-        # Use cached roster if available
-        if other_key in _roster_cache:
-            other_roster = _roster_cache[other_key]
-        else:
-            try:
-                other_team = lg.to_team(other_key)
-                other_roster = other_team.roster()
-                _roster_cache[other_key] = other_roster
-            except Exception:
-                continue
+        other_roster = all_rosters.get(other_key, [])
+        if not other_roster:
+            continue
 
         # Get their category profile (cached)
         if other_key in _cat_profile_cache:

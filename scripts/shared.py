@@ -267,6 +267,50 @@ def get_cached_standings(lg):
     return _get_cached_league_call("standings", _LEAGUE_DATA_TTL, lg.standings)
 
 
+def get_cached_league_rosters(lg):
+    """Fetch all team rosters in one pass and cache for 120s.
+    Returns {team_key: [player_dicts]} where each player_dict has
+    name, player_id, eligible_positions, status, etc.
+    """
+    cached = cache_get(_league_data_cache, "all_rosters", 120)
+    if cached is not None:
+        return cached
+    all_teams = get_cached_teams(lg)
+    rosters = {}
+    for team_key in all_teams:
+        try:
+            t = lg.to_team(team_key)
+            rosters[team_key] = t.roster()
+        except Exception:
+            rosters[team_key] = []
+    cache_set(_league_data_cache, "all_rosters", rosters)
+    return rosters
+
+
+def find_player_in_rosters(lg, name_or_id, rosters=None):
+    """Find a player across all league rosters using the cached roster index.
+    Searches by player_id (str) or name (case-insensitive partial match).
+    Returns (team_key, team_name, player_dict) or (None, None, None).
+    """
+    if rosters is None:
+        rosters = get_cached_league_rosters(lg)
+    all_teams = get_cached_teams(lg)
+    search_lower = str(name_or_id).strip().lower()
+    is_id = search_lower.isdigit()
+
+    for team_key, roster in rosters.items():
+        team_name = all_teams.get(team_key, {}).get("name", "Unknown")
+        for p in roster:
+            if is_id:
+                if str(p.get("player_id", "")) == search_lower:
+                    return team_key, team_name, p
+            else:
+                pname = p.get("name", "")
+                if pname.lower() == search_lower or search_lower in pname.lower():
+                    return team_key, team_name, p
+    return None, None, None
+
+
 _LEAGUE_SETTINGS_CACHE_TTL = int(os.environ.get("LEAGUE_SETTINGS_CACHE_TTL", "3600"))
 _LEAGUE_SETTINGS_NEGATIVE_TTL = 60  # seconds to cache empty result on API failure
 _league_settings_cache = {}

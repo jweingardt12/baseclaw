@@ -152,7 +152,7 @@ _catcher_thread.start()
 
 import concurrent.futures
 import shared
-from shared import cache_get, cache_set
+from shared import cache_get, cache_set, get_cached_league_rosters, find_player_in_rosters
 
 _response_cache = {}
 _timeout_pool = concurrent.futures.ThreadPoolExecutor(max_workers=10)
@@ -2561,6 +2561,11 @@ def workflow_trade_analysis():
     get_names = data.get("get_names", [])
     if not give_names or not get_names:
         return safe_jsonify({"error": "Missing give_names and/or get_names arrays"}, 400)
+    # Cache by sorted player names (same trade = same result for 5 min)
+    _ta_key = "wf-trade-" + ",".join(sorted(n.lower() for n in give_names)) + "|" + ",".join(sorted(n.lower() for n in get_names))
+    _ta_cached = cache_get(_response_cache, _ta_key, 300)
+    if _ta_cached is not None:
+        return safe_jsonify(_ta_cached)
     try:
 
         # Resolve player names to IDs via value lookup
@@ -2612,32 +2617,22 @@ def workflow_trade_analysis():
                                     )
                             found_in_search = True
                             break
-                    # If not found in free agents (player is rostered), scan all team rosters
+                    # If not found in free agents (player is rostered), use cached roster index
                     if not found_in_search:
                         try:
                             _sc, _gm, _lg = yahoo_fantasy.get_league()
-                            all_teams = _lg.teams()  # dict: team_key -> team_info
-                            for team_key in all_teams:
-                                try:
-                                    team_obj = _lg.to_team(team_key)
-                                    team_roster = team_obj.roster()
-                                    for tp in team_roster:
-                                        if str(tp.get("name", "")).lower() == str(p.get("name", "")).lower():
-                                            get_ids.append(str(tp.get("player_id", "")))
-                                            positions = tp.get("eligible_positions", [])
-                                            if positions:
-                                                p["eligible_positions"] = positions
-                                                if not p.get("pos"):
-                                                    p["pos"] = ",".join(
-                                                        pos for pos in positions
-                                                        if pos not in ("BN", "IL", "IL+", "DL", "NA", "Util")
-                                                    )
-                                            found_in_search = True
-                                            break
-                                except Exception:
-                                    continue
-                                if found_in_search:
-                                    break
+                            _tk, _tn, _tp = find_player_in_rosters(_lg, p.get("name", ""))
+                            if _tp:
+                                get_ids.append(str(_tp.get("player_id", "")))
+                                positions = _tp.get("eligible_positions", [])
+                                if positions:
+                                    p["eligible_positions"] = positions
+                                    if not p.get("pos"):
+                                        p["pos"] = ",".join(
+                                            pos for pos in positions
+                                            if pos not in ("BN", "IL", "IL+", "DL", "NA", "Util")
+                                        )
+                                found_in_search = True
                         except Exception:
                             pass
                     get_players.append(p)
@@ -2748,7 +2743,7 @@ def workflow_trade_analysis():
             print("Warning: trade strategy context failed: " + str(e))
             trade_strategy = {"_error": str(e)}
 
-        return safe_jsonify({
+        _ta_result = {
             "give_players": give_players,
             "get_players": get_players,
             "give_ids": give_ids,
@@ -2760,7 +2755,9 @@ def workflow_trade_analysis():
             "category_impact": category_impact,
             "trade_strategy": trade_strategy,
             "category_arms_race": arms_race,
-        })
+        }
+        cache_set(_response_cache, _ta_key, _ta_result)
+        return safe_jsonify(_ta_result)
     except Exception as e:
         return safe_jsonify({"error": str(e)}, 500)
 
@@ -2781,7 +2778,7 @@ def workflow_waiver_deadline_prep():
 @app.route("/api/workflow/trade-pipeline")
 def workflow_trade_pipeline():
     return _cached_endpoint("wf-trade-pipe",
-        lambda: season_manager.cmd_trade_pipeline([], as_json=True), 600)
+        lambda: season_manager.cmd_trade_pipeline([], as_json=True), 600, timeout_sec=40)
 
 
 @app.route("/api/workflow/weekly-digest")

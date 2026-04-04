@@ -379,7 +379,7 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
         const data = await apiPost<TradeAnalysisResponse>("/api/workflow/trade-analysis", {
           give_names,
           get_names,
-        });
+        }, 60000);
 
         const lines: string[] = [];
         lines.push(header("TRADE_ANALYSIS", "Give " + give_names.join(", ") + " | Get " + get_names.join(", ")));
@@ -787,7 +787,7 @@ export function registerWorkflowTools(server: McpServer, writesEnabled: boolean 
     },
     async () => {
       try {
-        const data = await apiGet<TradePipelineResponse>("/api/workflow/trade-pipeline");
+        const data = await apiGet<TradePipelineResponse>("/api/workflow/trade-pipeline", undefined, 60000);
 
         const lines: string[] = [];
         lines.push(header("TRADE_PIPELINE", (data.partners || []).length + " partner(s) | weak: " + (data.weak_categories || []).join(", ")));

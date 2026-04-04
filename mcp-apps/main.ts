@@ -22,6 +22,9 @@ var enabledTools = toolsetConfig === "all"
   : resolveToolset(toolsetConfig);
 
 async function handleMcp(req: Request, res: Response): Promise<void> {
+  // McpServer stores a single transport, so we must create a new instance per
+  // stateless HTTP request. Tool registration is cheap (no I/O at registration
+  // time); HTML assets are only read when a resource is fetched.
   var server = createServer(enabledTools);
   var transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,

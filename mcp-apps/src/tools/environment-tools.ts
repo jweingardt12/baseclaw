@@ -1,8 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
-import { apiGet, toolError } from "../api/python-client.js";
+import { apiGet } from "../api/python-client.js";
 import { READ_ANNO } from "../api/annotations.js";
+import { defineTool } from "../api/define-tool.js";
 import {
   str,
   type GameEnvironmentResponse,
@@ -10,14 +10,11 @@ import {
   type ConsensusRankingsResponse,
   type FangraphsRecentResponse,
 } from "../api/types.js";
-import { shouldRegister as _shouldRegister } from "../toolsets.js";
 
 export function registerEnvironmentTools(server: McpServer, enabledTools?: Set<string>) {
-  var shouldRegister = (name: string) => _shouldRegister(enabledTools, name);
 
   // yahoo_game_environment
-  if (shouldRegister("yahoo_game_environment")) {
-  registerAppTool(
+  defineTool(
     server,
     "yahoo_game_environment",
     {
@@ -27,35 +24,30 @@ export function registerEnvironmentTools(server: McpServer, enabledTools?: Set<s
       _meta: {},
     },
     async ({ date }) => {
-      try {
-        var params: Record<string, string> = {};
-        if (date) params.date = date;
-        var data = await apiGet<GameEnvironmentResponse>("/api/game-environment", params);
-        var lines = ["Game Environment - " + data.date, ""];
-        var games = data.games;
-        for (var gpk of Object.keys(games)) {
-          var g = games[gpk];
-          lines.push(str(g.away_team) + " @ " + str(g.home_team) + " (" + str(g.venue) + ")");
-          if (g.weather && (g.weather.temp || g.weather.wind)) {
-            lines.push("  Weather: " + str(g.weather.temp) + "F, " + str(g.weather.wind) + " - " + str(g.weather.condition));
-          }
-          if (g.hp_umpire && g.hp_umpire.name) {
-            lines.push("  HP Umpire: " + str(g.hp_umpire.name));
-          }
-          lines.push("  Park Factor: " + String(g.park_factor));
-          lines.push("");
+      var params: Record<string, string> = {};
+      if (date) params.date = date as string;
+      var data = await apiGet<GameEnvironmentResponse>("/api/game-environment", params);
+      var lines = ["Game Environment - " + data.date, ""];
+      var games = data.games;
+      for (var gpk of Object.keys(games)) {
+        var g = games[gpk];
+        lines.push(str(g.away_team) + " @ " + str(g.home_team) + " (" + str(g.venue) + ")");
+        if (g.weather && (g.weather.temp || g.weather.wind)) {
+          lines.push("  Weather: " + str(g.weather.temp) + "F, " + str(g.weather.wind) + " - " + str(g.weather.condition));
         }
-        return {
-          content: [{ type: "text" as const, text: lines.join("\n") }],
-        };
-      } catch (e) { return toolError(e); }
+        if (g.hp_umpire && g.hp_umpire.name) {
+          lines.push("  HP Umpire: " + str(g.hp_umpire.name));
+        }
+        lines.push("  Park Factor: " + String(g.park_factor));
+        lines.push("");
+      }
+      return { text: lines.join("\n") };
     },
+    enabledTools,
   );
-  }
 
   // yahoo_umpire_report
-  if (shouldRegister("yahoo_umpire_report")) {
-  registerAppTool(
+  defineTool(
     server,
     "yahoo_umpire_report",
     {
@@ -65,30 +57,25 @@ export function registerEnvironmentTools(server: McpServer, enabledTools?: Set<s
       _meta: {},
     },
     async ({ date }) => {
-      try {
-        var params: Record<string, string> = {};
-        if (date) params.date = date;
-        var data = await apiGet<UmpireReportResponse>("/api/umpire-report", params);
-        var lines = ["HP Umpire Report - " + data.date, ""];
-        for (var u of data.umpires) {
-          lines.push(str(u.game) + " (" + str(u.venue) + ")");
-          lines.push("  HP: " + str(u.hp_umpire.name));
-          lines.push("");
-        }
-        if (data.umpires.length === 0) {
-          lines.push("No umpire assignments posted yet for this date.");
-        }
-        return {
-          content: [{ type: "text" as const, text: lines.join("\n") }],
-        };
-      } catch (e) { return toolError(e); }
+      var params: Record<string, string> = {};
+      if (date) params.date = date as string;
+      var data = await apiGet<UmpireReportResponse>("/api/umpire-report", params);
+      var lines = ["HP Umpire Report - " + data.date, ""];
+      for (var u of data.umpires) {
+        lines.push(str(u.game) + " (" + str(u.venue) + ")");
+        lines.push("  HP: " + str(u.hp_umpire.name));
+        lines.push("");
+      }
+      if (data.umpires.length === 0) {
+        lines.push("No umpire assignments posted yet for this date.");
+      }
+      return { text: lines.join("\n") };
     },
+    enabledTools,
   );
-  }
 
   // yahoo_consensus_rankings
-  if (shouldRegister("yahoo_consensus_rankings")) {
-  registerAppTool(
+  defineTool(
     server,
     "yahoo_consensus_rankings",
     {
@@ -101,35 +88,30 @@ export function registerEnvironmentTools(server: McpServer, enabledTools?: Set<s
       _meta: {},
     },
     async ({ position, limit }) => {
-      try {
-        var data = await apiGet<ConsensusRankingsResponse>("/api/consensus-rankings", { position: position });
-        var players = data.players.slice(0, limit);
-        var lines = ["FantasyPros Consensus Rankings (ROS) - " + data.position, ""];
-        lines.push("Rank  Player".padEnd(35) + "Team  Pos    ECR   Min-Max    StdDev");
-        lines.push("-".repeat(75));
-        for (var p of players) {
-          var rank = String(p.ecr).padStart(4);
-          var name = str(p.player_name).padEnd(26);
-          var team = str(p.team).padEnd(5);
-          var pos = str(p.pos_rank).padEnd(7);
-          var range = (String(p.rank_min) + "-" + String(p.rank_max)).padEnd(10);
-          var std = p.rank_std.toFixed(1);
-          var flag = p.rank_std >= 30 ? " [HIGH DISAGREE]" : (p.rank_std >= 15 ? " [MODERATE]" : "");
-          lines.push(rank + "  " + name + team + pos + String(p.ecr).padEnd(6) + range + std + flag);
-        }
-        lines.push("");
-        lines.push("Total ranked: " + data.count + " | Showing top " + players.length);
-        return {
-          content: [{ type: "text" as const, text: lines.join("\n") }],
-        };
-      } catch (e) { return toolError(e); }
+      var data = await apiGet<ConsensusRankingsResponse>("/api/consensus-rankings", { position: position as string });
+      var players = data.players.slice(0, limit as number);
+      var lines = ["FantasyPros Consensus Rankings (ROS) - " + data.position, ""];
+      lines.push("Rank  Player".padEnd(35) + "Team  Pos    ECR   Min-Max    StdDev");
+      lines.push("-".repeat(75));
+      for (var p of players) {
+        var rank = String(p.ecr).padStart(4);
+        var name = str(p.player_name).padEnd(26);
+        var team = str(p.team).padEnd(5);
+        var pos = str(p.pos_rank).padEnd(7);
+        var range = (String(p.rank_min) + "-" + String(p.rank_max)).padEnd(10);
+        var std = p.rank_std.toFixed(1);
+        var flag = p.rank_std >= 30 ? " [HIGH DISAGREE]" : (p.rank_std >= 15 ? " [MODERATE]" : "");
+        lines.push(rank + "  " + name + team + pos + String(p.ecr).padEnd(6) + range + std + flag);
+      }
+      lines.push("");
+      lines.push("Total ranked: " + data.count + " | Showing top " + players.length);
+      return { text: lines.join("\n") };
     },
+    enabledTools,
   );
-  }
 
   // yahoo_fangraphs_recent
-  if (shouldRegister("yahoo_fangraphs_recent")) {
-  registerAppTool(
+  defineTool(
     server,
     "yahoo_fangraphs_recent",
     {
@@ -141,17 +123,13 @@ export function registerEnvironmentTools(server: McpServer, enabledTools?: Set<s
       _meta: {},
     },
     async ({ stat }) => {
-      try {
-        var data = await apiGet<FangraphsRecentResponse>("/api/fangraphs-recent", { stat: stat });
-        var lines = ["FanGraphs " + (stat === "bat" ? "Batting" : "Pitching") + " Stats", ""];
-        lines.push("Players loaded: " + data.count);
-        lines.push("Use yahoo_player_stats or yahoo_compare for individual player lookups.");
-        lines.push("This data enriches hot/cold detection and player comparisons.");
-        return {
-          content: [{ type: "text" as const, text: lines.join("\n") }],
-        };
-      } catch (e) { return toolError(e); }
+      var data = await apiGet<FangraphsRecentResponse>("/api/fangraphs-recent", { stat: stat as string });
+      var lines = ["FanGraphs " + (stat === "bat" ? "Batting" : "Pitching") + " Stats", ""];
+      lines.push("Players loaded: " + data.count);
+      lines.push("Use yahoo_player_stats or yahoo_compare for individual player lookups.");
+      lines.push("This data enriches hot/cold detection and player comparisons.");
+      return { text: lines.join("\n") };
     },
+    enabledTools,
   );
-  }
 }
