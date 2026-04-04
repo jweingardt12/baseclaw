@@ -7,6 +7,7 @@ Routes match the TypeScript MCP Apps server's python-client.ts expectations.
 import sys
 import os
 import importlib
+from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -150,6 +151,7 @@ _catcher_thread.start()
 # --- Response caching + timeout for slow endpoints ---
 
 import concurrent.futures
+import shared
 from shared import cache_get, cache_set
 
 _response_cache = {}
@@ -267,13 +269,11 @@ def api_roster():
 
 @app.route("/api/free-agents")
 def api_free_agents():
-    try:
-        pos_type = request.args.get("pos_type", "B")
-        count = request.args.get("count", "20")
-        result = yahoo_fantasy.cmd_free_agents([pos_type, count], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    pos_type = request.args.get("pos_type", "B")
+    count = request.args.get("count", "20")
+    cache_key = "free-agents-" + pos_type + "-" + count
+    return _cached_endpoint(cache_key,
+        lambda: yahoo_fantasy.cmd_free_agents([pos_type, count], as_json=True), 60)
 
 
 @app.route("/api/standings")
@@ -572,42 +572,34 @@ def api_best_available():
 
 @app.route("/api/rankings")
 def api_rankings():
-    try:
-        pos_type = request.args.get("pos_type", "B")
-        count = request.args.get("count", "25")
-        result = valuations.cmd_rankings([pos_type, count], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    pos_type = request.args.get("pos_type", "B")
+    count = request.args.get("count", "25")
+    cache_key = "rankings-" + pos_type + "-" + count
+    return _cached_endpoint(cache_key,
+        lambda: valuations.cmd_rankings([pos_type, count], as_json=True), 120)
 
 
 @app.route("/api/compare")
 def api_compare():
-    try:
-        # TS tool sends player1 and player2 params
-        player1 = request.args.get("player1", "")
-        player2 = request.args.get("player2", "")
-        if not player1 or not player2:
-            return safe_jsonify({"error": "Missing player1 and/or player2 parameters"}, 400)
-        result = valuations.cmd_compare([player1, player2], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    player1 = request.args.get("player1", "")
+    player2 = request.args.get("player2", "")
+    if not player1 or not player2:
+        return safe_jsonify({"error": "Missing player1 and/or player2 parameters"}, 400)
+    cache_key = "compare-" + player1.lower() + "-" + player2.lower()
+    return _cached_endpoint(cache_key,
+        lambda: valuations.cmd_compare([player1, player2], as_json=True), 60)
 
 
 @app.route("/api/value")
 def api_value():
-    try:
-        # TS tool sends "player_name" param
-        name = request.args.get("player_name", "")
-        if not name:
-            name = request.args.get("name", "")
-        if not name:
-            return safe_jsonify({"error": "Missing player_name parameter"}, 400)
-        result = valuations.cmd_value([name], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    name = request.args.get("player_name", "")
+    if not name:
+        name = request.args.get("name", "")
+    if not name:
+        return safe_jsonify({"error": "Missing player_name parameter"}, 400)
+    cache_key = "value-" + name.lower()
+    return _cached_endpoint(cache_key,
+        lambda: valuations.cmd_value([name], as_json=True), 60)
 
 
 @app.route("/api/projections-update", methods=["POST"])
@@ -654,21 +646,72 @@ def api_park_factors():
         return safe_jsonify({"error": str(e)}, 500)
 
 
+@app.route("/api/game-environment", methods=["GET"])
+def api_game_environment():
+    try:
+        game_date = request.args.get("date", "")
+        env = shared.get_game_environment(game_date or None)
+        result = {str(gpk): data for gpk, data in env.items()}
+        return safe_jsonify({"date": game_date or str(date.today()), "games": result})
+    except Exception as e:
+        return safe_jsonify({"error": str(e)}, 500)
+
+
+@app.route("/api/umpire-report", methods=["GET"])
+def api_umpire_report():
+    try:
+        game_date = request.args.get("date", "")
+        env = shared.get_game_environment(game_date or None)
+        umpires = []
+        for gpk, data in env.items():
+            if data.get("hp_umpire", {}).get("name"):
+                umpires.append({
+                    "game": data.get("away_team", "") + " @ " + data.get("home_team", ""),
+                    "venue": data.get("venue", ""),
+                    "hp_umpire": data.get("hp_umpire", {}),
+                })
+        return safe_jsonify({"date": game_date or str(date.today()), "umpires": umpires})
+    except Exception as e:
+        return safe_jsonify({"error": str(e)}, 500)
+
+
+@app.route("/api/consensus-rankings", methods=["GET"])
+def api_consensus_rankings():
+    try:
+        position = request.args.get("position", "ALL")
+        rankings = intel.get_consensus_rankings(position)
+        return safe_jsonify({"position": position, "count": len(rankings), "players": rankings})
+    except Exception as e:
+        return safe_jsonify({"error": str(e)}, 500)
+
+
+@app.route("/api/fangraphs-recent", methods=["GET"])
+def api_fangraphs_recent():
+    try:
+        stat_type = request.args.get("stat", "bat")
+        days = int(request.args.get("days", "7"))
+        data = intel.get_fangraphs_recent(stat_type, days)
+        return safe_jsonify({"stat": stat_type, "days": days, "count": len(data), "players": data})
+    except Exception as e:
+        return safe_jsonify({"error": str(e)}, 500)
+
+
 # --- Season Manager (season-manager.py) ---
 # TS tools call: /api/lineup-optimize, /api/category-check, etc.
 
 
 @app.route("/api/lineup-optimize")
 def api_lineup_optimize():
-    try:
-        args = []
-        apply_flag = request.args.get("apply", "false")
-        if apply_flag.lower() == "true":
-            args.append("--apply")
-        result = season_manager.cmd_lineup_optimize(args, as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    apply_flag = request.args.get("apply", "false")
+    if apply_flag.lower() == "true":
+        # Write operation — don't cache
+        try:
+            result = season_manager.cmd_lineup_optimize(["--apply"], as_json=True)
+            return safe_jsonify(result)
+        except Exception as e:
+            return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("lineup-optimize",
+        lambda: season_manager.cmd_lineup_optimize([], as_json=True), 30)
 
 
 @app.route("/api/category-check")
@@ -685,26 +728,20 @@ def api_injury_report():
 
 @app.route("/api/waiver-analyze")
 def api_waiver_analyze():
-    try:
-        pos_type = request.args.get("pos_type", "B")
-        count = request.args.get("count", "15")
-        result = season_manager.cmd_waiver_analyze([pos_type, count], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    pos_type = request.args.get("pos_type", "B")
+    count = request.args.get("count", "15")
+    cache_key = "waiver-" + pos_type + "-" + count
+    return _cached_endpoint(cache_key,
+        lambda: season_manager.cmd_waiver_analyze([pos_type, count], as_json=True), 120)
 
 
 @app.route("/api/streaming")
 def api_streaming():
-    try:
-        args = []
-        week = request.args.get("week", "")
-        if week:
-            args.append(week)
-        result = season_manager.cmd_streaming(args, as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    week = request.args.get("week", "")
+    args = [week] if week else []
+    cache_key = "streaming-" + (week or "current")
+    return _cached_endpoint(cache_key,
+        lambda: season_manager.cmd_streaming(args, as_json=True), 120)
 
 
 @app.route("/api/trade-eval", methods=["POST"])
@@ -924,27 +961,17 @@ def api_league_pulse():
 
 @app.route("/api/whats-new")
 def api_whats_new():
-    try:
-        result = season_manager.cmd_whats_new([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("whats-new",
+        lambda: season_manager.cmd_whats_new([], as_json=True), 60)
 
 
 @app.route("/api/trade-finder")
 def api_trade_finder():
-    try:
-        target = request.args.get("target", "")
-        timeout = int(request.args.get("timeout", "120"))
-        args = [target] if target else []
-        future = _timeout_pool.submit(season_manager.cmd_trade_finder, args, as_json=True)
-        try:
-            result = future.result(timeout=timeout)
-        except concurrent.futures.TimeoutError:
-            return safe_jsonify({"error": "Trade finder timed out after " + str(timeout) + "s. Try with a specific target player name."}, 504)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    target = request.args.get("target", "")
+    cache_key = "trade-finder-" + (target or "auto")
+    return _cached_endpoint(cache_key,
+        lambda: season_manager.cmd_trade_finder([target] if target else [], as_json=True),
+        300, timeout_sec=60)
 
 
 # --- Phase 4: Power Rankings, Week Planner, Season Pace ---
@@ -964,15 +991,11 @@ def api_league_intel():
 
 @app.route("/api/week-planner")
 def api_week_planner():
-    try:
-        args = []
-        week = request.args.get("week", "")
-        if week:
-            args.append(week)
-        result = season_manager.cmd_week_planner(args, as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    week = request.args.get("week", "")
+    args = [week] if week else []
+    cache_key = "week-planner-" + (week or "current")
+    return _cached_endpoint(cache_key,
+        lambda: season_manager.cmd_week_planner(args, as_json=True), 120)
 
 
 @app.route("/api/season-pace")
@@ -995,13 +1018,11 @@ def api_closer_monitor():
 
 @app.route("/api/pitcher-matchup")
 def api_pitcher_matchup():
-    try:
-        week = request.args.get("week", "")
-        args = [week] if week else []
-        result = season_manager.cmd_pitcher_matchup(args, as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    week = request.args.get("week", "")
+    args = [week] if week else []
+    cache_key = "pitcher-matchup-" + (week or "current")
+    return _cached_endpoint(cache_key,
+        lambda: season_manager.cmd_pitcher_matchup(args, as_json=True), 120)
 
 
 # --- New Yahoo API Tools ---
@@ -1029,21 +1050,19 @@ def api_player_stats():
 
 @app.route("/api/roster-stats")
 def api_roster_stats():
-    try:
-        period = request.args.get("period", "season")
-        week = request.args.get("week", "")
-        team_key = request.args.get("team_key", "")
-        args = []
-        if period:
-            args.append("--period=" + period)
-        if week:
-            args.append("--week=" + week)
-        if team_key:
-            args.append("--team=" + team_key)
-        result = season_manager.cmd_roster_stats(args, as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    period = request.args.get("period", "season")
+    week = request.args.get("week", "")
+    team_key = request.args.get("team_key", "")
+    args = []
+    if period:
+        args.append("--period=" + period)
+    if week:
+        args.append("--week=" + week)
+    if team_key:
+        args.append("--team=" + team_key)
+    cache_key = "roster-stats-" + period + "-" + week + "-" + team_key
+    return _cached_endpoint(cache_key,
+        lambda: season_manager.cmd_roster_stats(args, as_json=True), 120)
 
 
 @app.route("/api/faab-recommend")
@@ -1072,57 +1091,40 @@ def api_ownership_trends():
 
 @app.route("/api/category-trends")
 def api_category_trends():
-    try:
-        result = season_manager.cmd_category_trends([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("category-trends",
+        lambda: season_manager.cmd_category_trends([], as_json=True), 120)
 
 
 @app.route("/api/punt-advisor")
 def api_punt_advisor():
-    try:
-        result = season_manager.cmd_punt_advisor([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("punt-advisor",
+        lambda: season_manager.cmd_punt_advisor([], as_json=True), 300)
 
 
 @app.route("/api/il-stash-advisor")
 def api_il_stash_advisor():
-    try:
-        result = season_manager.cmd_il_stash_advisor([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("il-stash-advisor",
+        lambda: season_manager.cmd_il_stash_advisor([], as_json=True), 300)
 
 
 @app.route("/api/playoff-planner")
 def api_playoff_planner():
-    try:
-        result = season_manager.cmd_playoff_planner([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("playoff-planner",
+        lambda: season_manager.cmd_playoff_planner([], as_json=True), 600, timeout_sec=45)
 
 
 @app.route("/api/optimal-moves")
 def api_optimal_moves():
-    try:
-        count = request.args.get("count", "5")
-        result = season_manager.cmd_optimal_moves([count], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    count = request.args.get("count", "5")
+    cache_key = "optimal-moves-" + count
+    return _cached_endpoint(cache_key,
+        lambda: season_manager.cmd_optimal_moves([count], as_json=True), 300, timeout_sec=30)
 
 
 @app.route("/api/weekly-narrative")
 def api_weekly_narrative():
-    try:
-        result = season_manager.cmd_weekly_narrative([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("weekly-narrative",
+        lambda: season_manager.cmd_weekly_narrative([], as_json=True), 300)
 
 
 @app.route("/api/roster-history")
@@ -1851,11 +1853,19 @@ def _synthesize_morning_actions(injury, lineup, whats_new, waiver_b, waiver_p):
 
     # Critical: injured players in active slots
     for p in (injury or {}).get("injured_active", []):
+        status = str(p.get("status", ""))
+        il_eligible = status in ("IL10", "IL15", "IL60")
+        if il_eligible:
+            advice = "move to IL or bench"
+        elif status == "DTD":
+            advice = "monitor status — bench if not starting"
+        else:
+            advice = "move to bench"
         actions.append({
-            "priority": 1,
+            "priority": 1 if il_eligible else 2,
             "type": "injury",
-            "message": str(p.get("name", "?")) + " (" + str(p.get("status", ""))
-                + ") injured in active slot - move to IL or bench",
+            "message": str(p.get("name", "?")) + " (" + status
+                + ") injured in active slot - " + advice,
             "player_id": str(p.get("player_id", "")),
         })
 
@@ -2162,6 +2172,16 @@ def _run_briefing():
                 "message": "Weak roster positions: " + ", ".join(weak_pos)
                     + " — consider upgrades",
             })
+
+    # Deduplicate by message text
+    seen_msgs = set()
+    deduped = []
+    for a in action_items:
+        msg = a.get("message", "")
+        if msg not in seen_msgs:
+            seen_msgs.add(msg)
+            deduped.append(a)
+    action_items = deduped
 
     action_items.sort(key=lambda a: a.get("priority", 99))
 
@@ -2926,11 +2946,8 @@ def api_rival_history():
 
 @app.route("/api/achievements")
 def api_achievements():
-    try:
-        result = season_manager.cmd_achievements([], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    return _cached_endpoint("achievements",
+        lambda: season_manager.cmd_achievements([], as_json=True), 600)
 
 
 # ============================================================
@@ -2988,11 +3005,9 @@ def api_category_arms_race():
 def api_research_feed():
     filter_type = request.args.get("filter", "all")
     limit = request.args.get("limit", "20")
-    try:
-        result = season_manager.cmd_research_feed([filter_type, limit], as_json=True)
-        return safe_jsonify(result)
-    except Exception as e:
-        return safe_jsonify({"error": str(e)}, 500)
+    cache_key = "research-" + filter_type + "-" + limit
+    return _cached_endpoint(cache_key,
+        lambda: season_manager.cmd_research_feed([filter_type, limit], as_json=True), 120)
 
 
 # ============================================================
@@ -3164,6 +3179,34 @@ def api_roster_monitor():
     }
     _monitor_cache["result"] = (result, _time.time())
     return safe_jsonify(result)
+
+
+# ---------------------------------------------------------------------------
+# Startup cache warmup
+# ---------------------------------------------------------------------------
+
+_WARMUP_TARGETS = [
+    ("roster", lambda: yahoo_fantasy.cmd_roster([], as_json=True)),
+    ("standings", lambda: yahoo_fantasy.cmd_standings([], as_json=True)),
+    ("injury-report", lambda: season_manager.cmd_injury_report([], as_json=True)),
+    ("category-check", lambda: season_manager.cmd_category_check([], as_json=True)),
+]
+
+
+def _warmup_caches():
+    """Pre-populate frequently-used caches on startup."""
+    import time as _time
+    _time.sleep(5)
+    for key, fn in _WARMUP_TARGETS:
+        try:
+            result = fn()
+            if result and not (isinstance(result, dict) and result.get("error")):
+                cache_set(_response_cache, key, result)
+                print("Warmup: cached " + key)
+        except Exception as e:
+            print("Warmup: " + key + " failed: " + str(e))
+
+threading.Thread(target=_warmup_caches, daemon=True).start()
 
 
 if __name__ == "__main__":

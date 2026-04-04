@@ -100,7 +100,7 @@ export const TOOLSETS: Record<string, string[]> = {
     "yahoo_achievements",
   ],
 
-  // Intel & Statcast (~12 tools)
+  // Intel & Statcast (~16 tools)
   intel: [
     "fantasy_player_report",
     "fantasy_regression_candidates",
@@ -115,6 +115,10 @@ export const TOOLSETS: Record<string, string[]> = {
     "yahoo_player_intel",
     "yahoo_projections_update",
     "fantasy_statcast_leaders",
+    "yahoo_game_environment",
+    "yahoo_umpire_report",
+    "yahoo_consensus_rankings",
+    "yahoo_fangraphs_recent",
   ],
 
   // Prospects (~11 tools)
@@ -141,7 +145,7 @@ export const TOOLSETS: Record<string, string[]> = {
     "yahoo_draft_board",
   ],
 
-  // MLB reference (~9 tools)
+  // MLB reference (~11 tools)
   mlb: [
     "mlb_teams",
     "mlb_roster",
@@ -152,6 +156,8 @@ export const TOOLSETS: Record<string, string[]> = {
     "mlb_standings",
     "mlb_draft",
     "yahoo_weather",
+    "yahoo_game_environment",
+    "yahoo_umpire_report",
   ],
 
   // League history (~9 tools)
@@ -233,6 +239,10 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
   yahoo_whats_new: "Recent transactions, roster moves, and league activity since last check",
   yahoo_weekly_digest: "End-of-week summary with matchup result, standings movement, and trends",
   yahoo_weather: "Game-day weather for MLB parks affecting player performance",
+  yahoo_game_environment: "Weather, HP umpire, and park factor for every game on a date",
+  yahoo_umpire_report: "Home plate umpire assignments for all games on a date",
+  yahoo_consensus_rankings: "FantasyPros expert consensus rankings with disagreement signal",
+  yahoo_fangraphs_recent: "FanGraphs current-season stats for batters or pitchers",
 
   // Lineup
   yahoo_auto_lineup: "Automatically set optimal daily lineup based on projections and matchups",

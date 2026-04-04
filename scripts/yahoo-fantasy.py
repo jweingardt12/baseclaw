@@ -264,7 +264,7 @@ def _fetch_game_info():
     """Fetch game info from MLB Stats API."""
     try:
         from shared import mlb_fetch
-        data = mlb_fetch("/schedule?sportId=1&date=" + datetime.date.today().isoformat() + "&hydrate=team,linescore")
+        data = mlb_fetch("/schedule?sportId=1&date=" + datetime.date.today().isoformat() + "&hydrate=team,linescore,weather,officials")
         result = {}
         dates = data.get("dates", [])
         if dates:

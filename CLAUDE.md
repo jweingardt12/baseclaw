@@ -136,15 +136,22 @@ Every recommendation engine and player display surface flows through a unified i
 - **Availability status** (available/minors/released/injured from MLB transactions)
 - **Depth charts** (MLB API → starter/backup/bench role, probable pitcher status)
 - **BvP matchup history** (career batter-vs-pitcher stats + platoon advantage)
+- **Game environment** (MLB weather, HP umpire, park factor per game)
+- **Consensus rankings** (FantasyPros ECR with expert disagreement signal)
 
 Key enrichment functions in `shared.py`:
-- `compute_adjusted_z(name, z, quality_tier, hot_cold, context)` — central scoring with all signals
+- `compute_adjusted_z(name, z, quality_tier, hot_cold, context, game_env, is_pitcher)` — central scoring with all signals
 - `enrich_with_intel(players)` — batch Statcast + trends attachment
 - `enrich_with_context(players)` — news flags + injuries + Reddit + availability + raw `_context` for scoring
 - `attach_context(players)` — lightweight context for scoring only (no display fields)
 - `prefetch_context(players)` — batch context fetch returning dict
 - `is_unavailable(context)` — dealbreaker/availability check for filtering
 - `get_player_profile(name)` — unified profile: z-score + intel + context + adjusted_z
+- `get_game_environment(date)` — weather + HP umpire + park factor for all games on a date
+
+Key data functions in `intel.py`:
+- `get_consensus_rankings(position)` — FantasyPros ECR with rank std deviation
+- `get_fangraphs_recent(stat_type, days)` — current-season FanGraphs stats via pybaseball
 
 ## Key Files
 
@@ -155,11 +162,12 @@ Key enrichment functions in `shared.py`:
 | `mcp-apps/src/toolsets.ts` | Toolset profiles, tool descriptions, filtering |
 | `mcp-apps/src/api/python-client.ts` | HTTP bridge to Python API (all `apiGet`/`apiPost` calls) |
 | `mcp-apps/src/api/errors.ts` | Structured error messages with fix instructions |
-| `scripts/api-server.py` | Flask API server (~2500 LOC, ~120 endpoints) |
+| `mcp-apps/src/tools/environment-tools.ts` | Game environment, umpire, consensus ranking tools |
+| `scripts/api-server.py` | Flask API server (~3200 LOC, ~130 endpoints) |
 | `scripts/season-manager.py` | Strategy engine (~11K LOC, largest file) |
 | `scripts/valuations.py` | Z-score valuation engine (pandas/numpy) |
 | `scripts/shared.py` | Yahoo OAuth, MLB API, intelligence helpers (compute_adjusted_z, enrichment) |
-| `scripts/intel.py` | Statcast, bat tracking, pitch mix, depth charts, BvP matchups, regression |
+| `scripts/intel.py` | Statcast, bat tracking, pitch mix, depth charts, BvP, regression, consensus rankings |
 | `scripts/news.py` | 16-source RSS aggregator, player context (flags, injuries, availability) |
 | `scripts/prospect_news.py` | Prospect call-up probability (Bayesian signal classification) |
 | `entrypoint.sh` | Container startup — generates OAuth file, starts Python bg + Node fg |

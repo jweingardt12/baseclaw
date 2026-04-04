@@ -17,6 +17,7 @@ import { registerIntelTools } from "./src/tools/intel-tools.js";
 import { registerWorkflowTools } from "./src/tools/workflow-tools.js";
 import { registerStrategyTools } from "./src/tools/strategy-tools.js";
 import { registerProspectTools } from "./src/tools/prospect-tools.js";
+import { registerEnvironmentTools } from "./src/tools/environment-tools.js";
 import { registerMetaTools, populateRegistryFromServer } from "./src/tools/meta-tools.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -53,6 +54,7 @@ export function createServer(enabledTools?: Set<string>): McpServer {
   registerWorkflowTools(server, WRITES_ENABLED, enabledTools);
   registerStrategyTools(server, enabledTools);
   registerProspectTools(server, enabledTools);
+  registerEnvironmentTools(server, enabledTools);
 
   // Populate TOOL_REGISTRY with real descriptions from registered tools
   populateRegistryFromServer(server);

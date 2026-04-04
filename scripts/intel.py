@@ -120,7 +120,7 @@ def _get_intel_db():
     if _intel_db is not None:
         return _intel_db
     db_path = os.path.join(DATA_DIR, "season.db")
-    _intel_db = sqlite3.connect(db_path)
+    _intel_db = sqlite3.connect(db_path, check_same_thread=False)
     _intel_db.execute(
         "CREATE TABLE IF NOT EXISTS arsenal_snapshots "
         "(player_name TEXT, date TEXT, pitch_type TEXT, "
@@ -674,6 +674,109 @@ def _fetch_fangraphs_pitching():
     return _fetch_fangraphs(pitching_stats, "fangraphs_pitching")
 
 
+def get_fangraphs_recent(stat_type="bat", days=7):
+    """Fetch FanGraphs current-season stats via pybaseball.
+
+    stat_type: 'bat' or 'pit'.
+    Returns dict keyed by lowercase player name with wRC+/OPS/K%/BB% for batters
+    or ERA/FIP/K%/BB%/WHIP for pitchers.
+    """
+    cache_key = ("fangraphs_recent", stat_type, days, YEAR)
+    cached = _cache_get(cache_key, TTL_FANGRAPHS)
+    if cached is not None:
+        return cached
+
+    result = {}
+    try:
+        if stat_type == "bat":
+            from pybaseball import batting_stats
+            df = batting_stats(YEAR, qual=0)
+        else:
+            from pybaseball import pitching_stats
+            df = pitching_stats(YEAR, qual=0)
+
+        if df is None or len(df) == 0:
+            _cache_set(cache_key, result)
+            return result
+
+        for _, row in df.iterrows():
+            name = row.get("Name", "")
+            if not name:
+                continue
+            if stat_type == "bat":
+                result[name.lower()] = {
+                    "wrc_plus": row.get("wRC+", None),
+                    "ops": row.get("OPS", None),
+                    "k_rate": row.get("K%", None),
+                    "bb_rate": row.get("BB%", None),
+                    "avg": row.get("AVG", None),
+                    "slg": row.get("SLG", None),
+                    "pa": row.get("PA", 0),
+                }
+            else:
+                result[name.lower()] = {
+                    "era": row.get("ERA", None),
+                    "fip": row.get("FIP", None),
+                    "k_rate": row.get("K%", None),
+                    "bb_rate": row.get("BB%", None),
+                    "whip": row.get("WHIP", None),
+                    "ip": row.get("IP", 0),
+                }
+    except Exception as e:
+        print("Warning: FanGraphs recent " + stat_type + " fetch failed: " + str(e))
+
+    _cache_set(cache_key, result)
+    return result
+
+
+# ============================================================
+# 3b. FantasyPros Consensus Rankings
+# ============================================================
+
+TTL_CONSENSUS = 86400  # 24 hours — rankings update daily
+
+
+def get_consensus_rankings(position="ALL"):
+    """Fetch FantasyPros consensus rest-of-season rankings.
+
+    Returns list of dicts with ecr, rank_min, rank_max, rank_avg, rank_std,
+    player_name, position, team, yahoo_id per player.
+    rank_std identifies high-disagreement players (breakout/bust candidates).
+    """
+    cache_key = ("consensus_rankings", position)
+    cached = _cache_get(cache_key, TTL_CONSENSUS)
+    if cached is not None:
+        return cached
+
+    url = ("https://partners.fantasypros.com/api/v1/consensus-rankings.php"
+           "?sport=MLB&position=" + str(position)
+           + "&scoring=ROTO&type=ros")
+    result = []
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+        with urllib.request.urlopen(req, timeout=15) as response:
+            data = json.loads(response.read().decode())
+        for p in data.get("players", []):
+            result.append({
+                "player_name": p.get("player_name", ""),
+                "team": p.get("player_team_id", ""),
+                "position": p.get("primary_position", ""),
+                "positions": p.get("player_positions", ""),
+                "ecr": p.get("rank_ecr", 0),
+                "rank_min": int(p.get("rank_min", 0)),
+                "rank_max": int(p.get("rank_max", 0)),
+                "rank_avg": float(p.get("rank_ave", 0)),
+                "rank_std": float(p.get("rank_std", 0)),
+                "pos_rank": p.get("pos_rank", ""),
+                "yahoo_id": p.get("player_yahoo_id", ""),
+            })
+    except Exception as e:
+        print("Warning: FantasyPros consensus fetch failed: " + str(e))
+
+    _cache_set(cache_key, result)
+    return result
+
+
 # ============================================================
 # 4. Reddit JSON API Fetcher
 # ============================================================
@@ -870,7 +973,7 @@ def _fetch_probable_pitchers():
     try:
         today_str = date.today().strftime("%Y-%m-%d")
         endpoint = ("/schedule?sportId=1&date=" + today_str
-                    + "&hydrate=probablePitcher,lineups")
+                    + "&hydrate=probablePitcher,lineups,weather,officials")
         data = _mlb_fetch(endpoint)
         if not data:
             return result

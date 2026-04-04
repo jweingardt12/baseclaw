@@ -2329,3 +2329,70 @@ export interface ProspectNewsResponse {
   error?: string;
 }
 
+// Game Environment types
+export interface GameWeather {
+  temp?: string;
+  wind?: string;
+  condition?: string;
+}
+
+export interface HpUmpire {
+  name: string;
+  id?: number;
+}
+
+export interface GameEnvironmentEntry {
+  home_team: string;
+  away_team: string;
+  venue: string;
+  venue_id?: number;
+  game_time?: string;
+  status?: string;
+  weather: GameWeather;
+  hp_umpire: HpUmpire;
+  park_factor: number;
+}
+
+export interface GameEnvironmentResponse {
+  date: string;
+  games: Record<string, GameEnvironmentEntry>;
+}
+
+export interface UmpireEntry {
+  game: string;
+  venue: string;
+  hp_umpire: HpUmpire;
+}
+
+export interface UmpireReportResponse {
+  date: string;
+  umpires: UmpireEntry[];
+}
+
+export interface ConsensusPlayer {
+  player_name: string;
+  team: string;
+  position: string;
+  positions: string;
+  ecr: number;
+  rank_min: number;
+  rank_max: number;
+  rank_avg: number;
+  rank_std: number;
+  pos_rank: string;
+  yahoo_id: string;
+}
+
+export interface ConsensusRankingsResponse {
+  position: string;
+  count: number;
+  players: ConsensusPlayer[];
+}
+
+export interface FangraphsRecentResponse {
+  stat: string;
+  days: number;
+  count: number;
+  players: Record<string, Record<string, number | null>>;
+}
+

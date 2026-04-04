@@ -551,14 +551,17 @@ QUALITY_TIER_ADJ = {"elite": 1.5, "strong": 0.75, "below": -0.4, "poor": -0.8}
 HOT_COLD_ADJ = {"hot": 0.8, "warm": 0.4, "cold": -0.4, "ice": -0.8}
 
 
-def compute_adjusted_z(player_name, z_final, quality_tier=None, hot_cold=None, context=None):
-    """Compute fully adjusted z-score: regression + Statcast quality + hot/cold + news context.
+def compute_adjusted_z(player_name, z_final, quality_tier=None, hot_cold=None, context=None, game_env=None, is_pitcher=False):
+    """Compute fully adjusted z-score: regression + Statcast quality + hot/cold + news context + game environment.
 
     Consolidates the adjustment logic into a reusable function.
     The optional ``context`` dict (from ``news.get_player_context()``) feeds
     dealbreaker/warning/info flags, injury severity, and Reddit sentiment
     into the score so that recommendation engines never surface unavailable
     or significantly impaired players.
+
+    The optional ``game_env`` dict (from ``get_game_environment()``) adds
+    park factor and weather adjustments for today's game context.
 
     Returns (adjusted_z, adjustments_dict) where adjustments_dict shows each modifier.
     """
@@ -642,7 +645,114 @@ def compute_adjusted_z(player_name, z_final, quality_tier=None, hot_cold=None, c
             adjusted += hc_adj
             adjustments["momentum"] = hc_adj
 
+    # Game environment adjustments (park factor + weather)
+    if game_env and isinstance(game_env, dict):
+        pf = game_env.get("park_factor", 1.0)
+        if pf and pf != 1.0:
+            # Hitter-friendly parks boost batters / hurt pitchers, and vice versa
+            favorable = (pf < 0.96) if is_pitcher else (pf > 1.05)
+            unfavorable = (pf > 1.05) if is_pitcher else (pf < 0.96)
+            if favorable:
+                adjusted += 0.3
+                adjustments["park_favorable"] = 0.3
+            elif unfavorable:
+                adjusted -= 0.2
+                adjustments["park_unfavorable"] = -0.2
+
+        # Weather: warm + wind out favors offense
+        weather = game_env.get("weather", {})
+        try:
+            temp = int(str(weather.get("temp", "0")).replace("F", "").strip())
+        except (ValueError, TypeError):
+            temp = 0
+        wind_out = "out to" in str(weather.get("wind", "")).lower()
+        if not is_pitcher:
+            if temp >= 80 and wind_out:
+                adjusted += 0.2
+                adjustments["weather_warm_wind_out"] = 0.2
+            elif temp <= 45:
+                adjusted -= 0.15
+                adjustments["weather_cold"] = -0.15
+
     return round(adjusted, 2), adjustments
+
+
+# ---------------------------------------------------------------------------
+# Game Environment (weather + umpires + park factors per game)
+# ---------------------------------------------------------------------------
+
+_game_env_cache = {}
+_GAME_ENV_TTL = 1800  # 30 minutes
+
+
+def get_game_environment(game_date=None):
+    """Get weather, HP umpire, and park factor for every game on a date.
+
+    Returns dict keyed by game_pk with home_team, away_team, venue,
+    weather, hp_umpire, and park_factor for each game.
+    """
+    from datetime import date as _date
+    if not game_date:
+        game_date = _date.today().isoformat()
+
+    cache_key = "game_env_" + game_date
+    cached = cache_get(_game_env_cache, cache_key, _GAME_ENV_TTL)
+    if cached is not None:
+        return cached
+
+    # Fetch schedule with weather + officials hydrations
+    data = mlb_fetch("/schedule?sportId=1&date=" + game_date
+                     + "&hydrate=team,weather,officials")
+    result = {}
+    if not data:
+        return result
+
+    # Get park factors lookup
+    try:
+        from valuations import get_park_factor
+    except Exception:
+        get_park_factor = lambda t: 1.0
+
+    for game_date_entry in data.get("dates", []):
+        for game in game_date_entry.get("games", []):
+            game_pk = game.get("gamePk")
+            if not game_pk:
+                continue
+
+            home_team = game.get("teams", {}).get("home", {}).get("team", {}).get("name", "")
+            away_team = game.get("teams", {}).get("away", {}).get("team", {}).get("name", "")
+            venue = game.get("venue", {})
+
+            # Weather (from hydration)
+            weather = game.get("weather", {})
+
+            # HP umpire (from officials hydration)
+            hp_umpire = {}
+            for official in game.get("officials", []):
+                if official.get("officialType") == "Home Plate":
+                    hp_umpire = {
+                        "name": official.get("official", {}).get("fullName", ""),
+                        "id": official.get("official", {}).get("id"),
+                    }
+                    break
+
+            # Park factor from existing valuations module
+            pf = get_park_factor(home_team)
+
+            result[game_pk] = {
+                "home_team": home_team,
+                "away_team": away_team,
+                "venue": venue.get("name", ""),
+                "venue_id": venue.get("id"),
+                "game_time": game.get("gameDate", ""),
+                "status": game.get("status", {}).get("detailedState", ""),
+                "weather": weather,
+                "hp_umpire": hp_umpire,
+                "park_factor": pf,
+            }
+
+    cache_set(_game_env_cache, cache_key, result)
+    return result
 
 
 # ---------------------------------------------------------------------------

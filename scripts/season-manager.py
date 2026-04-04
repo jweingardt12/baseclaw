@@ -506,7 +506,7 @@ def get_schedule_for_range(start_date, end_date):
     if statsapi:
         if _statsapi_hydrate_works:
             try:
-                return statsapi.schedule(start_date=start_date, end_date=end_date, hydrate="probablePitcher")
+                return statsapi.schedule(start_date=start_date, end_date=end_date, hydrate="probablePitcher,weather,officials")
             except Exception:
                 _statsapi_hydrate_works = False
         try:
@@ -515,7 +515,7 @@ def get_schedule_for_range(start_date, end_date):
             print("  Warning: statsapi range schedule failed: " + str(e))
     # Fallback to raw MLB API
     try:
-        data = mlb_fetch("/schedule?sportId=1&startDate=" + start_date + "&endDate=" + end_date + "&hydrate=team,probablePitcher")
+        data = mlb_fetch("/schedule?sportId=1&startDate=" + start_date + "&endDate=" + end_date + "&hydrate=team,probablePitcher,weather,officials")
         return _parse_schedule_response(data)
     except Exception as e:
         print("  Warning: range schedule fetch failed: " + str(e))
@@ -7425,7 +7425,7 @@ def cmd_pitcher_matchup(args, as_json=False):
         probable_map = {}  # pitcher_name_norm -> [game_info, ...]
         try:
             if statsapi:
-                prob_sched = statsapi.schedule(start_date=start_date, end_date=end_date, hydrate="probablePitcher")
+                prob_sched = statsapi.schedule(start_date=start_date, end_date=end_date, hydrate="probablePitcher,weather,officials")
                 for game in prob_sched:
                     game_date = game.get("game_date", "")
                     for side in ["away_probable_pitcher", "home_probable_pitcher"]:
@@ -11834,15 +11834,15 @@ def cmd_competitor_tracker(args, as_json=False):
 
             # Check if this affects categories we're competing on
             rival_rank = standings_by_name.get(team_name, 99)
-            if abs(rival_rank - my_rank) <= 2:
-                for cat in cats_improved:
-                    my_cat_rank = my_cat_ranks.get(cat, 99)
-                    if my_cat_rank >= 4:
-                        alerts.append({
-                            "type": "rival_add",
-                            "message": team_name + " (#" + str(rival_rank) + ") added " + player_name
-                                + " — improves " + cat + " (you're ranked #" + str(my_cat_rank) + ")",
-                        })
+            if abs(rival_rank - my_rank) <= 2 and cats_improved:
+                weak_cats = [c for c in cats_improved if my_cat_ranks.get(c, 99) >= 4]
+                if weak_cats:
+                    alerts.append({
+                        "type": "rival_add",
+                        "message": team_name + " (#" + str(rival_rank) + ") added " + player_name
+                            + " — improves " + ", ".join(weak_cats)
+                            + " (you're ranked #" + str(my_cat_ranks.get(weak_cats[0], "?")) + ")",
+                    })
 
     # Build team summaries
     teams = []
